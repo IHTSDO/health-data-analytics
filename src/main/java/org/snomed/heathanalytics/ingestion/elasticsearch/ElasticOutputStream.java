@@ -1,9 +1,11 @@
-package org.snomed.heathanalytics.ingestion.store.elasticsearch;
+package org.snomed.heathanalytics.ingestion.elasticsearch;
 
 import org.snomed.heathanalytics.domain.ClinicalEncounter;
 import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.domain.Sex;
 import org.snomed.heathanalytics.ingestion.HealthDataOutputStream;
+import org.snomed.heathanalytics.store.ClinicalEncounterRepository;
+import org.snomed.heathanalytics.store.PatientRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;

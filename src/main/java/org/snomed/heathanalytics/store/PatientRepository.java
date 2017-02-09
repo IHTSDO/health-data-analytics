@@ -1,4 +1,4 @@
-package org.snomed.heathanalytics.ingestion.store.elasticsearch;
+package org.snomed.heathanalytics.store;
 
 import org.snomed.heathanalytics.domain.Patient;
 import org.springframework.data.elasticsearch.repository.ElasticsearchCrudRepository;

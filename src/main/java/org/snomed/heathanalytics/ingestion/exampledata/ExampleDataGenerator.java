@@ -50,37 +50,37 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		GregorianCalendar encounterDate = new GregorianCalendar();
 		// 10% of patients have diabetes.
 		if (chance(0.1f)) {
-			healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectChildOf("420868002 | Disorder due to type 1 diabetes mellitus"));
+			healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectChildOf("420868002"));// Disorder due to type 1 diabetes mellitus
 
 			// 7% of the diabetic patients also have Peripheral Neuropathy.
 			if (chance(0.07f)) {
-				healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectChildOf("?? | Peripheral Neuropathy"));
+				healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectChildOf("302226006"));// Peripheral Neuropathy
 			}
 
 			// 10% of the diabetic patients have a Myocardial Infarction.
 			if (chance(0.1f)) {
-				healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectChildOf("?? | Myocardial Infarction"));
+				healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectChildOf("22298006"));// Myocardial Infarction
 			}
 		} else {
 			// 1% of the non-diabetic patients have Peripheral Neuropathy.
 			if (chance(0.01f)) {
-				healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectChildOf("?? | Peripheral Neuropathy"));
+				healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectChildOf("302226006"));// Peripheral Neuropathy
 			}
 		}
 
 		// 30 % of patients over 40 years old have hypertension.
 		if (getAge(patient.getDob()) > 40 && chance(0.3f)) {
-			healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectChildOf("?? | Hypertension"));
+			healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectChildOf("38341003"));// Hypertension
 
 			// 8% of patients with hypertension have a Myocardial Infarction.
 			if (chance(0.08f)) {
-				healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectChildOf("?? | Myocardial Infarction"));
+				healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectChildOf("22298006"));// Myocardial Infarction
 			}
 		}
 
 		// 5% of all patients over 55 years old have Myocardial Infarction.
 		if (getAge(patient.getDob()) > 55 && chance(0.05f)) {
-			healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectChildOf("?? | Myocardial Infarction"));
+			healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectChildOf("22298006"));// Myocardial Infarction
 		}
 	}
 

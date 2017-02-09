@@ -1,23 +1,35 @@
 package org.snomed.heathanalytics.domain;
 
-import java.util.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.Document;
 
+import java.util.Date;
+
+@Document(indexName = "patient")
 public class Patient {
 
+	@Id
+	public String roleId;
 	private String name;
 	private Date dob;
 	private Sex sex;
-	private Set<Act> acts;
 
 	public Patient() {
-		acts = new TreeSet<>(Act.ACT_DATE_COMPARATOR);
 	}
 
-	public Patient(String name, Date dob, Sex sex) {
-		this();
+	public Patient(String roleId, String name, Date dob, Sex sex) {
+		this.roleId = roleId;
 		this.name = name;
 		this.dob = dob;
 		this.sex = sex;
+	}
+
+	public String getRoleId() {
+		return roleId;
+	}
+
+	public void setRoleId(String roleId) {
+		this.roleId = roleId;
 	}
 
 	public String getName() {
@@ -44,11 +56,13 @@ public class Patient {
 		this.sex = sex;
 	}
 
-	public Set<Act> getActs() {
-		return acts;
-	}
-
-	public void setActs(Set<Act> acts) {
-		this.acts = acts;
+	@Override
+	public String toString() {
+		return "Patient{" +
+				"roleId='" + roleId + '\'' +
+				", name='" + name + '\'' +
+				", sex=" + sex +
+				", dob=" + dob +
+				'}';
 	}
 }

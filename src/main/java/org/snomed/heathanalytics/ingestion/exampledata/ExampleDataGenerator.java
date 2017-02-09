@@ -1,5 +1,7 @@
 package org.snomed.heathanalytics.ingestion.exampledata;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.domain.Sex;
 import org.snomed.heathanalytics.ingestion.HealthDataIngestionSource;
@@ -18,6 +20,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 
 	private final ExampleConceptService concepts;
 	private int numberOfPatients;
+	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	public ExampleDataGenerator(ExampleConceptService exampleConceptService, int numberOfPatients) {
 		this.concepts = exampleConceptService;
@@ -26,10 +29,11 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 
 	@Override
 	public void stream(HealthDataOutputStream healthDataOutputStream) {
-		IntStream.range(0, numberOfPatients).parallel().forEach(i -> generateExamplePatientAndActs(healthDataOutputStream));
+		IntStream.range(0, numberOfPatients).parallel().forEach(i -> generateExamplePatientAndActs(i + "", healthDataOutputStream));
+		logger.info("Persisted {} patients", numberOfPatients);
 	}
 
-	private void generateExamplePatientAndActs(HealthDataOutputStream healthDataOutputStream) {
+	private void generateExamplePatientAndActs(String roleId, HealthDataOutputStream healthDataOutputStream) {
 		Patient patient = new Patient();
 
 		//  All patients are over the age of 30 and under the age of 85.
@@ -42,41 +46,41 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 			patient.setSex(Sex.FEMALE);
 		}
 
-		String roleId = healthDataOutputStream.createPatient(patient.getName(), patient.getDob(), patient.getSex());
-
+		healthDataOutputStream.createPatient(roleId, patient.getName(), patient.getDob(), patient.getSex());
+		GregorianCalendar encounterDate = new GregorianCalendar();
 		// 10% of patients have diabetes.
 		if (chance(0.1f)) {
-			healthDataOutputStream.addCondition(roleId, concepts.selectChildOf("420868002 | Disorder due to type 1 diabetes mellitus"));
+			healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectChildOf("420868002 | Disorder due to type 1 diabetes mellitus"));
 
 			// 7% of the diabetic patients also have Peripheral Neuropathy.
 			if (chance(0.07f)) {
-				healthDataOutputStream.addCondition(roleId, concepts.selectChildOf("?? | Peripheral Neuropathy"));
+				healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectChildOf("?? | Peripheral Neuropathy"));
 			}
 
 			// 10% of the diabetic patients have a Myocardial Infarction.
 			if (chance(0.1f)) {
-				healthDataOutputStream.addCondition(roleId, concepts.selectChildOf("?? | Myocardial Infarction"));
+				healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectChildOf("?? | Myocardial Infarction"));
 			}
 		} else {
 			// 1% of the non-diabetic patients have Peripheral Neuropathy.
 			if (chance(0.01f)) {
-				healthDataOutputStream.addCondition(roleId, concepts.selectChildOf("?? | Peripheral Neuropathy"));
+				healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectChildOf("?? | Peripheral Neuropathy"));
 			}
 		}
 
 		// 30 % of patients over 40 years old have hypertension.
 		if (getAge(patient.getDob()) > 40 && chance(0.3f)) {
-			healthDataOutputStream.addCondition(roleId, concepts.selectChildOf("?? | Hypertension"));
+			healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectChildOf("?? | Hypertension"));
 
 			// 8% of patients with hypertension have a Myocardial Infarction.
 			if (chance(0.08f)) {
-				healthDataOutputStream.addCondition(roleId, concepts.selectChildOf("?? | Myocardial Infarction"));
+				healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectChildOf("?? | Myocardial Infarction"));
 			}
 		}
 
 		// 5% of all patients over 55 years old have Myocardial Infarction.
 		if (getAge(patient.getDob()) > 55 && chance(0.05f)) {
-			healthDataOutputStream.addCondition(roleId, concepts.selectChildOf("?? | Myocardial Infarction"));
+			healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectChildOf("?? | Myocardial Infarction"));
 		}
 	}
 

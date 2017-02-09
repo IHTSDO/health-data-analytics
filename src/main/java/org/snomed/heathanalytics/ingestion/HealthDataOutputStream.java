@@ -6,7 +6,7 @@ import java.util.Date;
 
 public interface HealthDataOutputStream {
 
-	String createPatient(String name, Date dateOfBirth, Sex sex);
+	void createPatient(String roleId, String name, Date dateOfBirth, Sex sex);
 
-	void addCondition(String roleId, String conceptId);
+	void addClinicalEncounter(String roleId, Date date, String conceptId);
 }

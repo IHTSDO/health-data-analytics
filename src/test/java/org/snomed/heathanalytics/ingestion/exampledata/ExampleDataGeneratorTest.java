@@ -3,6 +3,8 @@ package org.snomed.heathanalytics.ingestion.exampledata;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.heathanalytics.domain.ClinicalEncounter;
+import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.domain.Sex;
 import org.snomed.heathanalytics.ingestion.HealthDataOutputStream;
 
@@ -17,24 +19,22 @@ public class ExampleDataGeneratorTest {
 
 	@Test
 	public void testStream() throws Exception {
-		Map<String, List<String>> patientData = new HashMap<>();
+		Map<String, List<ClinicalEncounter>> patientData = new HashMap<>();
 
-		AtomicLong roleIdSource = new AtomicLong();
 		new ExampleDataGenerator(new ExampleConceptService(), 20).stream(new HealthDataOutputStream() {
 			@Override
-			public String createPatient(String name, Date dateOfBirth, Sex sex) {
-				String roleId = roleIdSource.incrementAndGet() + "";
-				logger.info("New patient roleId:{}, name:{}, dob:{}, sex:{}", roleId, name, dateOfBirth, sex);
+			public void createPatient(String roleId, String name, Date dateOfBirth, Sex sex) {
+				logger.info("New patient {}", new Patient(roleId, name, dateOfBirth, sex));
 				synchronized (patientData) {
 					patientData.put(roleId, new ArrayList<>());
 				}
-				return roleId;
 			}
 
 			@Override
-			public void addCondition(String roleId, String conceptId) {
-				logger.info("New condition roleId:{}, conceptId:{}", roleId, conceptId);
-				patientData.get(roleId).add(conceptId);
+			public void addClinicalEncounter(String roleId, Date date, String conceptId) {
+				ClinicalEncounter clinicalEncounter = new ClinicalEncounter(roleId, date, conceptId);
+				logger.info("New clinical encounter {}", clinicalEncounter);
+				patientData.get(clinicalEncounter.getRoleId()).add(clinicalEncounter);
 			}
 		});
 

@@ -1,12 +1,14 @@
 package org.snomed.heathanalytics;
 
+import org.ihtsdo.otf.snomedboot.ReleaseImportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.domain.ClinicalEncounter;
 import org.snomed.heathanalytics.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.ingestion.exampledata.ExampleConceptService;
 import org.snomed.heathanalytics.ingestion.exampledata.ExampleDataGenerator;
-import org.snomed.heathanalytics.query.QueryService;
+import org.snomed.heathanalytics.service.QueryService;
+import org.snomed.heathanalytics.snomed.SnomedSubsumptionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -14,6 +16,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.Page;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.text.DecimalFormat;
 
 @SpringBootApplication
@@ -25,6 +29,9 @@ public class Application {
 	@Autowired
 	private QueryService queryService;
 
+	@Autowired
+	private SnomedSubsumptionService snomedSubsumptionService;
+
 	private boolean demoMode = true;
 	private int demoPatientCount = 10 * 1000;
 	private Logger logger = LoggerFactory.getLogger(getClass());
@@ -34,7 +41,7 @@ public class Application {
 		context.getBean(Application.class).run();
 	}
 
-	public void run() {
+	private void run() {
 		if (demoMode) {
 			runDemo();
 		}
@@ -49,6 +56,15 @@ public class Application {
 		System.out.println();
 
 		logger.info("******** DEMO MODE ********");
+
+		String demoSnomedReleaseZipPath = "release/SnomedCT_InternationalRF2_Production_20170131.zip";
+		logger.info("******** Loading Snomed Release from {}", demoSnomedReleaseZipPath);
+		try {
+			snomedSubsumptionService.loadSnomedRelease(new FileInputStream(demoSnomedReleaseZipPath));
+		} catch (IOException | ReleaseImportException e) {
+			logger.error("Failed to load Snomed release zip", e);
+			return;
+		}
 
 		logger.info("******** Generating data for {} patients ...", new DecimalFormat( "#,###,###" ).format(demoPatientCount));
 		exampleDataSource().stream(elasticOutputStream);

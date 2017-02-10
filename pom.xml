@@ -42,6 +42,11 @@
 			<artifactId>jna</artifactId>
 			<version>4.3.0</version>
 		</dependency>
+		<dependency>
+			<groupId>org.ihtsdo.otf</groupId>
+			<artifactId>snomed-boot</artifactId>
+			<version>1.1.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>

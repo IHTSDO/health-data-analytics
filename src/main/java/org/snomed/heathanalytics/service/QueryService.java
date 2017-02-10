@@ -1,13 +1,10 @@
-package org.snomed.heathanalytics.query;
+package org.snomed.heathanalytics.service;
 
 import org.snomed.heathanalytics.domain.ClinicalEncounter;
-import org.snomed.heathanalytics.store.ClinicalEncounterRepository;
-import org.snomed.heathanalytics.store.PatientRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
-import org.springframework.data.elasticsearch.core.aggregation.AggregatedPage;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.stereotype.Service;
 

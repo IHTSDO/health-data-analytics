@@ -1,6 +1,5 @@
 package org.snomed.heathanalytics.store;
 
-import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.snomed.Concept;
 import org.springframework.data.elasticsearch.repository.ElasticsearchCrudRepository;
 

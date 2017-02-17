@@ -1,5 +1,6 @@
 package org.snomed.heathanalytics.snomed;
 
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import org.ihtsdo.otf.snomedboot.ComponentStore;
 import org.ihtsdo.otf.snomedboot.ReleaseImportException;
 import org.ihtsdo.otf.snomedboot.ReleaseImporter;
@@ -16,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class SnomedSubsumptionService {
@@ -23,17 +25,31 @@ public class SnomedSubsumptionService {
 	@Autowired
 	private ConceptRepository conceptRepository;
 
+	private Long2ObjectMap<ConceptImpl> concepts;
+
 	private Logger logger = LoggerFactory.getLogger(getClass());
+
+	public Set<Long> getDescendantsOf(Long conceptId) {
+		return concepts.values().parallelStream().filter(c -> c.getAncestorIds().contains(conceptId)).map(ConceptImpl::getId).collect(Collectors.toSet());
+	}
+
+	public Set<Long> getAncestorsOf(Long conceptId) {
+		return concepts.get(conceptId).getAncestorIds();
+	}
 
 	public void loadSnomedRelease(InputStream snomedReleaseZipStreamIn) throws IOException, ReleaseImportException {
 		// Use 'Snomed Boot' project to unzip release and build transitive closure
 		ComponentStore componentStore = new ComponentStore();
 		new ReleaseImporter().loadSnapshotReleaseFiles(snomedReleaseZipStreamIn, LoadingProfile.light.withoutInactiveConcepts(), new ComponentFactoryImpl(componentStore));
+		concepts = componentStore.getConcepts();
+		// Keep all concepts in memory
+	}
 
-		logger.info("Storing {} Snomed concepts including transitive closure...", componentStore.getConcepts().size());
+	private void persistConcepts() {
+		logger.info("Storing {} Snomed concepts including transitive closure...", concepts.size());
 		Set<Concept> batch = new HashSet<>();
 		int i = 1;
-		for (ConceptImpl concept : componentStore.getConcepts().values()) {
+		for (ConceptImpl concept : concepts.values()) {
 			batch.add(new Concept(concept.getId(), concept.getFsn(), concept.getDefinitionStatusId(), concept.getAncestorIds()));
 			if (i % 10000 == 0) {
 				System.out.print(".");
@@ -51,4 +67,11 @@ public class SnomedSubsumptionService {
 		System.out.println();
 	}
 
+	public Long2ObjectMap<ConceptImpl> getConcepts() {
+		return concepts;
+	}
+
+	public void setConcepts(Long2ObjectMap<ConceptImpl> concepts) {
+		this.concepts = concepts;
+	}
 }

@@ -35,8 +35,10 @@ public class QueryService {
 		long start = new Date().getTime();
 
 		Set<Long> descendantsOf = snomedSubsumptionService.getDescendantsOf(conceptId);
+		long gatherConcepts = new Date().getTime() - start;
+		start = new Date().getTime();
 
-		AggregatedPage<ClinicalEncounter> page = elasticsearchTemplate.queryForPage(new NativeSearchQueryBuilder()
+		Page<ClinicalEncounter> page = elasticsearchTemplate.queryForPage(new NativeSearchQueryBuilder()
 						.withQuery(boolQuery()
 								.should(termsQuery("conceptId", conceptId, descendantsOf))
 						)
@@ -44,8 +46,8 @@ public class QueryService {
 						.build(),
 				ClinicalEncounter.class
 		);
-		logger.info("Fetched cohort for {} in {} milliseconds with {} results.",
-				conceptId, new Date().getTime() - start, page.getTotalElements());
+		logger.info("Fetched cohort for {} with {} results. Gathering concepts took {} mills, Query took {} mills",
+				conceptId, page.getTotalElements(), gatherConcepts, new Date().getTime() - start);
 		return page;
 	}
 

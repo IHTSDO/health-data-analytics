@@ -3,6 +3,8 @@ package org.snomed.heathanalytics.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.domain.ClinicalEncounter;
+import org.snomed.heathanalytics.domain.Patient;
+import org.snomed.heathanalytics.pojo.Stats;
 import org.snomed.heathanalytics.snomed.SnomedSubsumptionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -10,14 +12,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.core.aggregation.AggregatedPage;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
+import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.Set;
 
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.*;
 
 @Service
 public class QueryService {
@@ -46,5 +47,12 @@ public class QueryService {
 		logger.info("Fetched cohort for {} in {} milliseconds with {} results.",
 				conceptId, new Date().getTime() - start, page.getTotalElements());
 		return page;
+	}
+
+	public Stats getStats() {
+		SearchQuery searchQuery = new NativeSearchQueryBuilder().build();
+		long patientCount = elasticsearchTemplate.count(searchQuery, Patient.class);
+		long clinicalEncounterCount = elasticsearchTemplate.count(searchQuery, ClinicalEncounter.class);
+		return new Stats(new Date(), patientCount, clinicalEncounterCount);
 	}
 }

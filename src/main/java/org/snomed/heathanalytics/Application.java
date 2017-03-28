@@ -11,21 +11,20 @@ import org.snomed.heathanalytics.ingestion.exampledata.ExampleDataGenerator;
 import org.snomed.heathanalytics.service.QueryService;
 import org.snomed.heathanalytics.snomed.SnomedSubsumptionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
-import org.springframework.util.FileSystemUtils;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.DecimalFormat;
 
 @SpringBootApplication
-public class Application {
+public class Application implements ApplicationRunner {
 
 	@Autowired
 	private ElasticOutputStream elasticOutputStream;
@@ -39,23 +38,18 @@ public class Application {
 	@Autowired
 	private ElasticsearchTemplate elasticsearchTemplate;
 
-	private boolean demoMode = true;
 	private int demoPatientCount = 10 * 1000;
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	public static void main(String[] args) {
-		if (new File("data").exists()) {
-			throw new IllegalStateException("The 'data' directory already exists, please move or remove before running the demo.");
-		}
-
-		ConfigurableApplicationContext context = SpringApplication.run(Application.class, args);
-		context.getBean(Application.class).run();
+		SpringApplication.run(Application.class, args);
 	}
-
-	private void run() {
-		if (demoMode) {
+	@Override
+	public void run(ApplicationArguments applicationArguments) throws Exception {
+		// if (applicationArguments.containsOption("demo-mode")) {
+		// Force Demo Mode
 			runDemo();
-		}
+		// }
 	}
 
 	@Bean
@@ -98,5 +92,4 @@ public class Application {
 		elasticsearchTemplate.deleteIndex(ClinicalEncounter.class);
 		elasticsearchTemplate.deleteIndex(Patient.class);
 	}
-
 }

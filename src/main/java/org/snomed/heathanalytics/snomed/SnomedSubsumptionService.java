@@ -45,7 +45,10 @@ public class SnomedSubsumptionService {
 	public void loadSnomedRelease(InputStream snomedReleaseZipStreamIn) throws IOException, ReleaseImportException {
 		// Use 'Snomed Boot' project to unzip release and build transitive closure
 		ComponentStore componentStore = new ComponentStore();
-		new ReleaseImporter().loadSnapshotReleaseFiles(snomedReleaseZipStreamIn, LoadingProfile.light.withoutInactiveConcepts(), new ComponentFactoryImpl(componentStore));
+		LoadingProfile loadingProfile = LoadingProfile.light
+				.withoutInactiveConcepts()
+				.withoutAnyRefsets();
+		new ReleaseImporter().loadSnapshotReleaseFiles(snomedReleaseZipStreamIn, loadingProfile, new ComponentFactoryImpl(componentStore));
 		concepts = componentStore.getConcepts();
 		// Keep all concepts in memory
 	}

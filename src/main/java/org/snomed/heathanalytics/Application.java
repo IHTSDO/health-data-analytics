@@ -4,6 +4,7 @@ import org.ihtsdo.otf.snomedboot.ReleaseImportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.domain.ClinicalEncounter;
+import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.ingestion.exampledata.ExampleConceptService;
 import org.snomed.heathanalytics.ingestion.exampledata.ExampleDataGenerator;
@@ -15,6 +16,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.Page;
+import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.util.FileSystemUtils;
 
 import java.io.File;
@@ -33,6 +35,9 @@ public class Application {
 
 	@Autowired
 	private SnomedSubsumptionService snomedSubsumptionService;
+
+	@Autowired
+	private ElasticsearchTemplate elasticsearchTemplate;
 
 	private boolean demoMode = true;
 	private int demoPatientCount = 10 * 1000;
@@ -60,6 +65,7 @@ public class Application {
 
 	private void runDemo() {
 		System.out.println();
+		deleteDemoData();
 
 		logger.info("******** DEMO MODE ********");
 
@@ -82,10 +88,15 @@ public class Application {
 			System.out.println(clinicalEncounter);
 		}
 
+		System.out.println("Demo complete.");
 		System.out.println();
 
-		logger.info("Deleting demo data");
-		FileSystemUtils.deleteRecursively(new File("data"));
+		deleteDemoData();
+	}
+
+	private void deleteDemoData() {
+		elasticsearchTemplate.deleteIndex(ClinicalEncounter.class);
+		elasticsearchTemplate.deleteIndex(Patient.class);
 	}
 
 }

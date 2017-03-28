@@ -54,8 +54,7 @@ public class ExampleDataGeneratorTest {
 
 			@Override
 			public void addClinicalEncounter(String roleId, Date date, String conceptId) {
-				ClinicalEncounter clinicalEncounter = new ClinicalEncounter(roleId, date, conceptId,
-						Sets.newHashSet(new Long(conceptId)));
+				ClinicalEncounter clinicalEncounter = new ClinicalEncounter(roleId, date, conceptId);
 				logger.info("New clinical encounter {}", clinicalEncounter);
 				patientData.get(clinicalEncounter.getRoleId()).add(clinicalEncounter);
 			}

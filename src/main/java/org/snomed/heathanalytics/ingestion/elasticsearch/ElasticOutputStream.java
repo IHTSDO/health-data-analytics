@@ -20,9 +20,6 @@ public class ElasticOutputStream implements HealthDataOutputStream {
 
 	private ClinicalEncounterRepository clinicalEncounterRepository;
 
-	@Autowired
-	private SnomedSubsumptionService snomedSubsumptionService;
-
 	public ElasticOutputStream(PatientRepository patientRepository, ClinicalEncounterRepository clinicalEncounterRepository) {
 		this.patientRepository = patientRepository;
 		this.clinicalEncounterRepository = clinicalEncounterRepository;
@@ -35,7 +32,6 @@ public class ElasticOutputStream implements HealthDataOutputStream {
 
 	@Override
 	public void addClinicalEncounter(String roleId, Date date, String conceptId) {
-		Set<Long> ancestors = snomedSubsumptionService.getAncestorsOf(Long.parseLong(conceptId));
-		clinicalEncounterRepository.save(new ClinicalEncounter(roleId, date, conceptId, ancestors));
+		clinicalEncounterRepository.save(new ClinicalEncounter(roleId, date, conceptId));
 	}
 }

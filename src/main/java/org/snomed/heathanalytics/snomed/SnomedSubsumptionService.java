@@ -1,6 +1,7 @@
 package org.snomed.heathanalytics.snomed;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.ihtsdo.otf.snomedboot.ComponentStore;
 import org.ihtsdo.otf.snomedboot.ReleaseImportException;
 import org.ihtsdo.otf.snomedboot.ReleaseImporter;
@@ -28,6 +29,10 @@ public class SnomedSubsumptionService {
 	private Long2ObjectMap<ConceptImpl> concepts;
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
+
+	public Set<Long> getDescendantsOf(String conceptId) {
+		return getDescendantsOf(Long.parseLong(conceptId));
+	}
 
 	public Set<Long> getDescendantsOf(Long conceptId) {
 		return concepts.values().parallelStream().filter(c -> c.getAncestorIds().contains(conceptId)).map(ConceptImpl::getId).collect(Collectors.toSet());
@@ -73,5 +78,12 @@ public class SnomedSubsumptionService {
 
 	public void setConcepts(Long2ObjectMap<ConceptImpl> concepts) {
 		this.concepts = concepts;
+	}
+
+	public void setConcepts(Set<ConceptImpl> conceptSet) {
+		concepts = new Long2ObjectOpenHashMap<>();
+		for (ConceptImpl concept : conceptSet) {
+			concepts.put(concept.getId(), concept);
+		}
 	}
 }

@@ -14,16 +14,14 @@ public class ClinicalEncounter implements Act {
 	private String roleId;
 	private Date date;
 	private String conceptId;
-	private Set<Long> transitiveClosure;
 
 	public ClinicalEncounter() {
 	}
 
-	public ClinicalEncounter(String roleId, Date date, String conceptId, Set<Long> transitiveClosure) {
+	public ClinicalEncounter(String roleId, Date date, String conceptId) {
 		this.roleId = roleId;
 		this.date = date;
 		this.conceptId = conceptId;
-		this.transitiveClosure = transitiveClosure;
 	}
 
 	public String getRoleId() {
@@ -37,10 +35,6 @@ public class ClinicalEncounter implements Act {
 
 	public String getConceptId() {
 		return conceptId;
-	}
-
-	public Set<Long> getTransitiveClosure() {
-		return transitiveClosure;
 	}
 
 	@Override

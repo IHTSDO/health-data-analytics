@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<property name="CONSOLE_LOG_PATTERN" value="%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+	<include resource="org/springframework/boot/logging/logback/base.xml" />
+	<logger name="org.springframework" level="info" />
+</configuration>

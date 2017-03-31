@@ -4,14 +4,11 @@ import org.snomed.heathanalytics.domain.ClinicalEncounter;
 import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.domain.Sex;
 import org.snomed.heathanalytics.ingestion.HealthDataOutputStream;
-import org.snomed.heathanalytics.snomed.SnomedSubsumptionService;
 import org.snomed.heathanalytics.store.ClinicalEncounterRepository;
 import org.snomed.heathanalytics.store.PatientRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
-import java.util.Set;
 
 @Service
 public class ElasticOutputStream implements HealthDataOutputStream {

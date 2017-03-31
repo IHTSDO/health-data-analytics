@@ -1,6 +1,9 @@
 package org.snomed.heathanalytics;
 
 import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ConceptImpl;
+import org.ihtsdo.otf.sqs.service.ReleaseWriter;
+import org.ihtsdo.otf.sqs.service.SnomedQueryService;
+import org.ihtsdo.otf.sqs.service.store.RamReleaseStore;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -11,16 +14,16 @@ import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.domain.Sex;
 import org.snomed.heathanalytics.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.service.QueryService;
-import org.snomed.heathanalytics.snomed.SnomedSubsumptionService;
+import org.snomed.heathanalytics.service.ServiceException;
+import org.snomed.heathanalytics.testutil.TestSnomedQueryServiceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.util.HashSet;
+import java.io.IOException;
 import java.util.List;
-import java.util.Set;
 
 import static org.snomed.heathanalytics.TestUtils.date;
 
@@ -34,8 +37,7 @@ public class IntegrationTest {
 	@Autowired
 	private ElasticOutputStream healthDataStream;
 
-	@Autowired
-	private SnomedSubsumptionService snomedSubsumptionService;
+	private SnomedQueryService snomedQueryService;
 
 	@Autowired
 	private ElasticsearchTemplate elasticsearchTemplate;
@@ -44,27 +46,28 @@ public class IntegrationTest {
 	private ConceptImpl acuteQWaveMyocardialInfarction;
 
 	@Before
-	public void setup() {
+	public void setup() throws IOException {
 		clearIndexes();
 
-		Set<ConceptImpl> concepts = new HashSet<>();
-
 		// 22298006 |Myocardial infarction (disorder)|
-		myocardialInfarction = addConcept("22298006", concepts);
+		myocardialInfarction = createConcept("22298006");
 
 		// 304914007 |Acute Q wave myocardial infarction (disorder)|
-		acuteQWaveMyocardialInfarction = addConcept("304914007", concepts);
+		acuteQWaveMyocardialInfarction = createConcept("304914007");
 		acuteQWaveMyocardialInfarction.addInferredParent(myocardialInfarction);
 
-		snomedSubsumptionService.setConcepts(concepts);
+		// Set up ECL query service test data
+		snomedQueryService = TestSnomedQueryServiceBuilder.createWithConcepts(myocardialInfarction, acuteQWaveMyocardialInfarction);
 
 		healthDataStream.createPatient("1", "Bob", date(1983), Sex.MALE);
 		healthDataStream.addClinicalEncounter("1", date(2017, 0, 20), acuteQWaveMyocardialInfarction.getId().toString());
+
+		queryService.setSnomedQueryService(snomedQueryService);
 	}
 
 	@Test
-	public void test() {
-		Page<ClinicalEncounter> clinicalEncounters = queryService.fetchCohort(myocardialInfarction.getId().toString());
+	public void test() throws ServiceException {
+		Page<ClinicalEncounter> clinicalEncounters = queryService.fetchCohort("<<" + myocardialInfarction.getId().toString());
 		Assert.assertEquals(1, clinicalEncounters.getTotalElements());
 		List<ClinicalEncounter> content = clinicalEncounters.getContent();
 		Assert.assertEquals(1, content.size());
@@ -73,9 +76,9 @@ public class IntegrationTest {
 		Assert.assertEquals(acuteQWaveMyocardialInfarction.getId().toString(), clinicalEncounter.getConceptId());
 	}
 
-	private ConceptImpl addConcept(String id, Set<ConceptImpl> concepts) {
+	private ConceptImpl createConcept(String id) {
 		ConceptImpl concept = new ConceptImpl(id, "", true, "", "");
-		concepts.add(concept);
+		concept.setFsn("");
 		return concept;
 	}
 

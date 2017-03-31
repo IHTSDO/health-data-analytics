@@ -1,8 +1,6 @@
 package org.snomed.heathanalytics.ingestion.exampledata;
 
-import com.google.common.collect.Sets;
-import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
-import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ConceptImpl;
+import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -11,8 +9,9 @@ import org.snomed.heathanalytics.domain.ClinicalEncounter;
 import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.domain.Sex;
 import org.snomed.heathanalytics.ingestion.HealthDataOutputStream;
-import org.snomed.heathanalytics.snomed.SnomedSubsumptionService;
+import org.snomed.heathanalytics.testutil.TestSnomedQueryServiceBuilder;
 
+import java.io.IOException;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -23,20 +22,16 @@ public class ExampleDataGeneratorTest {
 	private ExampleDataGenerator exampleDataGenerator;
 
 	@Before
-	public void setup() {
-		SnomedSubsumptionService snomedSubsumptionService = new SnomedSubsumptionService();
-		Long2ObjectArrayMap<ConceptImpl> concepts = new Long2ObjectArrayMap<>();
-		addTestConcept(concepts, "716020005", 420868002L);
-		addTestConcept(concepts, "422426003", 302226006L);
-		addTestConcept(concepts, "42531007", 22298006L);
-		addTestConcept(concepts, "230645003", 302226006L);
-		addTestConcept(concepts, "84094009", 38341003L);
-		snomedSubsumptionService.setConcepts(concepts);
-		exampleDataGenerator = new ExampleDataGenerator(new ExampleConceptService(snomedSubsumptionService), 20);
-	}
+	public void setup() throws IOException {
+		SnomedQueryService snomedQueryService = TestSnomedQueryServiceBuilder.createWithConcepts(
+				TestSnomedQueryServiceBuilder.concept("716020005", "420868002"),
+				TestSnomedQueryServiceBuilder.concept("422426003", "302226006"),
+				TestSnomedQueryServiceBuilder.concept("42531007", "22298006"),
+				TestSnomedQueryServiceBuilder.concept("230645003", "302226006"),
+				TestSnomedQueryServiceBuilder.concept("84094009", "38341003")
+		);
 
-	private ConceptImpl addTestConcept(Long2ObjectArrayMap<ConceptImpl> concepts, String conceptId, Long... descendent) {
-		return concepts.put(Long.parseLong(conceptId), createTestConcept(conceptId, descendent));
+		exampleDataGenerator = new ExampleDataGenerator(new ExampleConceptService(snomedQueryService), 20);
 	}
 
 	@Test
@@ -61,15 +56,6 @@ public class ExampleDataGeneratorTest {
 		});
 
 		assertEquals(20, patientData.size());
-	}
-
-	private ConceptImpl createTestConcept(final String conceptId, Long... ancestorIds) {
-		return new ConceptImpl(conceptId) {
-			@Override
-			public Set<Long> getAncestorIds() throws IllegalStateException {
-				return Sets.newHashSet(ancestorIds);
-			}
-		};
 	}
 
 }

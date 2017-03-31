@@ -1,5 +1,6 @@
 package org.snomed.heathanalytics.ingestion.exampledata;
 
+import org.ihtsdo.otf.sqs.service.exception.ServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.domain.Patient;
@@ -7,9 +8,7 @@ import org.snomed.heathanalytics.domain.Sex;
 import org.snomed.heathanalytics.ingestion.HealthDataIngestionSource;
 import org.snomed.heathanalytics.ingestion.HealthDataOutputStream;
 
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
@@ -30,17 +29,27 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 	@Override
 	public void stream(HealthDataOutputStream healthDataOutputStream) {
 		long start = new Date().getTime();
+		List<Exception> exceptions = new ArrayList<>();
 		IntStream.range(0, numberOfPatients).parallel().forEach(i -> {
 			if (i % 1000 == 0) {
 				System.out.print(".");
 			}
-			generateExamplePatientAndActs(i + "", healthDataOutputStream);
+			try {
+				generateExamplePatientAndActs(i + "", healthDataOutputStream);
+			} catch (ServiceException e) {
+				if (exceptions.size() < 10) {
+					exceptions.add(e);
+				}
+			}
 		});
 		System.out.println();
+		if (!exceptions.isEmpty()) {
+			logger.error("There were errors generating patent data.", exceptions.get(0));
+		}
 		logger.info("Generating patient data took {} seconds.", (new Date().getTime() - start) / 1000);
 	}
 
-	private void generateExamplePatientAndActs(String roleId, HealthDataOutputStream healthDataOutputStream) {
+	private void generateExamplePatientAndActs(String roleId, HealthDataOutputStream healthDataOutputStream) throws ServiceException {
 		Patient patient = new Patient();
 
 		//  All patients are over the age of 30 and under the age of 85.

@@ -2,7 +2,7 @@ package org.snomed.heathanalytics.service;
 
 import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.ihtsdo.otf.sqs.service.dto.ConceptIdResults;
-//import org.ihtsdo.otf.sqs.service.exception.ServiceException;
+import org.ihtsdo.otf.sqs.service.dto.ConceptResults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.domain.ClinicalEncounter;
@@ -56,6 +56,14 @@ public class QueryService {
 			return page;
 		} catch (org.ihtsdo.otf.sqs.service.exception.ServiceException e) {
 			throw new ServiceException("Failed to process ECL query.", e);
+		}
+	}
+
+	public ConceptResults findConcepts(String prefix, int offset, int limit) throws ServiceException {
+		try {
+			return snomedQueryService.search(prefix, offset, limit);
+		} catch (org.ihtsdo.otf.sqs.service.exception.ServiceException e) {
+			throw new ServiceException("Failed to find concept by prefix '" + prefix + "'", e);
 		}
 	}
 

@@ -28,7 +28,7 @@ public class ElasticOutputStream implements HealthDataOutputStream {
 	}
 
 	@Override
-	public void addClinicalEncounter(String roleId, Date date, String conceptId) {
+	public void addClinicalEncounter(String roleId, Date date, Long conceptId) {
 		clinicalEncounterRepository.save(new ClinicalEncounter(roleId, date, conceptId));
 	}
 }

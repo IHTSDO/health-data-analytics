@@ -8,5 +8,5 @@ public interface HealthDataOutputStream {
 
 	void createPatient(String roleId, String name, Date dateOfBirth, Sex sex);
 
-	void addClinicalEncounter(String roleId, Date date, String conceptId);
+	void addClinicalEncounter(String roleId, Date date, Long conceptId);
 }

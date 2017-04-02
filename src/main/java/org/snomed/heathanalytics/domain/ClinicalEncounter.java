@@ -13,12 +13,16 @@ public class ClinicalEncounter implements Act {
 	private String id;
 	private String roleId;
 	private Date date;
-	private String conceptId;
+	private Long conceptId;
+
+	public static final String FIELD_ROLE_ID = "roleId";
+	public static final String FIELD_DATE = "date";
+	public static final String FIELD_CONCEPT_ID = "conceptId";
 
 	public ClinicalEncounter() {
 	}
 
-	public ClinicalEncounter(String roleId, Date date, String conceptId) {
+	public ClinicalEncounter(String roleId, Date date, Long conceptId) {
 		this.roleId = roleId;
 		this.date = date;
 		this.conceptId = conceptId;
@@ -33,7 +37,7 @@ public class ClinicalEncounter implements Act {
 		return date;
 	}
 
-	public String getConceptId() {
+	public Long getConceptId() {
 		return conceptId;
 	}
 

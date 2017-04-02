@@ -78,11 +78,11 @@ public class Application implements ApplicationRunner {
 		logger.info("******** Generating data for {} patients ...", new DecimalFormat( "#,###,###" ).format(demoPatientCount));
 		exampleDataSource().stream(elasticOutputStream);
 
-		Page<ClinicalEncounter> cohort = queryService.fetchCohort("<<420868002");// Disorder due to type 1 diabetes mellitus
+		Page<Patient> cohort = queryService.fetchCohort("<<420868002");// Disorder due to type 1 diabetes mellitus
 		logger.info("******** Fetched 'Diabetes type 1' cohort, size:{}", cohort.getTotalElements());
 		System.out.println("First 100 results:");
-		for (ClinicalEncounter clinicalEncounter : cohort) {
-			System.out.println(clinicalEncounter);
+		for (Patient patient : cohort) {
+			System.out.println(patient);
 		}
 
 		System.out.println("Demo complete.");

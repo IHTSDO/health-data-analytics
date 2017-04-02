@@ -1,5 +1,9 @@
 package org.snomed.heathanalytics.service;
 
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.ihtsdo.otf.sqs.service.dto.ConceptIdResults;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResults;
@@ -12,12 +16,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
+import org.springframework.data.elasticsearch.core.aggregation.AggregatedPage;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.data.elasticsearch.core.query.SearchQuery;
+import org.springframework.data.util.CloseableIterator;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
@@ -33,27 +42,57 @@ public class QueryService {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	public Page<ClinicalEncounter> fetchCohort(String ecl) throws ServiceException {
-		long start = new Date().getTime();
+	public Page<Patient> fetchCohort(String ecl) throws ServiceException {
+		Timer timer = new Timer();
 
 		try {
 			ConceptIdResults conceptResults = snomedQueryService.eclQueryReturnConceptIdentifiers(ecl, 0, 1000 * 1000);
 			List<Long> conceptIds = conceptResults.getConceptIds();
+			timer.split("Gather concepts");
 
-			long gatherConcepts = new Date().getTime() - start;
-			start = new Date().getTime();
+			Set<String> totalRoleIds = new HashSet<>();
+			AtomicLong encounterCount = new AtomicLong(0L);
+			try (CloseableIterator<ClinicalEncounter> encounterStream = elasticsearchTemplate.stream(new NativeSearchQueryBuilder()
+							.withQuery(termsQuery(ClinicalEncounter.FIELD_CONCEPT_ID, conceptIds))
+							.withPageable(new PageRequest(0, 1000))
+							.build(),
+					ClinicalEncounter.class)) {
+				encounterStream.forEachRemaining(e -> {
+					totalRoleIds.add(e.getRoleId());
+					encounterCount.incrementAndGet();
+				});
+			}
+			timer.split("Fetch all encounters");
 
-			Page<ClinicalEncounter> page = elasticsearchTemplate.queryForPage(new NativeSearchQueryBuilder()
-							.withQuery(boolQuery()
-									.should(termsQuery("conceptId", conceptIds))
-							)
+			AggregatedPage<Patient> patientPage = elasticsearchTemplate.queryForPage(new NativeSearchQueryBuilder()
+							.withQuery(termsQuery(Patient.FIELD_ID, totalRoleIds))
 							.withPageable(new PageRequest(0, 100))
 							.build(),
-					ClinicalEncounter.class
+					Patient.class
 			);
-			logger.info("Fetched cohort for {} with {} results. Gathering concepts took {} mills, Query took {} mills",
-					ecl, page.getTotalElements(), gatherConcepts, new Date().getTime() - start);
-			return page;
+			timer.split("Fetch page of patients");
+
+			Map<String, Patient> patientPageMap = patientPage.getContent().stream().collect(Collectors.toMap(Patient::getRoleId, Function.identity()));
+			try (CloseableIterator<ClinicalEncounter> patientEncounters = elasticsearchTemplate.stream(new NativeSearchQueryBuilder()
+							.withQuery(termsQuery(ClinicalEncounter.FIELD_ROLE_ID, patientPageMap.keySet()))
+							.withPageable(new PageRequest(0, 1000))
+							.build(),
+					ClinicalEncounter.class)) {
+				patientEncounters.forEachRemaining(e -> {
+					Patient patient = patientPageMap.get(e.getRoleId());
+					if (patient != null) {
+						patient.addEncounter(e);
+					} else {
+						logger.error("Patient missing from result map '{}'", e.getRoleId());
+					}
+				});
+			}
+			timer.split("Fetch patient encounters");
+
+			logger.info("Fetched encounters for {} with {} results. Times {}",
+					ecl, encounterCount, timer.getTimes());
+
+			return patientPage;
 		} catch (org.ihtsdo.otf.sqs.service.exception.ServiceException e) {
 			throw new ServiceException("Failed to process ECL query.", e);
 		}

@@ -2,7 +2,6 @@ package org.snomed.heathanalytics.ingestion.exampledata;
 
 import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.ihtsdo.otf.sqs.service.exception.ServiceException;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.HashMap;
 import java.util.List;
@@ -20,14 +19,10 @@ public class ExampleConceptService {
 		conceptDescendantMap = new HashMap<>();
 	}
 
-	String selectRandomChildOf(String conceptId) throws ServiceException {
-		return selectRandomChildOf(Long.parseLong(conceptId)).toString();
-	}
-
-	Long selectRandomChildOf(Long conceptId) throws ServiceException {
+	Long selectRandomChildOf(String conceptId) throws ServiceException {
 		List<Long> descendants;
 		try {
-			descendants = getDescendants(conceptId);
+			descendants = getDescendants(Long.parseLong(conceptId));
 		} catch (ServiceException e) {
 			throw new ServiceException("Failed to fetch descendants of " + conceptId, e);
 		}

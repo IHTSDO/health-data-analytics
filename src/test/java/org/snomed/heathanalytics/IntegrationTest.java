@@ -1,9 +1,7 @@
 package org.snomed.heathanalytics;
 
 import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ConceptImpl;
-import org.ihtsdo.otf.sqs.service.ReleaseWriter;
 import org.ihtsdo.otf.sqs.service.SnomedQueryService;
-import org.ihtsdo.otf.sqs.service.store.RamReleaseStore;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -60,20 +58,20 @@ public class IntegrationTest {
 		snomedQueryService = TestSnomedQueryServiceBuilder.createWithConcepts(myocardialInfarction, acuteQWaveMyocardialInfarction);
 
 		healthDataStream.createPatient("1", "Bob", date(1983), Sex.MALE);
-		healthDataStream.addClinicalEncounter("1", date(2017, 0, 20), acuteQWaveMyocardialInfarction.getId().toString());
+		healthDataStream.addClinicalEncounter("1", date(2017, 0, 20), acuteQWaveMyocardialInfarction.getId());
 
 		queryService.setSnomedQueryService(snomedQueryService);
 	}
 
 	@Test
 	public void test() throws ServiceException {
-		Page<ClinicalEncounter> clinicalEncounters = queryService.fetchCohort("<<" + myocardialInfarction.getId().toString());
-		Assert.assertEquals(1, clinicalEncounters.getTotalElements());
-		List<ClinicalEncounter> content = clinicalEncounters.getContent();
+		Page<Patient> patients = queryService.fetchCohort("<<" + myocardialInfarction.getId().toString());
+		Assert.assertEquals(1, patients.getTotalElements());
+		List<Patient> content = patients.getContent();
 		Assert.assertEquals(1, content.size());
-		ClinicalEncounter clinicalEncounter = content.get(0);
-		Assert.assertEquals("1", clinicalEncounter.getRoleId());
-		Assert.assertEquals(acuteQWaveMyocardialInfarction.getId().toString(), clinicalEncounter.getConceptId());
+		Patient patient = content.get(0);
+		Assert.assertEquals("1", patient.getRoleId());
+		Assert.assertEquals(acuteQWaveMyocardialInfarction.getId(), patient.getEncounters().iterator().next().getConceptId());
 	}
 
 	private ConceptImpl createConcept(String id) {

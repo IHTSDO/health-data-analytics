@@ -3,16 +3,26 @@ package org.snomed.heathanalytics.domain;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 
+import java.util.Comparator;
 import java.util.Date;
+import java.util.Set;
+import java.util.TreeSet;
 
 @Document(indexName = "patient")
 public class Patient {
 
 	@Id
-	public String roleId;
+	private String roleId;
 	private String name;
 	private Date dob;
 	private Sex sex;
+
+	private Set<ClinicalEncounter> encounters;
+
+	public static final String FIELD_ID = "roleId";
+	public static final String FIELD_NAME = "name";
+	public static final String FIELD_DOB = "dob";
+	public static final String FIELD_SEX = "sex";
 
 	public Patient() {
 	}
@@ -22,6 +32,17 @@ public class Patient {
 		this.name = name;
 		this.dob = dob;
 		this.sex = sex;
+	}
+
+	public void addEncounter(ClinicalEncounter encounter) {
+		if (encounters == null) {
+			encounters = new TreeSet<>(Comparator.comparing(ClinicalEncounter::getDate));
+		}
+		encounters.add(encounter);
+	}
+
+	public Set<ClinicalEncounter> getEncounters() {
+		return encounters;
 	}
 
 	public String getRoleId() {
@@ -63,6 +84,7 @@ public class Patient {
 				", name='" + name + '\'' +
 				", sex=" + sex +
 				", dob=" + dob +
+				", encounters=" + encounters +
 				'}';
 	}
 }

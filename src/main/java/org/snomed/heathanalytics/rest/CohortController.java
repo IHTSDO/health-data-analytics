@@ -1,6 +1,5 @@
 package org.snomed.heathanalytics.rest;
 
-import org.snomed.heathanalytics.domain.ClinicalEncounter;
 import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.service.QueryService;
 import org.snomed.heathanalytics.service.ServiceException;
@@ -15,8 +14,8 @@ public class CohortController {
 
 	@RequestMapping(value = "/cohort", method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
-	public Page<Patient> fetchCohort(@RequestParam String ecl) throws ServiceException {
-		return new Page<>(queryService.fetchCohort(ecl));
+	public org.springframework.data.domain.Page<Patient> fetchCohort(@RequestParam String ecl) throws ServiceException {
+		return queryService.fetchCohort(ecl);
 	}
 
 }

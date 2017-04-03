@@ -1,9 +1,7 @@
 package org.snomed.heathanalytics.service;
 
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.ihtsdo.otf.sqs.service.dto.ConceptIdResults;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
@@ -18,13 +16,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.core.aggregation.AggregatedPage;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.data.util.CloseableIterator;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -65,12 +63,14 @@ public class QueryService {
 			}
 			timer.split("Fetch all encounters");
 
-			AggregatedPage<Patient> patientPage = elasticsearchTemplate.queryForPage(new NativeSearchQueryBuilder()
-							.withQuery(termsQuery(Patient.FIELD_ID, totalRoleIds))
-							.withPageable(new PageRequest(0, 100))
-							.build(),
-					Patient.class
-			);
+			NativeSearchQuery patientQuery = new NativeSearchQueryBuilder()
+					.withQuery(termsQuery(Patient.FIELD_ID, totalRoleIds))
+					.withPageable(new PageRequest(0, 100))
+					.build();
+			patientQuery.addAggregation(AggregationBuilders.dateHistogram("patient_birth_dates")
+					.field(Patient.FIELD_DOB).interval(DateHistogramInterval.YEAR));
+
+			AggregatedPage<Patient> patientPage = elasticsearchTemplate.queryForPage(patientQuery, Patient.class);
 			timer.split("Fetch page of patients");
 
 			Map<String, Patient> patientPageMap = patientPage.getContent().stream().collect(Collectors.toMap(Patient::getRoleId, Function.identity()));

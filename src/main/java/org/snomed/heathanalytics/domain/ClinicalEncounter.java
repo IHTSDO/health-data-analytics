@@ -2,6 +2,7 @@ package org.snomed.heathanalytics.domain;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.elasticsearch.annotations.Document;
 
 import java.util.Date;
@@ -15,6 +16,9 @@ public class ClinicalEncounter implements Act {
 	private String roleId;
 	private Date date;
 	private Long conceptId;
+
+	@Transient
+	private String conceptTerm;
 
 	public static final String FIELD_ROLE_ID = "roleId";
 	public static final String FIELD_DATE = "date";
@@ -41,6 +45,14 @@ public class ClinicalEncounter implements Act {
 
 	public Long getConceptId() {
 		return conceptId;
+	}
+
+	public String getConceptTerm() {
+		return conceptTerm;
+	}
+
+	public void setConceptTerm(String conceptTerm) {
+		this.conceptTerm = conceptTerm;
 	}
 
 	@Override

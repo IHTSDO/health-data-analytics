@@ -6,6 +6,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.ihtsdo.otf.sqs.service.dto.ConceptIdResults;
+import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,12 +82,22 @@ public class QueryService {
 							.withPageable(new PageRequest(0, 1000))
 							.build(),
 					ClinicalEncounter.class)) {
-				patientEncounters.forEachRemaining(e -> {
-					Patient patient = patientPageMap.get(e.getRoleId());
+				patientEncounters.forEachRemaining(encounter -> {
+					Patient patient = patientPageMap.get(encounter.getRoleId());
 					if (patient != null) {
-						patient.addEncounter(e);
+						String conceptId = encounter.getConceptId().toString();
+						encounter.setConceptTerm(conceptId);
+						try {
+							ConceptResult concept = snomedQueryService.retrieveConcept(conceptId);
+							if (concept != null) {
+								encounter.setConceptTerm(concept.getFsn());
+							}
+						} catch (org.ihtsdo.otf.sqs.service.exception.ServiceException e) {
+							logger.warn("Failed to fetch concept term.", e);
+						}
+						patient.addEncounter(encounter);
 					} else {
-						logger.error("Patient missing from result map '{}'", e.getRoleId());
+						logger.error("Patient missing from result map '{}'", encounter.getRoleId());
 					}
 				});
 			}

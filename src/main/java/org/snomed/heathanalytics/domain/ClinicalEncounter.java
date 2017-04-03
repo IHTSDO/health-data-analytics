@@ -1,5 +1,6 @@
 package org.snomed.heathanalytics.domain;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 
@@ -33,6 +34,7 @@ public class ClinicalEncounter implements Act {
 	}
 
 	@Override
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
 	public Date getDate() {
 		return date;
 	}

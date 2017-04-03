@@ -1,5 +1,6 @@
 package org.snomed.heathanalytics.domain;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.elasticsearch.annotations.Document;
@@ -63,6 +64,7 @@ public class Patient {
 		this.name = name;
 	}
 
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
 	public Date getDob() {
 		return dob;
 	}

@@ -1,6 +1,7 @@
 package org.snomed.heathanalytics.domain;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.elasticsearch.annotations.Document;
 
 import java.util.Comparator;
@@ -17,6 +18,7 @@ public class Patient {
 	private Date dob;
 	private Sex sex;
 
+	@Transient
 	private Set<ClinicalEncounter> encounters;
 
 	public static final String FIELD_ID = "roleId";

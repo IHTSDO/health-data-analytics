@@ -74,7 +74,10 @@ public class QueryService {
 
 			Map<String, Patient> patientPageMap = patientPage.getContent().stream().collect(Collectors.toMap(Patient::getRoleId, Function.identity()));
 			try (CloseableIterator<ClinicalEncounter> patientEncounters = elasticsearchTemplate.stream(new NativeSearchQueryBuilder()
-							.withQuery(termsQuery(ClinicalEncounter.FIELD_ROLE_ID, patientPageMap.keySet()))
+							.withQuery(boolQuery()
+									.must(termsQuery(ClinicalEncounter.FIELD_ROLE_ID, patientPageMap.keySet()))
+									.must(termsQuery(ClinicalEncounter.FIELD_CONCEPT_ID, conceptIds))
+							)
 							.withPageable(new PageRequest(0, 1000))
 							.build(),
 					ClinicalEncounter.class)) {

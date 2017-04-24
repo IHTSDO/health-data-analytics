@@ -64,8 +64,12 @@ public class Patient {
 		this.name = name;
 	}
 
-	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
 	public Date getDob() {
+		return dob;
+	}
+
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
+	public Date getDobFormated() {
 		return dob;
 	}
 

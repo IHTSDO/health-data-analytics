@@ -6,7 +6,7 @@ import java.util.Map;
 
 public class Timer {
 
-	private Map<String, Long> times;
+	private Map<String, Float> times;
 	private final Date start;
 	private Date split;
 
@@ -18,12 +18,12 @@ public class Timer {
 
 	public void split(String label) {
 		Date now = new Date();
-		times.put(label, now.getTime() - split.getTime());
+		times.put(label, (now.getTime() - split.getTime()) / 1000f);
 		split = now;
 	}
 
-	public Map<String, Long> getTimes() {
-		times.put("total", new Date().getTime() - start.getTime());
+	public Map<String, Float> getTimes() {
+		times.put("total", (new Date().getTime() - start.getTime()) / 1000f);
 		return times;
 	}
 }

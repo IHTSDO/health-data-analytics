@@ -21,6 +21,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.List;
 
 import static org.snomed.heathanalytics.TestUtils.date;
@@ -44,7 +45,7 @@ public class IntegrationTest {
 	private ConceptImpl acuteQWaveMyocardialInfarction;
 
 	@Before
-	public void setup() throws IOException {
+	public void setup() throws IOException, ParseException {
 		clearIndexes();
 
 		// 22298006 |Myocardial infarction (disorder)|

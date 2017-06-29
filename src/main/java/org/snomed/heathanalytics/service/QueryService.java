@@ -112,11 +112,11 @@ public class QueryService {
 		}
 	}
 
-	public ConceptResults findConcepts(String prefix, int offset, int limit) throws ServiceException {
+	public ConceptResults findConcepts(String termPrefix, int offset, int limit) throws ServiceException {
 		try {
-			return snomedQueryService.search(prefix, offset, limit);
+			return snomedQueryService.search(null, termPrefix, offset, limit);
 		} catch (org.ihtsdo.otf.sqs.service.exception.ServiceException e) {
-			throw new ServiceException("Failed to find concept by prefix '" + prefix + "'", e);
+			throw new ServiceException("Failed to find concept by prefix '" + termPrefix + "'", e);
 		}
 	}
 

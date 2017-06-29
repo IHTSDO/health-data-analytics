@@ -12,6 +12,7 @@ import org.snomed.heathanalytics.ingestion.HealthDataOutputStream;
 import org.snomed.heathanalytics.testutil.TestSnomedQueryServiceBuilder;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -22,7 +23,7 @@ public class ExampleDataGeneratorTest {
 	private ExampleDataGenerator exampleDataGenerator;
 
 	@Before
-	public void setup() throws IOException {
+	public void setup() throws IOException, ParseException {
 		SnomedQueryService snomedQueryService = TestSnomedQueryServiceBuilder.createWithConcepts(
 				TestSnomedQueryServiceBuilder.concept("716020005", "420868002"),
 				TestSnomedQueryServiceBuilder.concept("422426003", "302226006"),

@@ -29,6 +29,7 @@ import java.text.DecimalFormat;
 @SpringBootApplication
 public class Application implements ApplicationRunner {
 
+	public static final File INDEX_DIRECTORY = new File("index");
 	@Autowired
 	private ElasticOutputStream elasticOutputStream;
 
@@ -56,10 +57,12 @@ public class Application implements ApplicationRunner {
 	@Bean
 	public SnomedQueryService snomedQueryService() throws IOException, ReleaseImportException {
 		ReleaseImportManager importManager = new ReleaseImportManager();
-		if (!importManager.isReleaseStoreExists()) {
+		if (!importManager.isReleaseStoreExists(INDEX_DIRECTORY)) {
 			logger.info("SRS Index does not yet exist. Importing release to build disk based index.");
-			importManager.loadReleaseFiles(new File("release"),
-					LoadingProfile.light.withoutInactiveConcepts().withoutAnyRefsets());
+			importManager.loadReleaseFilesToDiskBasedIndex(
+					new File("release"),
+					LoadingProfile.light.withoutInactiveConcepts().withoutAnyRefsets(),
+					INDEX_DIRECTORY);
 		}
 		return new SnomedQueryService(importManager.openExistingReleaseStore());
 	}

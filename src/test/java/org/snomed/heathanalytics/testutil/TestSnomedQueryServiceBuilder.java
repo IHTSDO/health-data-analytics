@@ -6,24 +6,25 @@ import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.ihtsdo.otf.sqs.service.store.RamReleaseStore;
 
 import java.io.IOException;
+import java.text.ParseException;
 
 public class TestSnomedQueryServiceBuilder {
 
-	public static SnomedQueryService createBlank() throws IOException {
+	public static SnomedQueryService createBlank() throws IOException, ParseException {
 		RamReleaseStore releaseStore = new RamReleaseStore();
 		ReleaseWriter releaseWriter = new ReleaseWriter(releaseStore);
 		ConceptImpl concept = new ConceptImpl("1", "", true, "", "");
 		concept.setFsn("");
-		releaseWriter.addConcept(concept);
+		releaseWriter.addConcept(concept, false);
 		releaseWriter.close();
 		return new SnomedQueryService(releaseStore);
 	}
 
-	public static SnomedQueryService createWithConcepts(ConceptImpl... concepts) throws IOException {
+	public static SnomedQueryService createWithConcepts(ConceptImpl... concepts) throws IOException, ParseException {
 		RamReleaseStore luceneConceptStore = new RamReleaseStore();
 		ReleaseWriter conceptStoreWriter = new ReleaseWriter(luceneConceptStore);
 		for (ConceptImpl concept : concepts) {
-			conceptStoreWriter.addConcept(concept);
+			conceptStoreWriter.addConcept(concept, false);
 		}
 		conceptStoreWriter.close();
 		return new SnomedQueryService(luceneConceptStore);

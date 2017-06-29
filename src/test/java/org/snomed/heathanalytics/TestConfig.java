@@ -21,6 +21,7 @@ import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
+import java.text.ParseException;
 
 @PropertySource("application-test.properties")
 @SpringBootApplication
@@ -32,7 +33,7 @@ public class TestConfig {
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Bean
-	public SnomedQueryService snomedQueryService() throws IOException, ReleaseImportException {
+	public SnomedQueryService snomedQueryService() throws IOException, ReleaseImportException, ParseException {
 		return TestSnomedQueryServiceBuilder.createBlank();
 	}
 

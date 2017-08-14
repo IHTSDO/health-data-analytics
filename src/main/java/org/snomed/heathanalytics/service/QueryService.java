@@ -13,6 +13,7 @@ import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.pojo.Stats;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.core.aggregation.AggregatedPage;
@@ -52,7 +53,7 @@ public class QueryService {
 			Set<String> totalRoleIds = new HashSet<>();
 			AtomicLong encounterCount = new AtomicLong(0L);
 			try (CloseableIterator<ClinicalEncounter> encounterStream = elasticsearchTemplate.stream(new NativeSearchQueryBuilder()
-							.withQuery(termsQuery(ClinicalEncounter.FIELD_CONCEPT_ID, conceptIds))
+							.withFilter(termsQuery(ClinicalEncounter.FIELD_CONCEPT_ID, conceptIds))
 							.withPageable(new PageRequest(0, 1000))
 							.build(),
 					ClinicalEncounter.class)) {
@@ -63,12 +64,14 @@ public class QueryService {
 			}
 			timer.split("Fetch all encounters");
 
+			PageRequest pageRequest = new PageRequest(0, 100);
 			NativeSearchQuery patientQuery = new NativeSearchQueryBuilder()
-					.withQuery(termsQuery(Patient.FIELD_ID, totalRoleIds))
-					.withPageable(new PageRequest(0, 100))
+					.withFilter(termsQuery(Patient.FIELD_ID, totalRoleIds))
+					.withPageable(pageRequest)
 					.build();
-			patientQuery.addAggregation(AggregationBuilders.dateHistogram("patient_birth_dates")
-					.field(Patient.FIELD_DOB).interval(DateHistogramInterval.YEAR));
+			// TODO: try switching back to withQuery and using an aggregation which gathers birth years as Integers
+//			patientQuery.addAggregation(AggregationBuilders.dateHistogram("patient_birth_dates")
+//					.field(Patient.FIELD_DOB).interval(DateHistogramInterval.YEAR));
 
 			AggregatedPage<Patient> patientPage = elasticsearchTemplate.queryForPage(patientQuery, Patient.class);
 			timer.split("Fetch page of patients");
@@ -106,7 +109,7 @@ public class QueryService {
 			logger.info("Fetched encounters for {} with {} results. Times {}",
 					ecl, encounterCount, timer.getTimes());
 
-			return patientPage;
+			return new PageImpl<>(patientPage.getContent(), pageRequest, patientPage.getTotalElements());
 		} catch (org.ihtsdo.otf.sqs.service.exception.ServiceException e) {
 			throw new ServiceException("Failed to process ECL query.", e);
 		}

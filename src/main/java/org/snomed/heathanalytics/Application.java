@@ -21,12 +21,20 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
+import springfox.documentation.builders.RequestHandlerSelectors;
+import springfox.documentation.spi.DocumentationType;
+import springfox.documentation.spring.web.plugins.Docket;
+import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
 
+import static com.google.common.base.Predicates.not;
+import static springfox.documentation.builders.PathSelectors.regex;
+
 @SpringBootApplication
+@EnableSwagger2
 public class Application implements ApplicationRunner {
 
 	public static final File INDEX_DIRECTORY = new File("index");
@@ -95,5 +103,14 @@ public class Application implements ApplicationRunner {
 	private void deleteDemoData() {
 		elasticsearchTemplate.deleteIndex(ClinicalEncounter.class);
 		elasticsearchTemplate.deleteIndex(Patient.class);
+	}
+
+	@Bean
+	public Docket api() {
+		return new Docket(DocumentationType.SWAGGER_2)
+				.select()
+				.apis(RequestHandlerSelectors.any())
+				.paths(not(regex("/error")))
+				.build();
 	}
 }

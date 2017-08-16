@@ -53,33 +53,35 @@ public class QueryService {
 		String primaryExposureECL = cohortCriteria.getPrimaryExposureECL();
 		InclusionCriteria inclusionCriteria = cohortCriteria.getInclusionCriteria();
 		try {
+			// Gather primary exposure concepts
 			List<Long> primaryExposureConceptIds = getConceptIds(primaryExposureECL);
 			timer.split("Gather primary exposure concepts");
 
 			Map<String, Set<ClinicalEncounter>> inclusionRoleToEncounterMap = new HashMap<>();
 			if (inclusionCriteria != null) {
+				// Gather inclusion concepts
 				List<Long> inclusionConceptIds = getConceptIds(inclusionCriteria.getSelectionECL());
 				timer.split("Gather inclusion concepts");
 
+				// Gather inclusion encounters
 				try (CloseableIterator<ClinicalEncounter> encounterStream = elasticsearchTemplate.stream(new NativeSearchQueryBuilder()
 								.withFilter(termsQuery(ClinicalEncounter.FIELD_CONCEPT_ID, inclusionConceptIds))
 								.withPageable(LARGE_PAGE)
 								.build(),
 						ClinicalEncounter.class)) {
-					encounterStream.forEachRemaining(e -> {
-						inclusionRoleToEncounterMap.computeIfAbsent(e.getRoleId(), s -> new HashSet<>()).add(e);
-					});
+					encounterStream.forEachRemaining(e -> inclusionRoleToEncounterMap.computeIfAbsent(e.getRoleId(), s -> new HashSet<>()).add(e));
 				}
 				timer.split("Gather inclusion encounters");
 			}
 
+			// Identify patients matching all criteria
 			Set<String> totalRoleIds = new HashSet<>();
 			AtomicLong encounterCount = new AtomicLong(0L);
-			try (CloseableIterator<ClinicalEncounter> encounterStream = elasticsearchTemplate.stream(new NativeSearchQueryBuilder()
-							.withFilter(termsQuery(ClinicalEncounter.FIELD_CONCEPT_ID, primaryExposureConceptIds))
-							.withPageable(LARGE_PAGE)
-							.build(),
-					ClinicalEncounter.class)) {
+			NativeSearchQuery primaryExposureQuery = new NativeSearchQueryBuilder()
+					.withFilter(termsQuery(ClinicalEncounter.FIELD_CONCEPT_ID, primaryExposureConceptIds))
+					.withPageable(LARGE_PAGE)
+					.build();
+			try (CloseableIterator<ClinicalEncounter> encounterStream = elasticsearchTemplate.stream(primaryExposureQuery, ClinicalEncounter.class)) {
 				encounterStream.forEachRemaining(primaryExposure -> {
 					if (inclusionCriteria == null || passesInclusionCriteria(primaryExposure, inclusionCriteria, inclusionRoleToEncounterMap)) {
 						totalRoleIds.add(primaryExposure.getRoleId());
@@ -87,9 +89,10 @@ public class QueryService {
 					}
 				});
 			}
-			timer.split("Fetch encounters matching primary exposure");
 			inclusionRoleToEncounterMap.clear();
+			timer.split("Identify patients matching all criteria");
 
+			// Fetch page of patients
 			PageRequest pageRequest = new PageRequest(0, 100);
 			NativeSearchQuery patientQuery = new NativeSearchQueryBuilder()
 					.withFilter(termsQuery(Patient.FIELD_ID, totalRoleIds))
@@ -98,16 +101,14 @@ public class QueryService {
 			// TODO: try switching back to withQuery and using an aggregation which gathers birth years as Integers
 //			patientQuery.addAggregation(AggregationBuilders.dateHistogram("patient_birth_dates")
 //					.field(Patient.FIELD_DOB).interval(DateHistogramInterval.YEAR));
-
 			AggregatedPage<Patient> patientPage = elasticsearchTemplate.queryForPage(patientQuery, Patient.class);
 			timer.split("Fetch page of patients");
 
+			// Join patient encounters
 			Map<String, Patient> patientPageMap = patientPage.getContent().stream().collect(Collectors.toMap(Patient::getRoleId, Function.identity()));
 			try (CloseableIterator<ClinicalEncounter> patientEncounters = elasticsearchTemplate.stream(new NativeSearchQueryBuilder()
-							.withQuery(boolQuery()
-									.must(termsQuery(ClinicalEncounter.FIELD_ROLE_ID, patientPageMap.keySet()))
-									.must(termsQuery(ClinicalEncounter.FIELD_CONCEPT_ID, primaryExposureConceptIds))
-							)
+							// TODO: This should probably be a filter. Test with 1 million patients to compare performance.
+							.withQuery(boolQuery().must(termsQuery(ClinicalEncounter.FIELD_ROLE_ID, patientPageMap.keySet())))
 							.withPageable(LARGE_PAGE)
 							.build(),
 					ClinicalEncounter.class)) {
@@ -115,7 +116,12 @@ public class QueryService {
 					Patient patient = patientPageMap.get(encounter.getRoleId());
 					if (patient != null) {
 						String conceptId = encounter.getConceptId().toString();
+						if (primaryExposureConceptIds.contains(Long.parseLong(conceptId))) {
+							// Mark this encounter as a primary exposure for the context of this cohort
+							encounter.setPrimaryExposure(true);
+						}
 						encounter.setConceptTerm(conceptId);
+						// Lookup FSN
 						try {
 							ConceptResult concept = snomedQueryService.retrieveConcept(conceptId);
 							if (concept != null) {
@@ -130,7 +136,7 @@ public class QueryService {
 					}
 				});
 			}
-			timer.split("Fetch patient encounters");
+			timer.split("Join patient encounters");
 
 			logger.info("Fetched encounters for {} with {} results. Times {}",
 					primaryExposureECL, encounterCount, timer.getTimes());

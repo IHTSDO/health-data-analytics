@@ -20,6 +20,9 @@ public class ClinicalEncounter implements Act {
 	@Transient
 	private String conceptTerm;
 
+	@Transient
+	private boolean primaryExposure;
+
 	public static final String FIELD_ROLE_ID = "roleId";
 	public static final String FIELD_DATE = "date";
 	public static final String FIELD_CONCEPT_ID = "conceptId";
@@ -53,6 +56,14 @@ public class ClinicalEncounter implements Act {
 
 	public void setConceptTerm(String conceptTerm) {
 		this.conceptTerm = conceptTerm;
+	}
+
+	public boolean isPrimaryExposure() {
+		return primaryExposure;
+	}
+
+	public void setPrimaryExposure(boolean primaryExposure) {
+		this.primaryExposure = primaryExposure;
 	}
 
 	@Override

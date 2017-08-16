@@ -31,7 +31,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		long start = new Date().getTime();
 		List<Exception> exceptions = new ArrayList<>();
 		IntStream.range(0, numberOfPatients).parallel().forEach(i -> {
-			if (i % 1000 == 0) {
+			if (i % 10000 == 0) {
 				System.out.print(".");
 			}
 			try {
@@ -63,40 +63,63 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		}
 
 		healthDataOutputStream.createPatient(roleId, patient.getName(), patient.getDob(), patient.getSex());
-		GregorianCalendar encounterDate = new GregorianCalendar();
+
+		// Start 2 years ago
+		GregorianCalendar date = new GregorianCalendar();
+		date.add(Calendar.YEAR, -2);
+
+		// add 1 - 6 months
+		date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+
 		// 10% of patients have diabetes.
 		if (chance(0.1f)) {
-			healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectRandomChildOf("420868002"));// Disorder due to type 1 diabetes mellitus
+			healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), concepts.selectRandomChildOf("420868002"));// Disorder due to type 1 diabetes mellitus
 
 			// 7% of the diabetic patients also have Peripheral Neuropathy.
 			if (chance(0.07f)) {
-				healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectRandomChildOf("302226006"));// Peripheral Neuropathy
+				healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), concepts.selectRandomChildOf("302226006"));// Peripheral Neuropathy
 			}
 
 			// 10% of the diabetic patients have a Myocardial Infarction.
 			if (chance(0.1f)) {
-				healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectRandomChildOf("22298006"));// Myocardial Infarction
+				healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), concepts.selectRandomChildOf("22298006"));// Myocardial Infarction
 			}
 		} else {
 			// 1% of the non-diabetic patients have Peripheral Neuropathy.
 			if (chance(0.01f)) {
-				healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectRandomChildOf("302226006"));// Peripheral Neuropathy
+				healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), concepts.selectRandomChildOf("302226006"));// Peripheral Neuropathy
 			}
 		}
 
 		// 30 % of patients over 40 years old have hypertension.
 		if (getAge(patient.getDob()) > 40 && chance(0.3f)) {
-			healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectRandomChildOf("38341003"));// Hypertension
+			healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), concepts.selectRandomChildOf("38341003"));// Hypertension
 
-			// 8% of patients with hypertension have a Myocardial Infarction.
-			if (chance(0.08f)) {
-				healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectRandomChildOf("22298006"));// Myocardial Infarction
+			// 50% of patients over 40 with hypertension are prescribed an Antiplatelet agent
+			if (chance(0.5f)) {
+				healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), concepts.selectRandomChildOf("108972005"));// Antiplatelet agent (product)
+
+				// After 1 - 6 months
+				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+
+				// 2% of patients with hypertension who have been prescribed an Antiplatelet agent have a Myocardial Infarction.
+				if (chance(0.02f)) {
+					healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), concepts.selectRandomChildOf("22298006"));// Myocardial Infarction
+				}
+			} else {
+				// After 1 - 6 months
+				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+
+				// 8% of patients with hypertension who have NOT been prescribed an Antiplatelet agent have a Myocardial Infarction.
+				if (chance(0.08f)) {
+					healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), concepts.selectRandomChildOf("22298006"));// Myocardial Infarction
+				}
 			}
 		}
 
 		// 5% of all patients over 55 years old have Myocardial Infarction.
 		if (getAge(patient.getDob()) > 55 && chance(0.05f)) {
-			healthDataOutputStream.addClinicalEncounter(roleId, encounterDate.getTime(), concepts.selectRandomChildOf("22298006"));// Myocardial Infarction
+			healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), concepts.selectRandomChildOf("22298006"));// Myocardial Infarction
 		}
 	}
 

@@ -48,10 +48,10 @@ public class Application implements ApplicationRunner {
 
 	@Override
 	public void run(ApplicationArguments applicationArguments) throws Exception {
-		// if (applicationArguments.containsOption("demo-mode")) {
-		// Force Demo Mode
+		if (applicationArguments.containsOption("demo-mode")) {
+			// Force Demo Mode
 			runDemo();
-		// }
+		}
 	}
 
 	@Bean

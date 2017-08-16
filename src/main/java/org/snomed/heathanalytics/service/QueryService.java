@@ -88,6 +88,7 @@ public class QueryService {
 				});
 			}
 			timer.split("Fetch encounters matching primary exposure");
+			inclusionRoleToEncounterMap.clear();
 
 			PageRequest pageRequest = new PageRequest(0, 100);
 			NativeSearchQuery patientQuery = new NativeSearchQueryBuilder()

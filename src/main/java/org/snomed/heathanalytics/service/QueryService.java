@@ -1,7 +1,6 @@
 package org.snomed.heathanalytics.service;
 
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
+import com.fasterxml.jackson.databind.util.CompactStringObjectMap;
 import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.ihtsdo.otf.sqs.service.dto.ConceptIdResults;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
@@ -34,6 +33,8 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 @Service
 public class QueryService {
 
+	private static final PageRequest LARGE_PAGE = new PageRequest(0, 1000);
+
 	@Autowired
 	private ElasticsearchTemplate elasticsearchTemplate;
 
@@ -42,27 +43,51 @@ public class QueryService {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	public Page<Patient> fetchCohort(String ecl) throws ServiceException {
+	public Page<Patient> fetchCohort(String primaryExposureECL) throws ServiceException {
+		return fetchCohort(new CohortCriteria(primaryExposureECL));
+	}
+
+	public Page<Patient> fetchCohort(CohortCriteria cohortCriteria) throws ServiceException {
 		Timer timer = new Timer();
 
+		String primaryExposureECL = cohortCriteria.getPrimaryExposureECL();
+		InclusionCriteria inclusionCriteria = cohortCriteria.getInclusionCriteria();
 		try {
-			ConceptIdResults conceptResults = snomedQueryService.eclQueryReturnConceptIdentifiers(ecl, 0, 1000 * 1000);
-			List<Long> conceptIds = conceptResults.getConceptIds();
-			timer.split("Gather concepts");
+			List<Long> primaryExposureConceptIds = getConceptIds(primaryExposureECL);
+			timer.split("Gather primary exposure concepts");
+
+			Map<String, Set<ClinicalEncounter>> inclusionRoleToEncounterMap = new HashMap<>();
+			if (inclusionCriteria != null) {
+				List<Long> inclusionConceptIds = getConceptIds(inclusionCriteria.getSelectionECL());
+				timer.split("Gather inclusion concepts");
+
+				try (CloseableIterator<ClinicalEncounter> encounterStream = elasticsearchTemplate.stream(new NativeSearchQueryBuilder()
+								.withFilter(termsQuery(ClinicalEncounter.FIELD_CONCEPT_ID, inclusionConceptIds))
+								.withPageable(LARGE_PAGE)
+								.build(),
+						ClinicalEncounter.class)) {
+					encounterStream.forEachRemaining(e -> {
+						inclusionRoleToEncounterMap.computeIfAbsent(e.getRoleId(), s -> new HashSet<>()).add(e);
+					});
+				}
+				timer.split("Gather inclusion encounters");
+			}
 
 			Set<String> totalRoleIds = new HashSet<>();
 			AtomicLong encounterCount = new AtomicLong(0L);
 			try (CloseableIterator<ClinicalEncounter> encounterStream = elasticsearchTemplate.stream(new NativeSearchQueryBuilder()
-							.withFilter(termsQuery(ClinicalEncounter.FIELD_CONCEPT_ID, conceptIds))
-							.withPageable(new PageRequest(0, 1000))
+							.withFilter(termsQuery(ClinicalEncounter.FIELD_CONCEPT_ID, primaryExposureConceptIds))
+							.withPageable(LARGE_PAGE)
 							.build(),
 					ClinicalEncounter.class)) {
-				encounterStream.forEachRemaining(e -> {
-					totalRoleIds.add(e.getRoleId());
-					encounterCount.incrementAndGet();
+				encounterStream.forEachRemaining(primaryExposure -> {
+					if (inclusionCriteria == null || passesInclusionCriteria(primaryExposure, inclusionCriteria, inclusionRoleToEncounterMap)) {
+						totalRoleIds.add(primaryExposure.getRoleId());
+						encounterCount.incrementAndGet();
+					}
 				});
 			}
-			timer.split("Fetch all encounters");
+			timer.split("Fetch encounters matching primary exposure");
 
 			PageRequest pageRequest = new PageRequest(0, 100);
 			NativeSearchQuery patientQuery = new NativeSearchQueryBuilder()
@@ -80,9 +105,9 @@ public class QueryService {
 			try (CloseableIterator<ClinicalEncounter> patientEncounters = elasticsearchTemplate.stream(new NativeSearchQueryBuilder()
 							.withQuery(boolQuery()
 									.must(termsQuery(ClinicalEncounter.FIELD_ROLE_ID, patientPageMap.keySet()))
-									.must(termsQuery(ClinicalEncounter.FIELD_CONCEPT_ID, conceptIds))
+									.must(termsQuery(ClinicalEncounter.FIELD_CONCEPT_ID, primaryExposureConceptIds))
 							)
-							.withPageable(new PageRequest(0, 1000))
+							.withPageable(LARGE_PAGE)
 							.build(),
 					ClinicalEncounter.class)) {
 				patientEncounters.forEachRemaining(encounter -> {
@@ -107,12 +132,45 @@ public class QueryService {
 			timer.split("Fetch patient encounters");
 
 			logger.info("Fetched encounters for {} with {} results. Times {}",
-					ecl, encounterCount, timer.getTimes());
+					primaryExposureECL, encounterCount, timer.getTimes());
 
 			return new PageImpl<>(patientPage.getContent(), pageRequest, patientPage.getTotalElements());
 		} catch (org.ihtsdo.otf.sqs.service.exception.ServiceException e) {
 			throw new ServiceException("Failed to process ECL query.", e);
 		}
+	}
+
+	private boolean passesInclusionCriteria(ClinicalEncounter primaryExposure, InclusionCriteria inclusionCriteria, Map<String, Set<ClinicalEncounter>> inclusionRoleToEncounterMap) {
+		Date primaryExposureDate = primaryExposure.getDate();
+		Set<ClinicalEncounter> clinicalEncounters = inclusionRoleToEncounterMap.get(primaryExposure.getRoleId());
+		if (clinicalEncounters != null) {
+			for (ClinicalEncounter clinicalEncounter : clinicalEncounters) {
+				Integer includeDaysInPast = inclusionCriteria.getIncludeDaysInPast();
+				if (includeDaysInPast != null) {
+					GregorianCalendar lookBackCutOff = new GregorianCalendar();
+					lookBackCutOff.setTime(primaryExposureDate);
+					lookBackCutOff.add(Calendar.DAY_OF_YEAR, -includeDaysInPast);
+					if (clinicalEncounter.getDate().after(lookBackCutOff.getTime())) {
+						return true;
+					}
+				}
+				Integer includeDaysInFuture = inclusionCriteria.getIncludeDaysInFuture();
+				if (includeDaysInFuture != null) {
+					GregorianCalendar lookForwardCutOff = new GregorianCalendar();
+					lookForwardCutOff.setTime(primaryExposureDate);
+					lookForwardCutOff.add(Calendar.DAY_OF_YEAR, includeDaysInFuture);
+					if (clinicalEncounter.getDate().before(lookForwardCutOff.getTime())) {
+						return true;
+					}
+				}
+
+			}
+		}
+		return false;
+	}
+
+	private List<Long> getConceptIds(String ecl) throws org.ihtsdo.otf.sqs.service.exception.ServiceException {
+		return snomedQueryService.eclQueryReturnConceptIdentifiers(ecl, 0, -1).getConceptIds();
 	}
 
 	public ConceptResults findConcepts(String termPrefix, int offset, int limit) throws ServiceException {

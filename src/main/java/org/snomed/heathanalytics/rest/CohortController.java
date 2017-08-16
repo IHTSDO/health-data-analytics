@@ -1,6 +1,7 @@
 package org.snomed.heathanalytics.rest;
 
 import org.snomed.heathanalytics.domain.Patient;
+import org.snomed.heathanalytics.service.CohortCriteria;
 import org.snomed.heathanalytics.service.QueryService;
 import org.snomed.heathanalytics.service.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,8 +15,15 @@ public class CohortController {
 
 	@RequestMapping(value = "/cohort", method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
-	public org.springframework.data.domain.Page<Patient> fetchCohort(@RequestParam String ecl) throws ServiceException {
-		return queryService.fetchCohort(ecl);
+	public org.springframework.data.domain.Page<Patient> fetchCohort(@RequestParam String primaryExposureECL) throws ServiceException {
+		return queryService.fetchCohort(new CohortCriteria(primaryExposureECL));
+	}
+
+	@RequestMapping(value = "/cohort", method = RequestMethod.POST, produces = "application/json")
+	@ResponseBody
+	public org.springframework.data.domain.Page<Patient> fetchCohortWithInclusionCriteria(
+			@RequestBody CohortCriteria cohortCriteria) throws ServiceException {
+		return queryService.fetchCohort(cohortCriteria);
 	}
 
 }

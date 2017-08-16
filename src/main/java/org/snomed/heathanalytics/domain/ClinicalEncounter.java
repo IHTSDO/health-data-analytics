@@ -46,8 +46,17 @@ public class ClinicalEncounter implements Act {
 		return date;
 	}
 
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddhhmmss")
+	public Date getDateStamp() {
+		return date;
+	}
+
 	public Long getConceptId() {
 		return conceptId;
+	}
+
+	public void setConceptId(Long conceptId) {
+		this.conceptId = conceptId;
 	}
 
 	public String getConceptTerm() {

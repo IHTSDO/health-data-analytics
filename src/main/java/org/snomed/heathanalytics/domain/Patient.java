@@ -5,10 +5,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.elasticsearch.annotations.Document;
 
-import java.util.Comparator;
-import java.util.Date;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 @Document(indexName = "patient")
 public class Patient {
@@ -39,7 +36,7 @@ public class Patient {
 
 	public void addEncounter(ClinicalEncounter encounter) {
 		if (encounters == null) {
-			encounters = new TreeSet<>(Comparator.comparing(ClinicalEncounter::getDate));
+			encounters = new HashSet<>();
 		}
 		encounters.add(encounter);
 	}

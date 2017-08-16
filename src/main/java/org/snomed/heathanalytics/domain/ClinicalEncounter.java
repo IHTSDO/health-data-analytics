@@ -56,6 +56,26 @@ public class ClinicalEncounter implements Act {
 	}
 
 	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		ClinicalEncounter that = (ClinicalEncounter) o;
+
+		if (!roleId.equals(that.roleId)) return false;
+		if (!date.equals(that.date)) return false;
+		return conceptId.equals(that.conceptId);
+	}
+
+	@Override
+	public int hashCode() {
+		int result = roleId.hashCode();
+		result = 31 * result + date.hashCode();
+		result = 31 * result + conceptId.hashCode();
+		return result;
+	}
+
+	@Override
 	public String toString() {
 		return "ClinicalEncounter{" +
 				"roleId='" + roleId + '\'' +

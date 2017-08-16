@@ -39,7 +39,7 @@ public class Application implements ApplicationRunner {
 	@Autowired
 	private ElasticsearchTemplate elasticsearchTemplate;
 
-	private int demoPatientCount = 10000;
+	private int demoPatientCount = 1000 * 10;
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	public static void main(String[] args) {

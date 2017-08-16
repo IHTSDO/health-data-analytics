@@ -75,6 +75,9 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		if (chance(0.1f)) {
 			healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), concepts.selectRandomChildOf("420868002"));// Disorder due to type 1 diabetes mellitus
 
+			// After 1 - 2 months
+			date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 2));
+
 			// 7% of the diabetic patients also have Peripheral Neuropathy.
 			if (chance(0.07f)) {
 				healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), concepts.selectRandomChildOf("302226006"));// Peripheral Neuropathy
@@ -91,12 +94,16 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 			}
 		}
 
+		// After 1 - 3 months
+		date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 3));
+
 		// 30 % of patients over 40 years old have hypertension.
 		if (getAge(patient.getDob()) > 40 && chance(0.3f)) {
 			healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), concepts.selectRandomChildOf("38341003"));// Hypertension
 
 			// 50% of patients over 40 with hypertension are prescribed an Antiplatelet agent
 			if (chance(0.5f)) {
+				// Prescribed an Antiplatelet agent
 				healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), concepts.selectRandomChildOf("108972005"));// Antiplatelet agent (product)
 
 				// After 1 - 6 months
@@ -107,6 +114,8 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 					healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), concepts.selectRandomChildOf("22298006"));// Myocardial Infarction
 				}
 			} else {
+				// No medication prescribed
+
 				// After 1 - 6 months
 				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
 
@@ -116,6 +125,9 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 				}
 			}
 		}
+
+		// After 1 - 2 months
+		date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 2));
 
 		// 5% of all patients over 55 years old have Myocardial Infarction.
 		if (getAge(patient.getDob()) > 55 && chance(0.05f)) {

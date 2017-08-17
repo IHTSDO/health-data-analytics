@@ -34,7 +34,6 @@ import static com.google.common.base.Predicates.not;
 import static springfox.documentation.builders.PathSelectors.regex;
 
 @SpringBootApplication
-@EnableSwagger2
 public class Application implements ApplicationRunner {
 
 	public static final File INDEX_DIRECTORY = new File("index");

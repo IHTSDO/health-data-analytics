@@ -76,7 +76,7 @@ public class IntegrationTest {
 	}
 
 	private ConceptImpl createConcept(String id) {
-		ConceptImpl concept = new ConceptImpl(id, "", true, "", "");
+		ConceptImpl concept = new ConceptImpl(id, "20170731", true, "", "");
 		concept.setFsn("");
 		return concept;
 	}

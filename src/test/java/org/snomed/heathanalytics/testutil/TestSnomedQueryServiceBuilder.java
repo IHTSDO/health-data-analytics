@@ -13,7 +13,7 @@ public class TestSnomedQueryServiceBuilder {
 	public static SnomedQueryService createBlank() throws IOException, ParseException {
 		RamReleaseStore releaseStore = new RamReleaseStore();
 		ReleaseWriter releaseWriter = new ReleaseWriter(releaseStore);
-		ConceptImpl concept = new ConceptImpl("1", "", true, "", "");
+		ConceptImpl concept = new ConceptImpl("1", "20170731", true, "", "");
 		concept.setFsn("");
 		releaseWriter.addConcept(concept, false);
 		releaseWriter.close();
@@ -31,7 +31,7 @@ public class TestSnomedQueryServiceBuilder {
 	}
 
 	public static ConceptImpl concept(String id, String... ancestors) {
-		ConceptImpl concept = new ConceptImpl(id, "", true, "", "");
+		ConceptImpl concept = new ConceptImpl(id, "20170731", true, "", "");
 		concept.setFsn("");
 		for (String ancestor : ancestors) {
 			concept.addInferredParent(concept(ancestor));

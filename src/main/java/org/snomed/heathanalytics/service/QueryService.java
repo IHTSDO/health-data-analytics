@@ -180,6 +180,14 @@ public class QueryService {
 		return snomedQueryService.eclQueryReturnConceptIdentifiers(ecl, 0, -1).getConceptIds();
 	}
 
+	public ConceptResult findConcept(String conceptId) throws ServiceException {
+		try {
+			return snomedQueryService.retrieveConcept(conceptId);
+		} catch (org.ihtsdo.otf.sqs.service.exception.ServiceException e) {
+			throw new ServiceException("Failed to find concept by id '" + conceptId + "'", e);
+		}
+	}
+
 	public ConceptResults findConcepts(String termPrefix, int offset, int limit) throws ServiceException {
 		try {
 			return snomedQueryService.search(null, termPrefix, offset, limit);

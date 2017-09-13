@@ -1,6 +1,7 @@
 package org.snomed.heathanalytics.ingestion.elasticsearch;
 
 import org.snomed.heathanalytics.domain.ClinicalEncounter;
+import org.snomed.heathanalytics.domain.ClinicalEncounterType;
 import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.domain.Sex;
 import org.snomed.heathanalytics.ingestion.HealthDataOutputStream;
@@ -28,7 +29,7 @@ public class ElasticOutputStream implements HealthDataOutputStream {
 	}
 
 	@Override
-	public void addClinicalEncounter(String roleId, Date date, Long conceptId) {
-		clinicalEncounterRepository.save(new ClinicalEncounter(roleId, date, conceptId));
+	public void addClinicalEncounter(String roleId, Date date, ClinicalEncounterType type, Long conceptId) {
+		clinicalEncounterRepository.save(new ClinicalEncounter(roleId, date, type, conceptId));
 	}
 }

@@ -6,7 +6,6 @@ import org.springframework.data.annotation.Transient;
 import org.springframework.data.elasticsearch.annotations.Document;
 
 import java.util.Date;
-import java.util.Set;
 
 @Document(indexName = "clinc-en")
 public class ClinicalEncounter implements Act {
@@ -16,6 +15,7 @@ public class ClinicalEncounter implements Act {
 	private String roleId;
 	private Date date;
 	private Long conceptId;
+	private ClinicalEncounterType type;
 
 	@Transient
 	private String conceptTerm;
@@ -23,17 +23,21 @@ public class ClinicalEncounter implements Act {
 	@Transient
 	private boolean primaryExposure;
 
-	public static final String FIELD_ROLE_ID = "roleId";
-	public static final String FIELD_DATE = "date";
-	public static final String FIELD_CONCEPT_ID = "conceptId";
+	public interface Fields {
+		String ROLE_ID = "roleId";
+		String DATE = "date";
+		String CONCEPT_ID = "conceptId";
+		String TYPE = "type";
+	}
 
 	public ClinicalEncounter() {
 	}
 
-	public ClinicalEncounter(String roleId, Date date, Long conceptId) {
+	public ClinicalEncounter(String roleId, Date date, ClinicalEncounterType type, Long conceptId) {
 		this.roleId = roleId;
 		this.date = date;
 		this.conceptId = conceptId;
+		this.type = type;
 	}
 
 	public String getRoleId() {
@@ -57,6 +61,14 @@ public class ClinicalEncounter implements Act {
 
 	public void setConceptId(Long conceptId) {
 		this.conceptId = conceptId;
+	}
+
+	public ClinicalEncounterType getType() {
+		return type;
+	}
+
+	public void setType(ClinicalEncounterType type) {
+		this.type = type;
 	}
 
 	public String getConceptTerm() {

@@ -1,18 +1,12 @@
 package org.snomed.heathanalytics.service;
 
-public class InclusionCriteria {
+public class RelativeCriterion extends Criterion {
 
-	private String selectionECL;
+	// Optional
 	private Integer includeDaysInPast;
+
+	// Optional
 	private Integer includeDaysInFuture;
-
-	public String getSelectionECL() {
-		return selectionECL;
-	}
-
-	public void setSelectionECL(String selectionECL) {
-		this.selectionECL = selectionECL;
-	}
 
 	public Integer getIncludeDaysInPast() {
 		return includeDaysInPast;

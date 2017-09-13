@@ -7,10 +7,12 @@ import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.domain.ClinicalEncounter;
+import org.snomed.heathanalytics.domain.CohortCriteria;
 import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.ingestion.exampledata.ExampleConceptService;
 import org.snomed.heathanalytics.ingestion.exampledata.ExampleDataGenerator;
+import org.snomed.heathanalytics.service.Criterion;
 import org.snomed.heathanalytics.service.QueryService;
 import org.snomed.heathanalytics.service.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +26,6 @@ import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,7 +37,8 @@ import static springfox.documentation.builders.PathSelectors.regex;
 @SpringBootApplication
 public class Application implements ApplicationRunner {
 
-	public static final File INDEX_DIRECTORY = new File("index");
+	private static final File INDEX_DIRECTORY = new File("index");
+
 	@Autowired
 	private ElasticOutputStream elasticOutputStream;
 
@@ -88,7 +90,7 @@ public class Application implements ApplicationRunner {
 		logger.info("******** Generating data for {} patients ...", new DecimalFormat( "#,###,###" ).format(demoPatientCount));
 		exampleDataSource().stream(elasticOutputStream);
 
-		Page<Patient> cohort = queryService.fetchCohort("<<420868002");// Disorder due to type 1 diabetes mellitus
+		Page<Patient> cohort = queryService.fetchCohort(new CohortCriteria(new Criterion("<<420868002")));// Disorder due to type 1 diabetes mellitus
 		logger.info("******** Fetched 'Diabetes type 1' cohort, size:{}", cohort.getTotalElements());
 		System.out.println("First 100 results:");
 		for (Patient patient : cohort) {

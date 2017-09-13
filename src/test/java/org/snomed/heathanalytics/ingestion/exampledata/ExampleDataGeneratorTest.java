@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.domain.ClinicalEncounter;
+import org.snomed.heathanalytics.domain.ClinicalEncounterType;
 import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.domain.Sex;
 import org.snomed.heathanalytics.ingestion.HealthDataOutputStream;
@@ -49,8 +50,8 @@ public class ExampleDataGeneratorTest {
 			}
 
 			@Override
-			public void addClinicalEncounter(String roleId, Date date, Long conceptId) {
-				ClinicalEncounter clinicalEncounter = new ClinicalEncounter(roleId, date, conceptId);
+			public void addClinicalEncounter(String roleId, Date date, ClinicalEncounterType type, Long conceptId) {
+				ClinicalEncounter clinicalEncounter = new ClinicalEncounter(roleId, date, type, conceptId);
 				logger.info("New clinical encounter {}", clinicalEncounter);
 				patientData.get(clinicalEncounter.getRoleId()).add(clinicalEncounter);
 			}

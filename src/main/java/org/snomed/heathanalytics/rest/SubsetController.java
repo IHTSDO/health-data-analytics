@@ -1,15 +1,10 @@
 package org.snomed.heathanalytics.rest;
 
-import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.domain.Subset;
-import org.snomed.heathanalytics.service.CohortCriteria;
-import org.snomed.heathanalytics.service.QueryService;
 import org.snomed.heathanalytics.service.ServiceException;
 import org.snomed.heathanalytics.store.SubsetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
-import org.springframework.data.domain.Page;
-import org.springframework.data.elasticsearch.core.aggregation.impl.AggregatedPageImpl;
 import org.springframework.web.bind.annotation.*;
 
 import static org.snomed.heathanalytics.rest.ControllerHelper.aggregatedPageWorkaround;

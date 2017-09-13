@@ -7,10 +7,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.snomed.heathanalytics.domain.ClinicalEncounter;
-import org.snomed.heathanalytics.domain.Patient;
-import org.snomed.heathanalytics.domain.Sex;
+import org.snomed.heathanalytics.domain.*;
 import org.snomed.heathanalytics.ingestion.elasticsearch.ElasticOutputStream;
+import org.snomed.heathanalytics.service.Criterion;
 import org.snomed.heathanalytics.service.QueryService;
 import org.snomed.heathanalytics.service.ServiceException;
 import org.snomed.heathanalytics.testutil.TestSnomedQueryServiceBuilder;
@@ -36,8 +35,6 @@ public class IntegrationTest {
 	@Autowired
 	private ElasticOutputStream healthDataStream;
 
-	private SnomedQueryService snomedQueryService;
-
 	@Autowired
 	private ElasticsearchTemplate elasticsearchTemplate;
 
@@ -56,17 +53,15 @@ public class IntegrationTest {
 		acuteQWaveMyocardialInfarction.addInferredParent(myocardialInfarction);
 
 		// Set up ECL query service test data
-		snomedQueryService = TestSnomedQueryServiceBuilder.createWithConcepts(myocardialInfarction, acuteQWaveMyocardialInfarction);
-
 		healthDataStream.createPatient("1", "Bob", date(1983), Sex.MALE);
-		healthDataStream.addClinicalEncounter("1", date(2017, 0, 20), acuteQWaveMyocardialInfarction.getId());
+		healthDataStream.addClinicalEncounter("1", date(2017, 0, 20), ClinicalEncounterType.FINDING, acuteQWaveMyocardialInfarction.getId());
 
-		queryService.setSnomedQueryService(snomedQueryService);
+		queryService.setSnomedQueryService(TestSnomedQueryServiceBuilder.createWithConcepts(myocardialInfarction, acuteQWaveMyocardialInfarction));
 	}
 
 	@Test
 	public void test() throws ServiceException {
-		Page<Patient> patients = queryService.fetchCohort("<<" + myocardialInfarction.getId().toString());
+		Page<Patient> patients = queryService.fetchCohort(new CohortCriteria(new Criterion("<<" + myocardialInfarction.getId().toString())));
 		Assert.assertEquals(1, patients.getTotalElements());
 		List<Patient> content = patients.getContent();
 		Assert.assertEquals(1, content.size());

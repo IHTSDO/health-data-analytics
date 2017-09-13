@@ -1,13 +1,17 @@
 package org.snomed.heathanalytics.service;
 
+import org.elasticsearch.common.Strings;
 import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.domain.ClinicalEncounter;
+import org.snomed.heathanalytics.domain.CohortCriteria;
 import org.snomed.heathanalytics.domain.Patient;
+import org.snomed.heathanalytics.domain.Subset;
 import org.snomed.heathanalytics.pojo.Stats;
+import org.snomed.heathanalytics.store.SubsetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -39,31 +43,30 @@ public class QueryService {
 	@Autowired
 	private SnomedQueryService snomedQueryService;
 
-	private Logger logger = LoggerFactory.getLogger(getClass());
+	@Autowired
+	private SubsetRepository subsetRepository;
 
-	public Page<Patient> fetchCohort(String primaryExposureECL) throws ServiceException {
-		return fetchCohort(new CohortCriteria(primaryExposureECL));
-	}
+	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	public Page<Patient> fetchCohort(CohortCriteria cohortCriteria) throws ServiceException {
 		Timer timer = new Timer();
 
-		String primaryExposureECL = cohortCriteria.getPrimaryExposureECL();
-		InclusionCriteria inclusionCriteria = cohortCriteria.getInclusionCriteria();
+		String primaryExposureECL = getCriterionEcl(cohortCriteria.getPrimaryExposure());
+		RelativeCriterion inclusionCriterion = cohortCriteria.getInclusionCriteria();
 		try {
 			// Gather primary exposure concepts
 			List<Long> primaryExposureConceptIds = getConceptIds(primaryExposureECL);
 			timer.split("Gather primary exposure concepts");
 
 			Map<String, Set<ClinicalEncounter>> inclusionRoleToEncounterMap = new HashMap<>();
-			if (inclusionCriteria != null) {
+			if (inclusionCriterion != null) {
 				// Gather inclusion concepts
-				List<Long> inclusionConceptIds = getConceptIds(inclusionCriteria.getSelectionECL());
+				List<Long> inclusionConceptIds = getConceptIds(getCriterionEcl(inclusionCriterion));
 				timer.split("Gather inclusion concepts");
 
 				// Gather inclusion encounters
 				try (CloseableIterator<ClinicalEncounter> encounterStream = elasticsearchTemplate.stream(new NativeSearchQueryBuilder()
-								.withFilter(termsQuery(ClinicalEncounter.FIELD_CONCEPT_ID, inclusionConceptIds))
+								.withFilter(termsQuery(ClinicalEncounter.Fields.CONCEPT_ID, inclusionConceptIds))
 								.withPageable(LARGE_PAGE)
 								.build(),
 						ClinicalEncounter.class)) {
@@ -76,12 +79,12 @@ public class QueryService {
 			Set<String> totalRoleIds = new HashSet<>();
 			AtomicLong encounterCount = new AtomicLong(0L);
 			NativeSearchQuery primaryExposureQuery = new NativeSearchQueryBuilder()
-					.withFilter(termsQuery(ClinicalEncounter.FIELD_CONCEPT_ID, primaryExposureConceptIds))
+					.withFilter(termsQuery(ClinicalEncounter.Fields.CONCEPT_ID, primaryExposureConceptIds))
 					.withPageable(LARGE_PAGE)
 					.build();
 			try (CloseableIterator<ClinicalEncounter> encounterStream = elasticsearchTemplate.stream(primaryExposureQuery, ClinicalEncounter.class)) {
 				encounterStream.forEachRemaining(primaryExposure -> {
-					if (inclusionCriteria == null || passesInclusionCriteria(primaryExposure, inclusionCriteria, inclusionRoleToEncounterMap)) {
+					if (inclusionCriterion == null || passesInclusionCriteria(primaryExposure, inclusionCriterion, inclusionRoleToEncounterMap)) {
 						totalRoleIds.add(primaryExposure.getRoleId());
 						encounterCount.incrementAndGet();
 					}
@@ -108,7 +111,7 @@ public class QueryService {
 			Map<String, Patient> patientPageMap = patientPage.getContent().stream().collect(Collectors.toMap(Patient::getRoleId, Function.identity()));
 			try (CloseableIterator<ClinicalEncounter> patientEncounters = elasticsearchTemplate.stream(new NativeSearchQueryBuilder()
 							// TODO: This should probably be a filter. Test with 1 million patients to compare performance.
-							.withQuery(boolQuery().must(termsQuery(ClinicalEncounter.FIELD_ROLE_ID, patientPageMap.keySet())))
+							.withQuery(boolQuery().must(termsQuery(ClinicalEncounter.Fields.ROLE_ID, patientPageMap.keySet())))
 							.withPageable(LARGE_PAGE)
 							.build(),
 					ClinicalEncounter.class)) {
@@ -147,7 +150,22 @@ public class QueryService {
 		}
 	}
 
-	private boolean passesInclusionCriteria(ClinicalEncounter primaryExposure, InclusionCriteria inclusionCriteria, Map<String, Set<ClinicalEncounter>> inclusionRoleToEncounterMap) {
+	private String getCriterionEcl(Criterion criterion) throws ServiceException {
+		if (criterion != null) {
+			String subsetId = criterion.getSubsetId();
+			if (!Strings.isNullOrEmpty(subsetId)) {
+				Subset subset = subsetRepository.findOne(subsetId);
+				if (subset == null) {
+					throw new ServiceException("Referenced subset does not exist. ID:" + subsetId);
+				}
+				return subset.getEcl();
+			}
+			return criterion.getEcl();
+		}
+		return null;
+	}
+
+	private boolean passesInclusionCriteria(ClinicalEncounter primaryExposure, RelativeCriterion inclusionCriteria, Map<String, Set<ClinicalEncounter>> inclusionRoleToEncounterMap) {
 		Date primaryExposureDate = primaryExposure.getDate();
 		Set<ClinicalEncounter> clinicalEncounters = inclusionRoleToEncounterMap.get(primaryExposure.getRoleId());
 		if (clinicalEncounters != null) {

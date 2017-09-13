@@ -1,11 +1,7 @@
 package org.snomed.heathanalytics.domain;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.Transient;
 import org.springframework.data.elasticsearch.annotations.Document;
-
-import java.util.Date;
 
 @Document(indexName = "subset")
 public class Subset {
@@ -13,6 +9,7 @@ public class Subset {
 	@Id
 	private String id;
 	private String name;
+	private String description;
 	private String eclModel;
 	private String ecl;
 
@@ -21,6 +18,7 @@ public class Subset {
 	public static final class Fields {
 		public static final String ID = "id";
 		public static final String NAME = "name";
+		public static final String DESCRIPTION = "description";
 		public static final String ECL_MODEL = "eclModel";
 		public static final String ECL = "ecl";
 	}
@@ -42,6 +40,14 @@ public class Subset {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
 	}
 
 	public String getEclModel() {

@@ -3,10 +3,7 @@ package org.snomed.heathanalytics.domain;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
-import org.springframework.data.elasticsearch.annotations.Document;
-import org.springframework.data.elasticsearch.annotations.Field;
-import org.springframework.data.elasticsearch.annotations.FieldIndex;
-import org.springframework.data.elasticsearch.annotations.FieldType;
+import org.springframework.data.elasticsearch.annotations.*;
 
 import java.util.*;
 
@@ -22,6 +19,9 @@ public class Patient {
 	@Field(index = FieldIndex.not_analyzed)
 	private Date dob;
 
+	@Field(type = FieldType.Integer)
+	private int dobYear;
+
 	@Field(index = FieldIndex.not_analyzed)
 	private Gender gender;
 
@@ -32,6 +32,7 @@ public class Patient {
 		String ROLE_ID = "roleId";
 		String NAME = "name";
 		String DOB = "dob";
+		String DOB_YEAR = "dobYear";
 		String SEX = "gender";
 	}
 
@@ -41,7 +42,7 @@ public class Patient {
 	public Patient(String roleId, String name, Date dob, Gender gender) {
 		this.roleId = roleId;
 		this.name = name;
-		this.dob = dob;
+		setDob(dob);
 		this.gender = gender;
 	}
 
@@ -83,6 +84,17 @@ public class Patient {
 
 	public void setDob(Date dob) {
 		this.dob = dob;
+		GregorianCalendar calendar = new GregorianCalendar();
+		calendar.setTime(dob);
+		this.dobYear = calendar.get(Calendar.YEAR);
+	}
+
+	public int getDobYear() {
+		return dobYear;
+	}
+
+	public void setDobYear(int dobYear) {
+		this.dobYear = dobYear;
 	}
 
 	public Gender getGender() {

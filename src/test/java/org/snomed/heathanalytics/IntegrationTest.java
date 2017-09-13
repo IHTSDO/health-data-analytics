@@ -52,7 +52,7 @@ public class IntegrationTest {
 		acuteQWaveMyocardialInfarction.addInferredParent(myocardialInfarction);
 
 		// Set up ECL query service test data
-		healthDataStream.createPatient("1", "Bob", date(1983), Gender.MALE);
+		healthDataStream.createPatient("1", "Bob", TestUtils.getDob(35), Gender.MALE);
 		healthDataStream.addClinicalEncounter("1", date(2017, 0, 20), ClinicalEncounterType.FINDING, acuteQWaveMyocardialInfarction.getId());
 
 		queryService.setSnomedQueryService(TestSnomedQueryServiceBuilder.createWithConcepts(myocardialInfarction, acuteQWaveMyocardialInfarction));
@@ -60,7 +60,7 @@ public class IntegrationTest {
 
 	@Test
 	public void test() throws ServiceException {
-		Page<Patient> patients = queryService.fetchCohort(new CohortCriteria(new Criterion("<<" + myocardialInfarction.getId().toString())), 0, 100);
+		Page<Patient> patients = queryService.fetchCohort(new CohortCriteria(new Criterion("<<" + myocardialInfarction.getId().toString())));
 		Assert.assertEquals(1, patients.getTotalElements());
 		List<Patient> content = patients.getContent();
 		Assert.assertEquals(1, content.size());
@@ -74,15 +74,37 @@ public class IntegrationTest {
 		CohortCriteria cohortCriteria = new CohortCriteria(new Criterion("<<" + myocardialInfarction.getId().toString()));
 
 		// No gender filter
-		Assert.assertEquals(1, queryService.fetchCohort(cohortCriteria, 0, 100).getTotalElements());
+		Assert.assertEquals(1, queryService.fetchCohort(cohortCriteria).getTotalElements());
 
 		// Females
 		cohortCriteria.setGender(Gender.FEMALE);
-		Assert.assertEquals(0, queryService.fetchCohort(cohortCriteria, 0, 100).getTotalElements());
+		Assert.assertEquals(0, queryService.fetchCohort(cohortCriteria).getTotalElements());
 
 		// Males
 		cohortCriteria.setGender(Gender.MALE);
-		Assert.assertEquals(1, queryService.fetchCohort(cohortCriteria, 0, 100).getTotalElements());
+		Assert.assertEquals(1, queryService.fetchCohort(cohortCriteria).getTotalElements());
+	}
+
+	@Test
+	public void testAgeSelection() throws ServiceException {
+		CohortCriteria cohortCriteria = new CohortCriteria(new Criterion("<<" + myocardialInfarction.getId().toString()));
+
+		// No age filter
+		Assert.assertEquals(1, queryService.fetchCohort(cohortCriteria).getTotalElements());
+
+		cohortCriteria.setMinAge(36);
+		Assert.assertEquals(0, queryService.fetchCohort(cohortCriteria).getTotalElements());
+
+		cohortCriteria.setMinAge(35);
+		Assert.assertEquals(1, queryService.fetchCohort(cohortCriteria).getTotalElements());
+
+		cohortCriteria.setMinAge(30);
+		cohortCriteria.setMaxAge(31);
+		Assert.assertEquals(0, queryService.fetchCohort(cohortCriteria).getTotalElements());
+
+		cohortCriteria.setMinAge(30);
+		cohortCriteria.setMaxAge(38);
+		Assert.assertEquals(1, queryService.fetchCohort(cohortCriteria).getTotalElements());
 	}
 
 	private ConceptImpl createConcept(String id) {

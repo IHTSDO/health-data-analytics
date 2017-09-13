@@ -23,6 +23,12 @@ public class CohortCriteria {
 	@Field(type = FieldType.String)
 	private Gender gender;
 
+	@Field(type = FieldType.Integer)
+	private Integer minAge;
+
+	@Field(type = FieldType.Integer)
+	private Integer maxAge;
+
 	@Field(type = FieldType.Object)
 	private Criterion primaryExposure;
 
@@ -66,6 +72,22 @@ public class CohortCriteria {
 
 	public void setGender(Gender gender) {
 		this.gender = gender;
+	}
+
+	public Integer getMinAge() {
+		return minAge;
+	}
+
+	public void setMinAge(Integer minAge) {
+		this.minAge = minAge;
+	}
+
+	public Integer getMaxAge() {
+		return maxAge;
+	}
+
+	public void setMaxAge(Integer maxAge) {
+		this.maxAge = maxAge;
 	}
 
 	public Criterion getPrimaryExposure() {

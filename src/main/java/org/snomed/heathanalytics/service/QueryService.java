@@ -1,6 +1,8 @@
 package org.snomed.heathanalytics.service;
 
 import org.elasticsearch.common.Strings;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResults;
@@ -26,9 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.*;
 
 @Service
 public class QueryService {
@@ -46,7 +46,12 @@ public class QueryService {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
+	public Page<Patient> fetchCohort(CohortCriteria cohortCriteria) throws ServiceException {
+		return fetchCohort(cohortCriteria, 0, 100);
+	}
+
 	public Page<Patient> fetchCohort(CohortCriteria cohortCriteria, int page, int size) throws ServiceException {
+		GregorianCalendar now = new GregorianCalendar();
 		Timer timer = new Timer();
 
 		String primaryExposureECL = getCriterionEcl(cohortCriteria.getPrimaryExposure());
@@ -91,15 +96,33 @@ public class QueryService {
 			inclusionRoleToEncounterMap.clear();
 			timer.split("Identify patients matching all criteria");
 
-			// Apply gender filter
+			// Apply age and gender filters
+			Integer minAge = cohortCriteria.getMinAge();
+			Integer maxAge = cohortCriteria.getMaxAge();
 			Gender genderFilter = cohortCriteria.getGender();
-			if (genderFilter != null) {
+			if (minAge != null || maxAge != null || genderFilter != null) {
 				Set<String> newMatchingPatientIds = new HashSet<>();
+				BoolQueryBuilder boolQuery = boolQuery();
 				NativeSearchQuery patientsWithinDemographic = new NativeSearchQueryBuilder()
-						.withQuery(termQuery(Patient.Fields.SEX, genderFilter.toString().toLowerCase()))
+						.withQuery(boolQuery)
 						.withFilter(termsQuery(Patient.Fields.ROLE_ID, matchingPatientIds))
 						.withPageable(LARGE_PAGE)
 						.build();
+				if (genderFilter != null) {
+					boolQuery.must(termQuery(Patient.Fields.SEX, genderFilter.toString().toLowerCase()));
+				}
+				if (minAge != null || maxAge != null) {
+					// Crude match using birth year
+					RangeQueryBuilder rangeQueryBuilder = rangeQuery(Patient.Fields.DOB_YEAR);
+					int thisYear = now.get(Calendar.YEAR);
+					if (minAge != null) {
+						rangeQueryBuilder.lte(thisYear - minAge);
+					}
+					if (maxAge != null) {
+						rangeQueryBuilder.gte(thisYear - maxAge);
+					}
+					boolQuery.must(rangeQueryBuilder);
+				}
 				try (CloseableIterator<Patient> patientStream = elasticsearchTemplate.stream(patientsWithinDemographic, Patient.class)) {
 					patientStream.forEachRemaining(patient -> newMatchingPatientIds.add(patient.getRoleId()));
 				}

@@ -1,8 +1,6 @@
 package org.snomed.heathanalytics.service;
 
-import com.fasterxml.jackson.databind.util.CompactStringObjectMap;
 import org.ihtsdo.otf.sqs.service.SnomedQueryService;
-import org.ihtsdo.otf.sqs.service.dto.ConceptIdResults;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResults;
 import org.slf4j.Logger;
@@ -98,9 +96,11 @@ public class QueryService {
 					.withFilter(termsQuery(Patient.FIELD_ID, totalRoleIds))
 					.withPageable(pageRequest)
 					.build();
+
 			// TODO: try switching back to withQuery and using an aggregation which gathers birth years as Integers
 //			patientQuery.addAggregation(AggregationBuilders.dateHistogram("patient_birth_dates")
 //					.field(Patient.FIELD_DOB).interval(DateHistogramInterval.YEAR));
+
 			AggregatedPage<Patient> patientPage = elasticsearchTemplate.queryForPage(patientQuery, Patient.class);
 			timer.split("Fetch page of patients");
 
@@ -188,9 +188,9 @@ public class QueryService {
 		}
 	}
 
-	public ConceptResults findConcepts(String termPrefix, int offset, int limit) throws ServiceException {
+	public ConceptResults findConcepts(String termPrefix, String ecQuery, int offset, int limit) throws ServiceException {
 		try {
-			return snomedQueryService.search(null, termPrefix, offset, limit);
+			return snomedQueryService.search(ecQuery, termPrefix, offset, limit);
 		} catch (org.ihtsdo.otf.sqs.service.exception.ServiceException e) {
 			throw new ServiceException("Failed to find concept by prefix '" + termPrefix + "'", e);
 		}

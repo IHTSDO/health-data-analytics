@@ -14,8 +14,9 @@ public class ConceptController {
 	private QueryService queryService;
 
 	@RequestMapping(value = "/concepts", method = RequestMethod.GET, produces = "application/json")
-	public ConceptResults findConcepts(@RequestParam String prefix, @RequestParam(required = false, defaultValue = "20") int limit) throws ServiceException {
-		return queryService.findConcepts(prefix, 0, limit);
+	public ConceptResults findConcepts(@RequestParam(required = false) String prefix, @RequestParam(required = false) String ecQuery,
+									   @RequestParam(required = false, defaultValue = "20") int limit) throws ServiceException {
+		return queryService.findConcepts(prefix, ecQuery, 0, limit);
 	}
 
 	@RequestMapping(value = "/concepts/{conceptId}", method = RequestMethod.GET, produces = "application/json")

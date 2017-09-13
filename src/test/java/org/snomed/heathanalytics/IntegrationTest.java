@@ -1,7 +1,6 @@
 package org.snomed.heathanalytics;
 
 import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ConceptImpl;
-import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -61,7 +60,7 @@ public class IntegrationTest {
 
 	@Test
 	public void test() throws ServiceException {
-		Page<Patient> patients = queryService.fetchCohort(new CohortCriteria(new Criterion("<<" + myocardialInfarction.getId().toString())));
+		Page<Patient> patients = queryService.fetchCohort(new CohortCriteria(new Criterion("<<" + myocardialInfarction.getId().toString())), 0, 100);
 		Assert.assertEquals(1, patients.getTotalElements());
 		List<Patient> content = patients.getContent();
 		Assert.assertEquals(1, content.size());

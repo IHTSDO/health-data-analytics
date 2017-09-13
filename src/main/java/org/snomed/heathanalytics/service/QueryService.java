@@ -48,7 +48,7 @@ public class QueryService {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	public Page<Patient> fetchCohort(CohortCriteria cohortCriteria) throws ServiceException {
+	public Page<Patient> fetchCohort(CohortCriteria cohortCriteria, int page, int size) throws ServiceException {
 		Timer timer = new Timer();
 
 		String primaryExposureECL = getCriterionEcl(cohortCriteria.getPrimaryExposure());
@@ -94,7 +94,7 @@ public class QueryService {
 			timer.split("Identify patients matching all criteria");
 
 			// Fetch page of patients
-			PageRequest pageRequest = new PageRequest(0, 100);
+			PageRequest pageRequest = new PageRequest(page, size);
 			NativeSearchQuery patientQuery = new NativeSearchQueryBuilder()
 					.withFilter(termsQuery(Patient.FIELD_ID, totalRoleIds))
 					.withPageable(pageRequest)

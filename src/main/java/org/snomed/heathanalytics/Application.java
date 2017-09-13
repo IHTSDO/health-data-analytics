@@ -90,7 +90,7 @@ public class Application implements ApplicationRunner {
 		logger.info("******** Generating data for {} patients ...", new DecimalFormat( "#,###,###" ).format(demoPatientCount));
 		exampleDataSource().stream(elasticOutputStream);
 
-		Page<Patient> cohort = queryService.fetchCohort(new CohortCriteria(new Criterion("<<420868002")));// Disorder due to type 1 diabetes mellitus
+		Page<Patient> cohort = queryService.fetchCohort(new CohortCriteria(new Criterion("<<420868002")), 0, 100);// Disorder due to type 1 diabetes mellitus
 		logger.info("******** Fetched 'Diabetes type 1' cohort, size:{}", cohort.getTotalElements());
 		System.out.println("First 100 results:");
 		for (Patient patient : cohort) {

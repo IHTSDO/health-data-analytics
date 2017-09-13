@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.elasticsearch.annotations.Document;
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldIndex;
 
 import java.util.Date;
 
@@ -12,9 +14,17 @@ public class ClinicalEncounter implements Act {
 
 	@Id
 	private String id;
+
+	@Field(index = FieldIndex.not_analyzed)
 	private String roleId;
+
+	@Field(index = FieldIndex.not_analyzed)
 	private Date date;
+
+	@Field(index = FieldIndex.not_analyzed)
 	private Long conceptId;
+
+	@Field(index = FieldIndex.not_analyzed)
 	private ClinicalEncounterType type;
 
 	@Transient

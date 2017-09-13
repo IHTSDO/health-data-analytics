@@ -1,5 +1,5 @@
 package org.snomed.heathanalytics.domain;
 
-public enum Sex {
+public enum Gender {
 	MALE, FEMALE
 }

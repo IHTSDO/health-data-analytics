@@ -52,7 +52,7 @@ public class IntegrationTest {
 		acuteQWaveMyocardialInfarction.addInferredParent(myocardialInfarction);
 
 		// Set up ECL query service test data
-		healthDataStream.createPatient("1", "Bob", date(1983), Sex.MALE);
+		healthDataStream.createPatient("1", "Bob", date(1983), Gender.MALE);
 		healthDataStream.addClinicalEncounter("1", date(2017, 0, 20), ClinicalEncounterType.FINDING, acuteQWaveMyocardialInfarction.getId());
 
 		queryService.setSnomedQueryService(TestSnomedQueryServiceBuilder.createWithConcepts(myocardialInfarction, acuteQWaveMyocardialInfarction));
@@ -67,6 +67,22 @@ public class IntegrationTest {
 		Patient patient = content.get(0);
 		Assert.assertEquals("1", patient.getRoleId());
 		Assert.assertEquals(acuteQWaveMyocardialInfarction.getId(), patient.getEncounters().iterator().next().getConceptId());
+	}
+
+	@Test
+	public void testGenderSelection() throws ServiceException {
+		CohortCriteria cohortCriteria = new CohortCriteria(new Criterion("<<" + myocardialInfarction.getId().toString()));
+
+		// No gender filter
+		Assert.assertEquals(1, queryService.fetchCohort(cohortCriteria, 0, 100).getTotalElements());
+
+		// Females
+		cohortCriteria.setGender(Gender.FEMALE);
+		Assert.assertEquals(0, queryService.fetchCohort(cohortCriteria, 0, 100).getTotalElements());
+
+		// Males
+		cohortCriteria.setGender(Gender.MALE);
+		Assert.assertEquals(1, queryService.fetchCohort(cohortCriteria, 0, 100).getTotalElements());
 	}
 
 	private ConceptImpl createConcept(String id) {

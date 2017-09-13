@@ -6,10 +6,7 @@ import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.heathanalytics.domain.ClinicalEncounter;
-import org.snomed.heathanalytics.domain.CohortCriteria;
-import org.snomed.heathanalytics.domain.Patient;
-import org.snomed.heathanalytics.domain.Subset;
+import org.snomed.heathanalytics.domain.*;
 import org.snomed.heathanalytics.pojo.Stats;
 import org.snomed.heathanalytics.store.SubsetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +27,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @Service
@@ -76,7 +74,7 @@ public class QueryService {
 			}
 
 			// Identify patients matching all criteria
-			Set<String> totalRoleIds = new HashSet<>();
+			final Set<String> matchingPatientIds = new HashSet<>();
 			AtomicLong encounterCount = new AtomicLong(0L);
 			NativeSearchQuery primaryExposureQuery = new NativeSearchQueryBuilder()
 					.withFilter(termsQuery(ClinicalEncounter.Fields.CONCEPT_ID, primaryExposureConceptIds))
@@ -85,7 +83,7 @@ public class QueryService {
 			try (CloseableIterator<ClinicalEncounter> encounterStream = elasticsearchTemplate.stream(primaryExposureQuery, ClinicalEncounter.class)) {
 				encounterStream.forEachRemaining(primaryExposure -> {
 					if (inclusionCriterion == null || passesInclusionCriteria(primaryExposure, inclusionCriterion, inclusionRoleToEncounterMap)) {
-						totalRoleIds.add(primaryExposure.getRoleId());
+						matchingPatientIds.add(primaryExposure.getRoleId());
 						encounterCount.incrementAndGet();
 					}
 				});
@@ -93,10 +91,27 @@ public class QueryService {
 			inclusionRoleToEncounterMap.clear();
 			timer.split("Identify patients matching all criteria");
 
+			// Apply gender filter
+			Gender genderFilter = cohortCriteria.getGender();
+			if (genderFilter != null) {
+				Set<String> newMatchingPatientIds = new HashSet<>();
+				NativeSearchQuery patientsWithinDemographic = new NativeSearchQueryBuilder()
+						.withQuery(termQuery(Patient.Fields.SEX, genderFilter.toString().toLowerCase()))
+						.withFilter(termsQuery(Patient.Fields.ROLE_ID, matchingPatientIds))
+						.withPageable(LARGE_PAGE)
+						.build();
+				try (CloseableIterator<Patient> patientStream = elasticsearchTemplate.stream(patientsWithinDemographic, Patient.class)) {
+					patientStream.forEachRemaining(patient -> newMatchingPatientIds.add(patient.getRoleId()));
+				}
+				matchingPatientIds.clear();
+				matchingPatientIds.addAll(newMatchingPatientIds);
+				timer.split("Apply gender filter");
+			}
+
 			// Fetch page of patients
 			PageRequest pageRequest = new PageRequest(page, size);
 			NativeSearchQuery patientQuery = new NativeSearchQueryBuilder()
-					.withFilter(termsQuery(Patient.FIELD_ID, totalRoleIds))
+					.withFilter(termsQuery(Patient.Fields.ROLE_ID, matchingPatientIds))
 					.withPageable(pageRequest)
 					.build();
 
@@ -156,7 +171,7 @@ public class QueryService {
 			if (!Strings.isNullOrEmpty(subsetId)) {
 				Subset subset = subsetRepository.findOne(subsetId);
 				if (subset == null) {
-					throw new ServiceException("Referenced subset does not exist. ID:" + subsetId);
+					throw new ServiceException("Referenced subset does not exist. ROLE_ID:" + subsetId);
 				}
 				return subset.getEcl();
 			}

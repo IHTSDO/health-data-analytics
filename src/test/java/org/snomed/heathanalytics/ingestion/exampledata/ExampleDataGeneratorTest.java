@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.domain.ClinicalEncounter;
 import org.snomed.heathanalytics.domain.ClinicalEncounterType;
 import org.snomed.heathanalytics.domain.Patient;
-import org.snomed.heathanalytics.domain.Sex;
+import org.snomed.heathanalytics.domain.Gender;
 import org.snomed.heathanalytics.ingestion.HealthDataOutputStream;
 import org.snomed.heathanalytics.testutil.TestSnomedQueryServiceBuilder;
 
@@ -42,8 +42,8 @@ public class ExampleDataGeneratorTest {
 
 		exampleDataGenerator.stream(new HealthDataOutputStream() {
 			@Override
-			public void createPatient(String roleId, String name, Date dateOfBirth, Sex sex) {
-				logger.info("New patient {}", new Patient(roleId, name, dateOfBirth, sex));
+			public void createPatient(String roleId, String name, Date dateOfBirth, Gender gender) {
+				logger.info("New patient {}", new Patient(roleId, name, dateOfBirth, gender));
 				synchronized (patientData) {
 					patientData.put(roleId, new ArrayList<>());
 				}

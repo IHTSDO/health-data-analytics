@@ -5,6 +5,7 @@ import org.snomed.heathanalytics.service.RelativeCriterion;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldIndex;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
 @Document(indexName = "cohort")
@@ -13,9 +14,14 @@ public class CohortCriteria {
 	@Id
 	private String id;
 
+	@Field(index = FieldIndex.not_analyzed)
 	private String name;
 
+	@Field(index = FieldIndex.not_analyzed)
 	private String description;
+
+	@Field(type = FieldType.String)
+	private Gender gender;
 
 	@Field(type = FieldType.Object)
 	private Criterion primaryExposure;
@@ -52,6 +58,14 @@ public class CohortCriteria {
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	public Gender getGender() {
+		return gender;
+	}
+
+	public void setGender(Gender gender) {
+		this.gender = gender;
 	}
 
 	public Criterion getPrimaryExposure() {

@@ -4,8 +4,8 @@ import org.ihtsdo.otf.sqs.service.exception.ServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.domain.ClinicalEncounterType;
+import org.snomed.heathanalytics.domain.Gender;
 import org.snomed.heathanalytics.domain.Patient;
-import org.snomed.heathanalytics.domain.Sex;
 import org.snomed.heathanalytics.ingestion.HealthDataIngestionSource;
 import org.snomed.heathanalytics.ingestion.HealthDataOutputStream;
 
@@ -58,12 +58,12 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 
 		//  50% of patients are Male.
 		if (chance(0.5f)) {
-			patient.setSex(Sex.MALE);
+			patient.setGender(Gender.MALE);
 		} else {
-			patient.setSex(Sex.FEMALE);
+			patient.setGender(Gender.FEMALE);
 		}
 
-		healthDataOutputStream.createPatient(roleId, patient.getName(), patient.getDob(), patient.getSex());
+		healthDataOutputStream.createPatient(roleId, patient.getName(), patient.getDob(), patient.getGender());
 
 		// Start 2 years ago
 		GregorianCalendar date = new GregorianCalendar();

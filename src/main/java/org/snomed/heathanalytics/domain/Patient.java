@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.elasticsearch.annotations.Document;
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldIndex;
+import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.util.*;
 
@@ -12,26 +15,34 @@ public class Patient {
 
 	@Id
 	private String roleId;
+
+	@Field(index = FieldIndex.not_analyzed)
 	private String name;
+
+	@Field(index = FieldIndex.not_analyzed)
 	private Date dob;
-	private Sex sex;
+
+	@Field(index = FieldIndex.not_analyzed)
+	private Gender gender;
 
 	@Transient
 	private Set<ClinicalEncounter> encounters;
 
-	public static final String FIELD_ID = "roleId";
-	public static final String FIELD_NAME = "name";
-	public static final String FIELD_DOB = "dob";
-	public static final String FIELD_SEX = "sex";
+	public interface Fields {
+		String ROLE_ID = "roleId";
+		String NAME = "name";
+		String DOB = "dob";
+		String SEX = "gender";
+	}
 
 	public Patient() {
 	}
 
-	public Patient(String roleId, String name, Date dob, Sex sex) {
+	public Patient(String roleId, String name, Date dob, Gender gender) {
 		this.roleId = roleId;
 		this.name = name;
 		this.dob = dob;
-		this.sex = sex;
+		this.gender = gender;
 	}
 
 	public void addEncounter(ClinicalEncounter encounter) {
@@ -74,12 +85,12 @@ public class Patient {
 		this.dob = dob;
 	}
 
-	public Sex getSex() {
-		return sex;
+	public Gender getGender() {
+		return gender;
 	}
 
-	public void setSex(Sex sex) {
-		this.sex = sex;
+	public void setGender(Gender gender) {
+		this.gender = gender;
 	}
 
 	@Override
@@ -87,7 +98,7 @@ public class Patient {
 		return "Patient{" +
 				"roleId='" + roleId + '\'' +
 				", name='" + name + '\'' +
-				", sex=" + sex +
+				", gender=" + gender +
 				", dob=" + dob +
 				", encounters=" + encounters +
 				'}';

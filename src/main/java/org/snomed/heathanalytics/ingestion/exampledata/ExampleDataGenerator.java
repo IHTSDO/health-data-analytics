@@ -14,7 +14,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
 import static org.snomed.heathanalytics.ingestion.exampledata.ExampleDataGenerator.DateUtil.dateOfBirthFromAge;
-import static org.snomed.heathanalytics.ingestion.exampledata.ExampleDataGenerator.DateUtil.getAge;
 
 public class ExampleDataGenerator implements HealthDataIngestionSource {
 
@@ -54,7 +53,8 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		Patient patient = new Patient();
 
 		//  All patients are over the age of 30 and under the age of 85.
-		patient.setDob(dateOfBirthFromAge(ThreadLocalRandom.current().nextInt(30, 85)));
+		int age = ThreadLocalRandom.current().nextInt(30, 85);
+		patient.setDob(dateOfBirthFromAge(age));
 
 		//  50% of patients are Male.
 		if (chance(0.5f)) {
@@ -99,7 +99,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 3));
 
 		// 30 % of patients over 40 years old have hypertension.
-		if (getAge(patient.getDob()) > 40 && chance(0.3f)) {
+		if (age > 40 && chance(0.3f)) {
 			healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("38341003"));// Hypertension
 
 			// 50% of patients over 40 with hypertension are prescribed an Antiplatelet agent
@@ -131,7 +131,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 2));
 
 		// 5% of all patients over 55 years old have Myocardial Infarction.
-		if (getAge(patient.getDob()) > 55 && chance(0.05f)) {
+		if (age > 55 && chance(0.05f)) {
 			healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("22298006"));// Myocardial Infarction
 		}
 	}
@@ -150,15 +150,19 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 			millisecondsInAYear = calendar.getTime().getTime();
 		}
 
-		static int getAge(Date patientDob) {
-			// Rough calculation for example data
-			return Math.round((new Date().getTime() - patientDob.getTime()) / millisecondsInAYear);
-		}
-
 		static Date dateOfBirthFromAge(int ageInYears) {
 			GregorianCalendar date = new GregorianCalendar();
 			date.add(Calendar.YEAR, -ageInYears);
+			clearTime(date);
 			return date.getTime();
+		}
+
+		static GregorianCalendar clearTime(GregorianCalendar calendar) {
+			calendar.clear(Calendar.HOUR);
+			calendar.clear(Calendar.MINUTE);
+			calendar.clear(Calendar.SECOND);
+			calendar.clear(Calendar.MILLISECOND);
+			return calendar;
 		}
 	}
 }

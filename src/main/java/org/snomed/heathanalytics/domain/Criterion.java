@@ -1,4 +1,4 @@
-package org.snomed.heathanalytics.service;
+package org.snomed.heathanalytics.domain;
 
 public class Criterion {
 

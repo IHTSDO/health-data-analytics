@@ -12,7 +12,7 @@ import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.ingestion.exampledata.ExampleConceptService;
 import org.snomed.heathanalytics.ingestion.exampledata.ExampleDataGenerator;
-import org.snomed.heathanalytics.service.Criterion;
+import org.snomed.heathanalytics.domain.Criterion;
 import org.snomed.heathanalytics.service.QueryService;
 import org.snomed.heathanalytics.service.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,7 +1,5 @@
 package org.snomed.heathanalytics.domain;
 
-import org.snomed.heathanalytics.service.Criterion;
-import org.snomed.heathanalytics.service.RelativeCriterion;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;

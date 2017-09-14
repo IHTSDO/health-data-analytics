@@ -1,4 +1,6 @@
-package org.snomed.heathanalytics.service;
+package org.snomed.heathanalytics.domain;
+
+import org.snomed.heathanalytics.domain.Criterion;
 
 public class RelativeCriterion extends Criterion {
 
@@ -7,6 +9,15 @@ public class RelativeCriterion extends Criterion {
 
 	// Optional
 	private Integer includeDaysInFuture;
+
+	public RelativeCriterion() {
+	}
+
+	public RelativeCriterion(String ecl, Integer includeDaysInPast, Integer includeDaysInFuture) {
+		super(ecl);
+		this.includeDaysInPast = includeDaysInPast;
+		this.includeDaysInFuture = includeDaysInFuture;
+	}
 
 	public Integer getIncludeDaysInPast() {
 		return includeDaysInPast;

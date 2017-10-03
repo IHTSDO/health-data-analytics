@@ -35,6 +35,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>1.8</java.version>
+		<packageName>${project.artifactId}</packageName>
 	</properties>
 	<dependencies>
 		<!-- SNOMED International Open Source Libraries -->
@@ -98,4 +99,77 @@
 			</plugin>
 		</plugins>
 	</build>
+	<profiles>
+		<profile>
+			<id>deb</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.vafer</groupId>
+						<artifactId>jdeb</artifactId>
+						<version>1.1.1</version>
+						<executions>
+							<execution>
+								<phase>package</phase>
+								<goals>
+									<goal>jdeb</goal>
+								</goals>
+								<configuration>
+									<deb>${project.build.directory}/${packageName}-${project.version}-all.deb</deb>
+									<controlDir>${basedir}/src/deb/control</controlDir>
+									<snapshotExpand>true</snapshotExpand>
+									<snapshotEnv>BUILD_NUMBER</snapshotEnv>
+									<verbose>true</verbose>
+									<classifier>all</classifier>
+									<signPackage>false</signPackage>
+									<dataSet>
+										<data>
+											<src>${project.build.directory}/${project.build.finalName}.jar</src>
+											<dst>app.jar</dst>
+											<type>file</type>
+											<mapper>
+												<type>perm</type>
+												<prefix>/opt/${packageName}/</prefix>
+											</mapper>
+										</data>
+										<data>
+											<src>${basedir}/src/deb/supervisor.conf</src>
+											<dst>/etc/supervisor/conf.d/${packageName}.conf</dst>
+											<type>file</type>
+										</data>
+									</dataSet>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+	<repositories>
+		<repository>
+			<id>ihtsdo-releases</id>
+			<releases><enabled>true</enabled></releases>
+			<snapshots><enabled>false</enabled></snapshots>
+			<url>https://maven.ihtsdotools.org/content/repositories/releases/</url>
+		</repository>
+		<repository>
+			<id>ihtsdo-snapshots</id>
+			<releases><enabled>false</enabled></releases>
+			<snapshots><enabled>true</enabled></snapshots>
+			<url>https://maven.ihtsdotools.org/content/repositories/snapshots/</url>
+		</repository>
+	</repositories>
+	<distributionManagement>
+		<repository>
+			<id>ihtsdo-public-nexus</id>
+			<name>IHTSDO Public Nexus Releases</name>
+			<url>https://maven.ihtsdotools.org/content/repositories/releases/</url>
+		</repository>
+		<snapshotRepository>
+			<id>ihtsdo-public-nexus</id>
+			<name>IHTSDO Public Nexus Snapshots</name>
+			<url>https://maven.ihtsdotools.org/content/repositories/snapshots/</url>
+		</snapshotRepository>
+	</distributionManagement>
 </project>

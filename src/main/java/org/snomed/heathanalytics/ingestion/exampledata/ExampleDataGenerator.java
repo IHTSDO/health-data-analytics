@@ -7,6 +7,7 @@ import org.snomed.heathanalytics.domain.ClinicalEncounterType;
 import org.snomed.heathanalytics.domain.Gender;
 import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.ingestion.HealthDataIngestionSource;
+import org.snomed.heathanalytics.ingestion.HealthDataIngestionSourceConfiguration;
 import org.snomed.heathanalytics.ingestion.HealthDataOutputStream;
 
 import java.util.*;
@@ -18,19 +19,18 @@ import static org.snomed.heathanalytics.ingestion.exampledata.ExampleDataGenerat
 public class ExampleDataGenerator implements HealthDataIngestionSource {
 
 	private final ExampleConceptService concepts;
-	private int numberOfPatients;
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	public ExampleDataGenerator(ExampleConceptService exampleConceptService, int numberOfPatients) {
+	public ExampleDataGenerator(ExampleConceptService exampleConceptService) {
 		this.concepts = exampleConceptService;
-		this.numberOfPatients = numberOfPatients;
 	}
 
 	@Override
-	public void stream(HealthDataOutputStream healthDataOutputStream) {
+	public void stream(HealthDataIngestionSourceConfiguration configuration, HealthDataOutputStream healthDataOutputStream) {
+		ExampleDataGeneratorConfiguration generatorConfiguration = (ExampleDataGeneratorConfiguration) configuration;
 		long start = new Date().getTime();
 		List<Exception> exceptions = new ArrayList<>();
-		IntStream.range(0, numberOfPatients).parallel().forEach(i -> {
+		IntStream.range(0, generatorConfiguration.getDemoPatientCount()).parallel().forEach(i -> {
 			if (i % 10000 == 0) {
 				System.out.print(".");
 			}

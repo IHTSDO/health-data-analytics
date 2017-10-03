@@ -13,6 +13,7 @@ import org.snomed.heathanalytics.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.ingestion.exampledata.ExampleConceptService;
 import org.snomed.heathanalytics.ingestion.exampledata.ExampleDataGenerator;
 import org.snomed.heathanalytics.domain.Criterion;
+import org.snomed.heathanalytics.ingestion.exampledata.ExampleDataGeneratorConfiguration;
 import org.snomed.heathanalytics.service.QueryService;
 import org.snomed.heathanalytics.service.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,12 +31,16 @@ import springfox.documentation.spring.web.plugins.Docket;
 import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.List;
 
 import static com.google.common.base.Predicates.not;
 import static springfox.documentation.builders.PathSelectors.regex;
 
 @SpringBootApplication
 public class Application implements ApplicationRunner {
+
+	public static final String GENERATE_POPULATION = "generate-population";
+	public static final String DEMO_MODE = "demo-mode";
 
 	private static final File INDEX_DIRECTORY = new File("index");
 
@@ -57,9 +62,15 @@ public class Application implements ApplicationRunner {
 
 	@Override
 	public void run(ApplicationArguments applicationArguments) throws Exception {
-		if (applicationArguments.containsOption("demo-mode")) {
+		if (applicationArguments.containsOption(DEMO_MODE)) {
 			// Force Demo Mode
-			runDemo();
+			runDemo(demoPatientCount);
+		} else if (applicationArguments.containsOption(GENERATE_POPULATION)) {
+			List<String> values = applicationArguments.getOptionValues(GENERATE_POPULATION);
+			if (values.size() != 1 || !values.get(0).matches("\\d*")) {
+				throw new IllegalArgumentException("Option " + GENERATE_POPULATION + " requires one numeric value after the equals character.");
+			}
+			generatePopulation(Integer.parseInt(values.get(0)));
 		}
 	}
 
@@ -78,17 +89,14 @@ public class Application implements ApplicationRunner {
 
 	@Bean
 	public ExampleDataGenerator exampleDataSource() throws IOException, ReleaseImportException {
-		return new ExampleDataGenerator(new ExampleConceptService(snomedQueryService()), demoPatientCount);
+		return new ExampleDataGenerator(new ExampleConceptService(snomedQueryService()));
 	}
 
-	private void runDemo() throws ServiceException, IOException, ReleaseImportException {
+	private void runDemo(int demoPatientCount) throws ServiceException, IOException, ReleaseImportException {
 		System.out.println();
-		deleteDemoData();
-
 		logger.info("******** DEMO MODE ********");
 
-		logger.info("******** Generating data for {} patients ...", new DecimalFormat( "#,###,###" ).format(demoPatientCount));
-		exampleDataSource().stream(elasticOutputStream);
+		generatePopulation(demoPatientCount);
 
 		Page<Patient> cohort = queryService.fetchCohort(new CohortCriteria(new Criterion("<<420868002")), 0, 100);// Disorder due to type 1 diabetes mellitus
 		logger.info("******** Fetched 'Diabetes type 1' cohort, size:{}", cohort.getTotalElements());
@@ -101,7 +109,13 @@ public class Application implements ApplicationRunner {
 		System.out.println();
 	}
 
-	private void deleteDemoData() {
+	private void generatePopulation(int demoPatientCount) throws IOException, ReleaseImportException {
+		deleteExistingPatientData();
+		logger.info("******** Generating data for {} patients ...", new DecimalFormat( "#,###,###" ).format(demoPatientCount));
+		exampleDataSource().stream(new ExampleDataGeneratorConfiguration(demoPatientCount), elasticOutputStream);
+	}
+
+	private void deleteExistingPatientData() {
 		elasticsearchTemplate.deleteIndex(ClinicalEncounter.class);
 		elasticsearchTemplate.deleteIndex(Patient.class);
 	}

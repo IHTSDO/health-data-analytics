@@ -33,14 +33,14 @@ public class ExampleDataGeneratorTest {
 				TestSnomedQueryServiceBuilder.concept("84094009", "38341003")
 		);
 
-		exampleDataGenerator = new ExampleDataGenerator(new ExampleConceptService(snomedQueryService), 20);
+		exampleDataGenerator = new ExampleDataGenerator(new ExampleConceptService(snomedQueryService));
 	}
 
 	@Test
 	public void testStream() throws Exception {
 		Map<String, List<ClinicalEncounter>> patientData = new HashMap<>();
 
-		exampleDataGenerator.stream(new HealthDataOutputStream() {
+		exampleDataGenerator.stream(new ExampleDataGeneratorConfiguration(20), new HealthDataOutputStream() {
 			@Override
 			public void createPatient(String roleId, String name, Date dateOfBirth, Gender gender) {
 				logger.info("New patient {}", new Patient(roleId, name, dateOfBirth, gender));

@@ -1,5 +1,6 @@
 package org.snomed.heathanalytics.service;
 
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.RangeQueryBuilder;
@@ -10,23 +11,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.domain.*;
 import org.snomed.heathanalytics.pojo.Stats;
+import org.snomed.heathanalytics.pojo.TermHolder;
 import org.snomed.heathanalytics.store.SubsetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
-import org.springframework.data.elasticsearch.core.aggregation.AggregatedPage;
-import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.data.util.CloseableIterator;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
@@ -54,139 +52,142 @@ public class QueryService {
 		GregorianCalendar now = new GregorianCalendar();
 		Timer timer = new Timer();
 
-		String primaryExposureECL = getCriterionEcl(cohortCriteria.getPrimaryExposure());
-		RelativeCriterion inclusionCriterion = cohortCriteria.getInclusionCriteria();
-		try {
-			// Gather primary exposure concepts
-			List<Long> primaryExposureConceptIds = getConceptIds(primaryExposureECL);
-			timer.split("Gather primary exposure concepts");
+		BoolQueryBuilder patientQuery = boolQuery();
 
-			Map<String, Set<ClinicalEncounter>> inclusionRoleToEncounterMap = new HashMap<>();
-			if (inclusionCriterion != null) {
-				// Gather inclusion concepts
-				List<Long> inclusionConceptIds = getConceptIds(getCriterionEcl(inclusionCriterion));
-				timer.split("Gather inclusion concepts");
-
-				// Gather inclusion encounters
-				try (CloseableIterator<ClinicalEncounter> encounterStream = elasticsearchTemplate.stream(new NativeSearchQueryBuilder()
-								.withFilter(termsQuery(ClinicalEncounter.Fields.CONCEPT_ID, inclusionConceptIds))
-								.withPageable(LARGE_PAGE)
-								.build(),
-						ClinicalEncounter.class)) {
-					encounterStream.forEachRemaining(e -> inclusionRoleToEncounterMap.computeIfAbsent(e.getRoleId(), s -> new HashSet<>()).add(e));
-				}
-				timer.split("Gather inclusion encounters");
+		if (cohortCriteria.getGender() != null) {
+			patientQuery.must(termQuery(Patient.Fields.GENDER, cohortCriteria.getGender().toString().toLowerCase()));
+		}
+		Integer minAge = cohortCriteria.getMinAge();
+		Integer maxAge = cohortCriteria.getMaxAge();
+		if (minAge != null || maxAge != null) {
+			// Crude match using birth year
+			RangeQueryBuilder rangeQueryBuilder = rangeQuery(Patient.Fields.DOB_YEAR);
+			int thisYear = now.get(Calendar.YEAR);
+			if (minAge != null) {
+				rangeQueryBuilder.lte(thisYear - minAge);
 			}
-
-			// Identify patients matching all criteria
-			final Set<String> matchingPatientIds = new HashSet<>();
-			AtomicLong encounterCount = new AtomicLong(0L);
-			NativeSearchQuery primaryExposureQuery = new NativeSearchQueryBuilder()
-					.withFilter(termsQuery(ClinicalEncounter.Fields.CONCEPT_ID, primaryExposureConceptIds))
-					.withPageable(LARGE_PAGE)
-					.build();
-			try (CloseableIterator<ClinicalEncounter> encounterStream = elasticsearchTemplate.stream(primaryExposureQuery, ClinicalEncounter.class)) {
-				encounterStream.forEachRemaining(primaryExposure -> {
-					if (inclusionCriterion == null || passesInclusionCriteria(primaryExposure, inclusionCriterion, inclusionRoleToEncounterMap)) {
-						matchingPatientIds.add(primaryExposure.getRoleId());
-						encounterCount.incrementAndGet();
-					}
-				});
+			if (maxAge != null) {
+				rangeQueryBuilder.gte(thisYear - maxAge);
 			}
-			inclusionRoleToEncounterMap.clear();
-			timer.split("Identify patients matching all criteria");
+			patientQuery.must(rangeQueryBuilder);
+		}
 
-			// Apply age and gender filters
-			Integer minAge = cohortCriteria.getMinAge();
-			Integer maxAge = cohortCriteria.getMaxAge();
-			Gender genderFilter = cohortCriteria.getGender();
-			if (minAge != null || maxAge != null || genderFilter != null) {
-				Set<String> newMatchingPatientIds = new HashSet<>();
-				BoolQueryBuilder boolQuery = boolQuery();
-				NativeSearchQuery patientsWithinDemographic = new NativeSearchQueryBuilder()
-						.withQuery(boolQuery)
-						.withFilter(termsQuery(Patient.Fields.ROLE_ID, matchingPatientIds))
+		BoolQueryBuilder patientFilter = boolQuery();
+
+		// Fetch conceptIds of each criterion
+		List<Criterion> criteria = new ArrayList<>();
+		criteria.add(cohortCriteria.getPrimaryExposure());
+		criteria.addAll(cohortCriteria.getInclusionCriteria());
+		Map<Criterion, List<Long>> criterionToConceptIdMap = new HashMap<>();
+		for (Criterion criterion : criteria) {
+			String criterionEcl = getCriterionEcl(criterion);
+			timer.split("Fetching concepts for ECL " + criterionEcl);
+			List<Long> conceptIds = getConceptIds(criterionEcl);
+			patientFilter.must(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
+			criterionToConceptIdMap.put(criterion, conceptIds);
+		}
+
+		List<Patient> patientPage = new ArrayList<>();
+		AtomicInteger patientCount = new AtomicInteger();
+		int offset = page * size;
+		int limit = offset + size;
+		Map<Long, TermHolder> conceptTerms = new Long2ObjectOpenHashMap<>();
+		try (CloseableIterator<Patient> patientStream = elasticsearchTemplate.stream(new NativeSearchQueryBuilder()
+						.withQuery(patientQuery)
+						.withFilter(patientFilter)
 						.withPageable(LARGE_PAGE)
-						.build();
-				if (genderFilter != null) {
-					boolQuery.must(termQuery(Patient.Fields.SEX, genderFilter.toString().toLowerCase()));
-				}
-				if (minAge != null || maxAge != null) {
-					// Crude match using birth year
-					RangeQueryBuilder rangeQueryBuilder = rangeQuery(Patient.Fields.DOB_YEAR);
-					int thisYear = now.get(Calendar.YEAR);
-					if (minAge != null) {
-						rangeQueryBuilder.lte(thisYear - minAge);
+						.build(),
+				Patient.class)) {
+			patientStream.forEachRemaining(patient -> {
+				if (doEncounterDatesMatchCriteria(patient.getEncounters(), cohortCriteria.getPrimaryExposure(), cohortCriteria.getInclusionCriteria(), criterionToConceptIdMap)) {
+					long number = patientCount.incrementAndGet();
+					if (number > offset && number <= limit) {
+						for (ClinicalEncounter encounter : patient.getEncounters()) {
+							// Assign a TermHolder to avoid opening a try block within this loop
+							encounter.setConceptTerm(conceptTerms.computeIfAbsent(encounter.getConceptId(), conceptId -> new TermHolder()));
+						}
+						patientPage.add(patient);
 					}
-					if (maxAge != null) {
-						rangeQueryBuilder.gte(thisYear - maxAge);
-					}
-					boolQuery.must(rangeQueryBuilder);
 				}
-				try (CloseableIterator<Patient> patientStream = elasticsearchTemplate.stream(patientsWithinDemographic, Patient.class)) {
-					patientStream.forEachRemaining(patient -> newMatchingPatientIds.add(patient.getRoleId()));
+			});
+		}
+		timer.split("Fetching patients");
+
+		try {
+			for (Long conceptId : conceptTerms.keySet()) {
+				ConceptResult conceptResult = snomedQueryService.retrieveConcept(conceptId.toString());
+				if (conceptResult != null) {
+					conceptTerms.get(conceptId).setTerm(conceptResult.getFsn());
 				}
-				matchingPatientIds.clear();
-				matchingPatientIds.addAll(newMatchingPatientIds);
-				timer.split("Apply gender filter");
 			}
+		} catch (org.ihtsdo.otf.sqs.service.exception.ServiceException e) {
+			logger.warn("Failed to retrieve concept terms", e);
+		}
+		timer.split("Fetching concept terms");
 
-			// Fetch page of patients
-			PageRequest pageRequest = new PageRequest(page, size);
-			NativeSearchQuery patientQuery = new NativeSearchQueryBuilder()
-					.withFilter(termsQuery(Patient.Fields.ROLE_ID, matchingPatientIds))
-					.withPageable(pageRequest)
-					.build();
+		logger.info("Times: {}", timer.getTimes());
 
-			// TODO: try switching back to withQuery and using an aggregation which gathers birth years as Integers
+		// TODO: try switching back to withQuery and using an aggregation which gathers birth years as Integers
 //			patientQuery.addAggregation(AggregationBuilders.dateHistogram("patient_birth_dates")
 //					.field(Patient.FIELD_DOB).interval(DateHistogramInterval.YEAR));
 
-			AggregatedPage<Patient> patientPage = elasticsearchTemplate.queryForPage(patientQuery, Patient.class);
-			timer.split("Fetch page of patients");
-
-			// Join patient encounters
-			Map<String, Patient> patientPageMap = patientPage.getContent().stream().collect(Collectors.toMap(Patient::getRoleId, Function.identity()));
-			try (CloseableIterator<ClinicalEncounter> patientEncounters = elasticsearchTemplate.stream(new NativeSearchQueryBuilder()
-							// TODO: This should probably be a filter. Test with 1 million patients to compare performance.
-							.withQuery(boolQuery().must(termsQuery(ClinicalEncounter.Fields.ROLE_ID, patientPageMap.keySet())))
-							.withPageable(LARGE_PAGE)
-							.build(),
-					ClinicalEncounter.class)) {
-				patientEncounters.forEachRemaining(encounter -> {
-					Patient patient = patientPageMap.get(encounter.getRoleId());
-					if (patient != null) {
-						String conceptId = encounter.getConceptId().toString();
-						if (primaryExposureConceptIds.contains(Long.parseLong(conceptId))) {
-							// Mark this encounter as a primary exposure for the context of this cohort
-							encounter.setPrimaryExposure(true);
-						}
-						encounter.setConceptTerm(conceptId);
-						// Lookup FSN
-						try {
-							ConceptResult concept = snomedQueryService.retrieveConcept(conceptId);
-							if (concept != null) {
-								encounter.setConceptTerm(concept.getFsn());
-							}
-						} catch (org.ihtsdo.otf.sqs.service.exception.ServiceException e) {
-							logger.warn("Failed to fetch concept term.", e);
-						}
-						patient.addEncounter(encounter);
-					} else {
-						logger.error("Patient missing from result map '{}'", encounter.getRoleId());
-					}
-				});
-			}
-			timer.split("Join patient encounters");
-
-			logger.info("Fetched encounters for {} with {} results. Times {}",
-					primaryExposureECL, encounterCount, timer.getTimes());
-
-			return new PageImpl<>(patientPage.getContent(), pageRequest, patientPage.getTotalElements());
-		} catch (org.ihtsdo.otf.sqs.service.exception.ServiceException e) {
-			throw new ServiceException("Failed to process ECL query.", e);
-		}
+		return new PageImpl<>(patientPage, new PageRequest(page, size), patientCount.get());
 	}
+
+	// Given set of encounters
+	// Find encounters which match primary cri
+	// For each of these find encounters which match relative cri 1
+	// For each of these find encounters which match relative cri 2
+	// cont
+	// if any found return true, else false
+
+	private boolean doEncounterDatesMatchCriteria(Set<ClinicalEncounter> allEncounters, Criterion primaryCriterion, List<RelativeCriterion> relativeCriteria, Map<Criterion, List<Long>> criterionToConceptIdMap) {
+		for (ClinicalEncounter encounter : allEncounters) {
+			if (criterionToConceptIdMap.get(primaryCriterion).contains(encounter.getConceptId())) {
+				if (relativeCriteria.isEmpty() || recursiveEncounterMatch(encounter, getCriteriaStack(relativeCriteria), allEncounters, criterionToConceptIdMap)) {
+					encounter.setPrimaryExposure(true);
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	private Stack<RelativeCriterion> getCriteriaStack(List<RelativeCriterion> relativeCriteria) {
+		Stack<RelativeCriterion> criterionStack = new Stack<>();
+		criterionStack.addAll(relativeCriteria);
+		return criterionStack;
+	}
+
+	private boolean recursiveEncounterMatch(ClinicalEncounter baseEncounter, Stack<RelativeCriterion> criterionStack, Set<ClinicalEncounter> allEncounters, Map<Criterion, List<Long>> criterionToConceptIdMap) {
+		RelativeCriterion criterion = criterionStack.pop();
+
+		List<Long> conceptIds = criterionToConceptIdMap.get(criterion);
+		Date lookBackCutOffDate = getRelativeDate(baseEncounter.getDate(), criterion.getIncludeDaysInPast(), -1);
+		Date lookForwardCutOffDate = getRelativeDate(baseEncounter.getDate(), criterion.getIncludeDaysInFuture(), 1);
+
+		for (ClinicalEncounter encounter : allEncounters) {
+			if (conceptIds.contains(encounter.getConceptId()) &&
+					((lookBackCutOffDate != null && encounter.getDate().after(lookBackCutOffDate)) ||
+							(lookForwardCutOffDate != null && encounter.getDate().before(lookForwardCutOffDate)))) {
+				return criterionStack.isEmpty() || recursiveEncounterMatch(encounter, criterionStack, allEncounters, criterionToConceptIdMap);
+			}
+		}
+
+		return false;
+	}
+
+	private Date getRelativeDate(Date baseDate, Integer days, int multiplier) {
+		// TODO: This could be optimised using a millisecond calculation rather than calendar
+		if (days != null) {
+			GregorianCalendar lookBackCutOff = new GregorianCalendar();
+			lookBackCutOff.setTime(baseDate);
+			lookBackCutOff.add(Calendar.DAY_OF_YEAR, days * multiplier);
+			return lookBackCutOff.getTime();
+		}
+		return null;
+	}
+
 
 	private String getCriterionEcl(Criterion criterion) throws ServiceException {
 		if (criterion != null) {
@@ -203,37 +204,12 @@ public class QueryService {
 		return null;
 	}
 
-	private boolean passesInclusionCriteria(ClinicalEncounter primaryExposure, RelativeCriterion inclusionCriteria, Map<String, Set<ClinicalEncounter>> inclusionRoleToEncounterMap) {
-		Date primaryExposureDate = primaryExposure.getDate();
-		Set<ClinicalEncounter> clinicalEncounters = inclusionRoleToEncounterMap.get(primaryExposure.getRoleId());
-		if (clinicalEncounters != null) {
-			for (ClinicalEncounter clinicalEncounter : clinicalEncounters) {
-				Integer includeDaysInPast = inclusionCriteria.getIncludeDaysInPast();
-				if (includeDaysInPast != null) {
-					GregorianCalendar lookBackCutOff = new GregorianCalendar();
-					lookBackCutOff.setTime(primaryExposureDate);
-					lookBackCutOff.add(Calendar.DAY_OF_YEAR, -includeDaysInPast);
-					if (clinicalEncounter.getDate().after(lookBackCutOff.getTime())) {
-						return true;
-					}
-				}
-				Integer includeDaysInFuture = inclusionCriteria.getIncludeDaysInFuture();
-				if (includeDaysInFuture != null) {
-					GregorianCalendar lookForwardCutOff = new GregorianCalendar();
-					lookForwardCutOff.setTime(primaryExposureDate);
-					lookForwardCutOff.add(Calendar.DAY_OF_YEAR, includeDaysInFuture);
-					if (clinicalEncounter.getDate().before(lookForwardCutOff.getTime())) {
-						return true;
-					}
-				}
-
-			}
+	private List<Long> getConceptIds(String ecl) throws ServiceException {
+		try {
+			return snomedQueryService.eclQueryReturnConceptIdentifiers(ecl, 0, -1).getConceptIds();
+		} catch (org.ihtsdo.otf.sqs.service.exception.ServiceException e) {
+			throw new ServiceException("Failed to process ECL query.", e);
 		}
-		return false;
-	}
-
-	private List<Long> getConceptIds(String ecl) throws org.ihtsdo.otf.sqs.service.exception.ServiceException {
-		return snomedQueryService.eclQueryReturnConceptIdentifiers(ecl, 0, -1).getConceptIds();
 	}
 
 	public ConceptResult findConcept(String conceptId) throws ServiceException {
@@ -255,8 +231,7 @@ public class QueryService {
 	public Stats getStats() {
 		SearchQuery searchQuery = new NativeSearchQueryBuilder().build();
 		long patientCount = elasticsearchTemplate.count(searchQuery, Patient.class);
-		long clinicalEncounterCount = elasticsearchTemplate.count(searchQuery, ClinicalEncounter.class);
-		return new Stats(new Date(), patientCount, clinicalEncounterCount);
+		return new Stats(new Date(), patientCount);
 	}
 
 	public void setSnomedQueryService(SnomedQueryService snomedQueryService) {

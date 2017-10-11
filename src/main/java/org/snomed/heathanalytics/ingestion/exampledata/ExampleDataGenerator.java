@@ -3,6 +3,7 @@ package org.snomed.heathanalytics.ingestion.exampledata;
 import org.ihtsdo.otf.sqs.service.exception.ServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.heathanalytics.domain.ClinicalEncounter;
 import org.snomed.heathanalytics.domain.ClinicalEncounterType;
 import org.snomed.heathanalytics.domain.Gender;
 import org.snomed.heathanalytics.domain.Patient;
@@ -50,7 +51,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 	}
 
 	private void generateExamplePatientAndActs(String roleId, HealthDataOutputStream healthDataOutputStream) throws ServiceException {
-		Patient patient = new Patient();
+		Patient patient = new Patient(roleId);
 
 		//  All patients are over the age of 30 and under the age of 85.
 		int age = ThreadLocalRandom.current().nextInt(30, 85);
@@ -63,8 +64,6 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 			patient.setGender(Gender.FEMALE);
 		}
 
-		healthDataOutputStream.createPatient(roleId, patient.getName(), patient.getDob(), patient.getGender());
-
 		// Start 2 years ago
 		GregorianCalendar date = new GregorianCalendar();
 		date.add(Calendar.YEAR, -2);
@@ -74,24 +73,24 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 
 		// 10% of patients have diabetes.
 		if (chance(0.1f)) {
-			healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("420868002"));// Disorder due to type 1 diabetes mellitus
+			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("420868002")));// Disorder due to type 1 diabetes mellitus
 
 			// After 1 - 2 months
 			date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 2));
 
 			// 7% of the diabetic patients also have Peripheral Neuropathy.
 			if (chance(0.07f)) {
-				healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("302226006"));// Peripheral Neuropathy
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("302226006")));// Peripheral Neuropathy
 			}
 
 			// 10% of the diabetic patients have a Myocardial Infarction.
 			if (chance(0.1f)) {
-				healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("22298006"));// Myocardial Infarction
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("22298006")));// Myocardial Infarction
 			}
 		} else {
 			// 1% of the non-diabetic patients have Peripheral Neuropathy.
 			if (chance(0.01f)) {
-				healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("302226006"));// Peripheral Neuropathy
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("302226006")));// Peripheral Neuropathy
 			}
 		}
 
@@ -100,19 +99,19 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 
 		// 30 % of patients over 40 years old have hypertension.
 		if (age > 40 && chance(0.3f)) {
-			healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("38341003"));// Hypertension
+			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("38341003")));// Hypertension
 
 			// 50% of patients over 40 with hypertension are prescribed an Antiplatelet agent
 			if (chance(0.5f)) {
 				// Prescribed an Antiplatelet agent
-				healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), ClinicalEncounterType.MEDICATION, concepts.selectRandomChildOf("108972005"));// Antiplatelet agent (product)
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.MEDICATION, concepts.selectRandomChildOf("108972005")));// Antiplatelet agent (product)
 
 				// After 1 - 6 months
 				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
 
 				// 2% of patients with hypertension who have been prescribed an Antiplatelet agent have a Myocardial Infarction.
 				if (chance(0.02f)) {
-					healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("22298006"));// Myocardial Infarction
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("22298006")));// Myocardial Infarction
 				}
 			} else {
 				// No medication prescribed
@@ -122,7 +121,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 
 				// 8% of patients with hypertension who have NOT been prescribed an Antiplatelet agent have a Myocardial Infarction.
 				if (chance(0.08f)) {
-					healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("22298006"));// Myocardial Infarction
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("22298006")));// Myocardial Infarction
 				}
 			}
 		}
@@ -132,8 +131,10 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 
 		// 5% of all patients over 55 years old have Myocardial Infarction.
 		if (age > 55 && chance(0.05f)) {
-			healthDataOutputStream.addClinicalEncounter(roleId, date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("22298006"));// Myocardial Infarction
+			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("22298006")));// Myocardial Infarction
 		}
+
+		healthDataOutputStream.createPatient(patient);
 	}
 
 	private boolean chance(float probability) {

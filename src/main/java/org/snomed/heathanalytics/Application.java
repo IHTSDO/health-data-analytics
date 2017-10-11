@@ -116,7 +116,6 @@ public class Application implements ApplicationRunner {
 	}
 
 	private void deleteExistingPatientData() {
-		elasticsearchTemplate.deleteIndex(ClinicalEncounter.class);
 		elasticsearchTemplate.deleteIndex(Patient.class);
 	}
 

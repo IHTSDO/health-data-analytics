@@ -1,22 +1,14 @@
 package org.snomed.heathanalytics.domain;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import org.springframework.data.annotation.Id;
+import org.snomed.heathanalytics.pojo.TermHolder;
 import org.springframework.data.annotation.Transient;
-import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldIndex;
 
 import java.util.Date;
 
-@Document(indexName = "clinc-en")
 public class ClinicalEncounter implements Act {
-
-	@Id
-	private String id;
-
-	@Field(index = FieldIndex.not_analyzed)
-	private String roleId;
 
 	@Field(index = FieldIndex.not_analyzed)
 	private Date date;
@@ -28,7 +20,7 @@ public class ClinicalEncounter implements Act {
 	private ClinicalEncounterType type;
 
 	@Transient
-	private String conceptTerm;
+	private TermHolder conceptTerm;
 
 	@Transient
 	private boolean primaryExposure;
@@ -43,15 +35,10 @@ public class ClinicalEncounter implements Act {
 	public ClinicalEncounter() {
 	}
 
-	public ClinicalEncounter(String roleId, Date date, ClinicalEncounterType type, Long conceptId) {
-		this.roleId = roleId;
+	public ClinicalEncounter(Date date, ClinicalEncounterType type, Long conceptId) {
 		this.date = date;
 		this.conceptId = conceptId;
 		this.type = type;
-	}
-
-	public String getRoleId() {
-		return roleId;
 	}
 
 	@Override
@@ -82,10 +69,13 @@ public class ClinicalEncounter implements Act {
 	}
 
 	public String getConceptTerm() {
-		return conceptTerm;
+		if (conceptTerm == null) {
+			return null;
+		}
+		return conceptTerm.getTerm() != null ? conceptTerm.getTerm() : conceptId.toString();
 	}
 
-	public void setConceptTerm(String conceptTerm) {
+	public void setConceptTerm(TermHolder conceptTerm) {
 		this.conceptTerm = conceptTerm;
 	}
 
@@ -104,15 +94,13 @@ public class ClinicalEncounter implements Act {
 
 		ClinicalEncounter that = (ClinicalEncounter) o;
 
-		if (!roleId.equals(that.roleId)) return false;
 		if (!date.equals(that.date)) return false;
 		return conceptId.equals(that.conceptId);
 	}
 
 	@Override
 	public int hashCode() {
-		int result = roleId.hashCode();
-		result = 31 * result + date.hashCode();
+		int result = date.hashCode();
 		result = 31 * result + conceptId.hashCode();
 		return result;
 	}
@@ -120,7 +108,6 @@ public class ClinicalEncounter implements Act {
 	@Override
 	public String toString() {
 		return "ClinicalEncounter{" +
-				"roleId='" + roleId + '\'' +
 				", conceptId='" + conceptId + '\'' +
 				", date=" + date +
 				'}';

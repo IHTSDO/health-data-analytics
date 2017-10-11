@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.domain.ClinicalEncounter;
 import org.snomed.heathanalytics.domain.ClinicalEncounterType;
 import org.snomed.heathanalytics.domain.Patient;
-import org.snomed.heathanalytics.domain.Gender;
 import org.snomed.heathanalytics.ingestion.HealthDataOutputStream;
 import org.snomed.heathanalytics.testutil.TestSnomedQueryServiceBuilder;
 
@@ -30,7 +29,8 @@ public class ExampleDataGeneratorTest {
 				TestSnomedQueryServiceBuilder.concept("422426003", "302226006"),
 				TestSnomedQueryServiceBuilder.concept("42531007", "22298006"),
 				TestSnomedQueryServiceBuilder.concept("230645003", "302226006"),
-				TestSnomedQueryServiceBuilder.concept("84094009", "38341003")
+				TestSnomedQueryServiceBuilder.concept("84094009", "38341003"),
+				TestSnomedQueryServiceBuilder.concept("385682008", "108972005", "373873005", "138875005")
 		);
 
 		exampleDataGenerator = new ExampleDataGenerator(new ExampleConceptService(snomedQueryService));
@@ -38,22 +38,21 @@ public class ExampleDataGeneratorTest {
 
 	@Test
 	public void testStream() throws Exception {
-		Map<String, List<ClinicalEncounter>> patientData = new HashMap<>();
+		Map<String, Set<ClinicalEncounter>> patientData = new HashMap<>();
 
 		exampleDataGenerator.stream(new ExampleDataGeneratorConfiguration(20), new HealthDataOutputStream() {
 			@Override
-			public void createPatient(String roleId, String name, Date dateOfBirth, Gender gender) {
-				logger.info("New patient {}", new Patient(roleId, name, dateOfBirth, gender));
+			public void createPatient(Patient patient) {
+				logger.info("New patient {}", patient);
 				synchronized (patientData) {
-					patientData.put(roleId, new ArrayList<>());
+					patientData.put(patient.getRoleId(), patient.getEncounters());
 				}
 			}
 
 			@Override
-			public void addClinicalEncounter(String roleId, Date date, ClinicalEncounterType type, Long conceptId) {
-				ClinicalEncounter clinicalEncounter = new ClinicalEncounter(roleId, date, type, conceptId);
-				logger.info("New clinical encounter {}", clinicalEncounter);
-				patientData.get(clinicalEncounter.getRoleId()).add(clinicalEncounter);
+			public void addClinicalEncounter(String roleId, ClinicalEncounter encounter) {
+				logger.info("New clinical encounter {} {}", roleId, encounter);
+				patientData.get(roleId).add(encounter);
 			}
 		});
 

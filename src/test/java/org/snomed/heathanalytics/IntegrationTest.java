@@ -63,12 +63,12 @@ public class IntegrationTest {
 
 		// Set up tiny set of integration test data.
 		// There is no attempt to make this realistic, we are just testing the logic.
-		healthDataStream.createPatient("1", "Bob", TestUtils.getDob(35), Gender.MALE);
-		healthDataStream.addClinicalEncounter("1", date(2017, 0, 10), ClinicalEncounterType.FINDING, hypertension.getId());
-		healthDataStream.addClinicalEncounter("1", date(2017, 0, 20), ClinicalEncounterType.FINDING, acuteQWaveMyocardialInfarction.getId());
+		healthDataStream.createPatient(new Patient("1", "Bob", TestUtils.getDob(35), Gender.MALE));
+		healthDataStream.addClinicalEncounter("1", new ClinicalEncounter(date(2017, 0, 10), ClinicalEncounterType.FINDING, hypertension.getId()));
+		healthDataStream.addClinicalEncounter("1", new ClinicalEncounter(date(2017, 0, 20), ClinicalEncounterType.FINDING, acuteQWaveMyocardialInfarction.getId()));
 
-		healthDataStream.createPatient("2", "Dave", TestUtils.getDob(40), Gender.MALE);
-		healthDataStream.addClinicalEncounter("2", date(2010, 5, 1), ClinicalEncounterType.FINDING, hypertension.getId());
+		healthDataStream.createPatient(new Patient("2", "Dave", TestUtils.getDob(40), Gender.MALE));
+		healthDataStream.addClinicalEncounter("2", new ClinicalEncounter(date(2010, 5, 1), ClinicalEncounterType.FINDING, hypertension.getId()));
 	}
 
 	@Test
@@ -97,7 +97,7 @@ public class IntegrationTest {
 
 		// Add inclusion criteria with Myocardial Infarction 5 days after primaryExposure
 		RelativeCriterion inclusionCriteria = new RelativeCriterion("<<" + myocardialInfarction.getId().toString(), null, 5);
-		cohortCriteria.setInclusionCriteria(inclusionCriteria);
+		cohortCriteria.addInclusionCriterion(inclusionCriteria);
 
 		// No matches because Bob had Myocardial Infarction 10 days after Hypertension is recorded
 		patients = queryService.fetchCohort(cohortCriteria);
@@ -165,7 +165,6 @@ public class IntegrationTest {
 	@After
 	public void clearIndexes() {
 		elasticsearchTemplate.deleteIndex(Patient.class);
-		elasticsearchTemplate.deleteIndex(ClinicalEncounter.class);
 	}
 
 }

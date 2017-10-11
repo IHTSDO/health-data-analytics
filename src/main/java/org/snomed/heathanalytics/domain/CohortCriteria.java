@@ -6,6 +6,10 @@ import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldIndex;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 @Document(indexName = "cohort")
 public class CohortCriteria {
 
@@ -31,13 +35,20 @@ public class CohortCriteria {
 	private Criterion primaryExposure;
 
 	@Field(type = FieldType.Object)
-	private RelativeCriterion inclusionCriteria;
+	private List<RelativeCriterion> inclusionCriteria;
 
 	public CohortCriteria() {
 	}
 
 	public CohortCriteria(Criterion primaryExposure) {
 		this.primaryExposure = primaryExposure;
+	}
+
+	public void addInclusionCriterion(RelativeCriterion criterion) {
+		if (inclusionCriteria == null) {
+			inclusionCriteria = new ArrayList<>();
+		}
+		inclusionCriteria.add(criterion);
 	}
 
 	public String getId() {
@@ -96,11 +107,11 @@ public class CohortCriteria {
 		this.primaryExposure = primaryExposure;
 	}
 
-	public RelativeCriterion getInclusionCriteria() {
-		return inclusionCriteria;
+	public List<RelativeCriterion> getInclusionCriteria() {
+		return inclusionCriteria != null ? inclusionCriteria : Collections.emptyList();
 	}
 
-	public void setInclusionCriteria(RelativeCriterion inclusionCriteria) {
+	public void setInclusionCriteria(List<RelativeCriterion> inclusionCriteria) {
 		this.inclusionCriteria = inclusionCriteria;
 	}
 }

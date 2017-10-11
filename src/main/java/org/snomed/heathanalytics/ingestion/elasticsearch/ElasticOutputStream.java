@@ -1,35 +1,38 @@
 package org.snomed.heathanalytics.ingestion.elasticsearch;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.domain.ClinicalEncounter;
-import org.snomed.heathanalytics.domain.ClinicalEncounterType;
-import org.snomed.heathanalytics.domain.Gender;
 import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.ingestion.HealthDataOutputStream;
-import org.snomed.heathanalytics.store.ClinicalEncounterRepository;
 import org.snomed.heathanalytics.store.PatientRepository;
 import org.springframework.stereotype.Service;
-
-import java.util.Date;
 
 @Service
 public class ElasticOutputStream implements HealthDataOutputStream {
 
 	private PatientRepository patientRepository;
 
-	private ClinicalEncounterRepository clinicalEncounterRepository;
+	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	public ElasticOutputStream(PatientRepository patientRepository, ClinicalEncounterRepository clinicalEncounterRepository) {
+	public ElasticOutputStream(PatientRepository patientRepository) {
 		this.patientRepository = patientRepository;
-		this.clinicalEncounterRepository = clinicalEncounterRepository;
 	}
 
 	@Override
-	public void createPatient(String roleId, String name, Date dateOfBirth, Gender gender) {
-		patientRepository.save(new Patient(roleId, name, dateOfBirth, gender));
+	public void createPatient(Patient patient) {
+		patientRepository.save(patient);
 	}
 
 	@Override
-	public void addClinicalEncounter(String roleId, Date date, ClinicalEncounterType type, Long conceptId) {
-		clinicalEncounterRepository.save(new ClinicalEncounter(roleId, date, type, conceptId));
+	public void addClinicalEncounter(String roleId, ClinicalEncounter encounter) {
+		Patient patient = patientRepository.findOne(roleId);
+		if (patient != null) {
+			patient.addEncounter(encounter);
+			patientRepository.save(patient);
+		} else {
+			logger.error("Failed to add clinical encounter {}/{} - patient not found with id {}", encounter.getDate(), encounter.getConceptId(), roleId);
+		}
 	}
+
 }

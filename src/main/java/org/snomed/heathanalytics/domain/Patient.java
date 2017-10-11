@@ -2,8 +2,10 @@ package org.snomed.heathanalytics.domain;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.Transient;
-import org.springframework.data.elasticsearch.annotations.*;
+import org.springframework.data.elasticsearch.annotations.Document;
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldIndex;
+import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.util.*;
 
@@ -14,9 +16,6 @@ public class Patient {
 	private String roleId;
 
 	@Field(index = FieldIndex.not_analyzed)
-	private String name;
-
-	@Field(index = FieldIndex.not_analyzed)
 	private Date dob;
 
 	@Field(type = FieldType.Integer)
@@ -25,23 +24,25 @@ public class Patient {
 	@Field(index = FieldIndex.not_analyzed)
 	private Gender gender;
 
-	@Transient
 	private Set<ClinicalEncounter> encounters;
 
 	public interface Fields {
 		String ROLE_ID = "roleId";
-		String NAME = "name";
 		String DOB = "dob";
 		String DOB_YEAR = "dobYear";
-		String SEX = "gender";
+		String GENDER = "gender";
+		String encounters = "encounters";
 	}
 
 	public Patient() {
 	}
 
+	public Patient(String roleId) {
+		this.roleId = roleId;
+	}
+
 	public Patient(String roleId, String name, Date dob, Gender gender) {
 		this.roleId = roleId;
-		this.name = name;
 		setDob(dob);
 		this.gender = gender;
 	}
@@ -63,14 +64,6 @@ public class Patient {
 
 	public void setRoleId(String roleId) {
 		this.roleId = roleId;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
 	}
 
 	public Date getDob() {
@@ -109,7 +102,6 @@ public class Patient {
 	public String toString() {
 		return "Patient{" +
 				"roleId='" + roleId + '\'' +
-				", name='" + name + '\'' +
 				", gender=" + gender +
 				", dob=" + dob +
 				", encounters=" + encounters +

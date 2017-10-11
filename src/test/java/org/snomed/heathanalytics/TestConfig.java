@@ -40,7 +40,6 @@ public class TestConfig {
 	@PostConstruct
 	public void cleanUp() {
 		logger.info("Deleting all existing entities before tests start");
-		elasticsearchTemplate.deleteIndex(ClinicalEncounter.class);
 		elasticsearchTemplate.deleteIndex(Patient.class);
 	}
 

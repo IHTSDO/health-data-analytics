@@ -1,7 +1,5 @@
 package org.snomed.heathanalytics.domain;
 
-import org.snomed.heathanalytics.domain.Criterion;
-
 public class RelativeCriterion extends Criterion {
 
 	// Optional

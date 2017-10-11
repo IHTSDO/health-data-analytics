@@ -8,12 +8,10 @@ public class Stats {
 
 	private Date date;
 	private final long patientCount;
-	private final long clinicalEncounterCount;
 
-	public Stats(Date date, long patientCount, long clinicalEncounterCount) {
+	public Stats(Date date, long patientCount) {
 		this.date = date;
 		this.patientCount = patientCount;
-		this.clinicalEncounterCount = clinicalEncounterCount;
 	}
 
 	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
@@ -25,7 +23,4 @@ public class Stats {
 		return patientCount;
 	}
 
-	public long getClinicalEncounterCount() {
-		return clinicalEncounterCount;
-	}
 }

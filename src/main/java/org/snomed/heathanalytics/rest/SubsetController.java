@@ -32,6 +32,7 @@ public class SubsetController {
 	@RequestMapping(value = "/subsets", method = RequestMethod.POST, produces = "application/json")
 	@ResponseBody
 	public Subset saveSubset(@RequestBody Subset subset) throws ServiceException {
+		ControllerHelper.checkInput("Subset ID must be null or not empty.", subset.getId() == null || !subset.getId().isEmpty());
 		return subsetRepository.save(subset);
 	}
 

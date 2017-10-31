@@ -36,6 +36,7 @@ public class CohortController {
 	@RequestMapping(value = "/cohorts", method = RequestMethod.POST, produces = "application/json")
 	@ResponseBody
 	public ResponseEntity<Void> saveCohort(@RequestBody CohortCriteria cohortCriteria) {
+		ControllerHelper.checkInput("Cohort ID must be null or not empty.", cohortCriteria.getId() == null || !cohortCriteria.getId().isEmpty());
 		criteriaRepository.save(cohortCriteria);
 		return getCreatedResponse(cohortCriteria.getId());
 	}

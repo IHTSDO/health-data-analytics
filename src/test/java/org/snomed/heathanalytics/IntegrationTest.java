@@ -97,7 +97,7 @@ public class IntegrationTest {
 
 		// Add inclusion criteria with Myocardial Infarction 5 days after primaryExposure
 		RelativeCriterion inclusionCriteria = new RelativeCriterion("<<" + myocardialInfarction.getId().toString(), null, 5);
-		cohortCriteria.addInclusionCriterion(inclusionCriteria);
+		cohortCriteria.addAdditionalCriterion(inclusionCriteria);
 
 		// No matches because Bob had Myocardial Infarction 10 days after Hypertension is recorded
 		patients = queryService.fetchCohort(cohortCriteria);

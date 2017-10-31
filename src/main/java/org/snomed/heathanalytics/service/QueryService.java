@@ -76,8 +76,8 @@ public class QueryService {
 
 		// Fetch conceptIds of each criterion
 		List<Criterion> criteria = new ArrayList<>();
-		criteria.add(cohortCriteria.getPrimaryExposure());
-		criteria.addAll(cohortCriteria.getInclusionCriteria());
+		criteria.add(cohortCriteria.getPrimaryCriterion());
+		criteria.addAll(cohortCriteria.getAdditionalCriteria());
 		Map<Criterion, List<Long>> criterionToConceptIdMap = new HashMap<>();
 		for (Criterion criterion : criteria) {
 			String criterionEcl = getCriterionEcl(criterion);
@@ -99,7 +99,7 @@ public class QueryService {
 						.build(),
 				Patient.class)) {
 			patientStream.forEachRemaining(patient -> {
-				if (doEncounterDatesMatchCriteria(patient.getEncounters(), cohortCriteria.getPrimaryExposure(), cohortCriteria.getInclusionCriteria(), criterionToConceptIdMap)) {
+				if (checkEncounterDatesAndExclusions(patient.getEncounters(), cohortCriteria.getPrimaryCriterion(), cohortCriteria.getAdditionalCriteria(), criterionToConceptIdMap)) {
 					long number = patientCount.incrementAndGet();
 					if (number > offset && number <= limit) {
 						for (ClinicalEncounter encounter : patient.getEncounters()) {

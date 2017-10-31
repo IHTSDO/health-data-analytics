@@ -32,23 +32,23 @@ public class CohortCriteria {
 	private Integer maxAge;
 
 	@Field(type = FieldType.Object)
-	private Criterion primaryExposure;
+	private Criterion primaryCriterion;
 
 	@Field(type = FieldType.Object)
-	private List<RelativeCriterion> inclusionCriteria;
+	private List<RelativeCriterion> additionalCriteria;
 
 	public CohortCriteria() {
 	}
 
-	public CohortCriteria(Criterion primaryExposure) {
-		this.primaryExposure = primaryExposure;
+	public CohortCriteria(Criterion primaryCriterion) {
+		this.primaryCriterion = primaryCriterion;
 	}
 
-	public void addInclusionCriterion(RelativeCriterion criterion) {
-		if (inclusionCriteria == null) {
-			inclusionCriteria = new ArrayList<>();
+	public void addAdditionalCriterion(RelativeCriterion criterion) {
+		if (additionalCriteria == null) {
+			additionalCriteria = new ArrayList<>();
 		}
-		inclusionCriteria.add(criterion);
+		additionalCriteria.add(criterion);
 	}
 
 	public String getId() {
@@ -99,19 +99,19 @@ public class CohortCriteria {
 		this.maxAge = maxAge;
 	}
 
-	public Criterion getPrimaryExposure() {
-		return primaryExposure;
+	public Criterion getPrimaryCriterion() {
+		return primaryCriterion;
 	}
 
-	public void setPrimaryExposure(Criterion primaryExposure) {
-		this.primaryExposure = primaryExposure;
+	public void setPrimaryCriterion(Criterion primaryCriterion) {
+		this.primaryCriterion = primaryCriterion;
 	}
 
-	public List<RelativeCriterion> getInclusionCriteria() {
-		return inclusionCriteria != null ? inclusionCriteria : Collections.emptyList();
+	public List<RelativeCriterion> getAdditionalCriteria() {
+		return additionalCriteria != null ? additionalCriteria : Collections.emptyList();
 	}
 
-	public void setInclusionCriteria(List<RelativeCriterion> inclusionCriteria) {
-		this.inclusionCriteria = inclusionCriteria;
+	public void setAdditionalCriteria(List<RelativeCriterion> additionalCriteria) {
+		this.additionalCriteria = additionalCriteria;
 	}
 }

@@ -37,6 +37,7 @@ public class CohortController {
 	@ResponseBody
 	public ResponseEntity<Void> saveCohort(@RequestBody CohortCriteria cohortCriteria) {
 		ControllerHelper.checkInput("Cohort ID must be null or not empty.", cohortCriteria.getId() == null || !cohortCriteria.getId().isEmpty());
+		validateSelection(cohortCriteria);
 		criteriaRepository.save(cohortCriteria);
 		return getCreatedResponse(cohortCriteria.getId());
 	}
@@ -54,7 +55,13 @@ public class CohortController {
 	public Page<Patient> runCohortSelection(@RequestBody CohortCriteria cohortCriteria,
 											@RequestParam(required = false, defaultValue = "0") int page,
 											@RequestParam(required = false, defaultValue = "100") int size) throws ServiceException {
+		validateSelection(cohortCriteria);
 		return queryService.fetchCohort(cohortCriteria, page, size);
+	}
+
+	private void validateSelection(@RequestBody CohortCriteria cohortCriteria) {
+		ControllerHelper.checkInput("There must be a Primary Criterion", cohortCriteria.getPrimaryCriterion() != null);
+		ControllerHelper.checkInput("The Primary Criterion can not be an exclusion.", cohortCriteria.getPrimaryCriterion().isHas());
 	}
 
 }

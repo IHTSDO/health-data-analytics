@@ -83,7 +83,9 @@ public class QueryService {
 			String criterionEcl = getCriterionEcl(criterion);
 			timer.split("Fetching concepts for ECL " + criterionEcl);
 			List<Long> conceptIds = getConceptIds(criterionEcl);
-			patientFilter.must(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
+			if (criterion.isHas()) {
+				patientFilter.must(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
+			}
 			criterionToConceptIdMap.put(criterion, conceptIds);
 		}
 
@@ -141,7 +143,7 @@ public class QueryService {
 	// cont
 	// if any found return true, else false
 
-	private boolean doEncounterDatesMatchCriteria(Set<ClinicalEncounter> allEncounters, Criterion primaryCriterion, List<RelativeCriterion> relativeCriteria, Map<Criterion, List<Long>> criterionToConceptIdMap) {
+	private boolean checkEncounterDatesAndExclusions(Set<ClinicalEncounter> allEncounters, Criterion primaryCriterion, List<RelativeCriterion> relativeCriteria, Map<Criterion, List<Long>> criterionToConceptIdMap) {
 		for (ClinicalEncounter encounter : allEncounters) {
 			if (criterionToConceptIdMap.get(primaryCriterion).contains(encounter.getConceptId())) {
 				if (relativeCriteria.isEmpty() || recursiveEncounterMatch(encounter, getCriteriaStack(relativeCriteria), allEncounters, criterionToConceptIdMap)) {
@@ -163,15 +165,26 @@ public class QueryService {
 		RelativeCriterion criterion = criterionStack.pop();
 
 		List<Long> conceptIds = criterionToConceptIdMap.get(criterion);
-		Date lookBackCutOffDate = getRelativeDate(baseEncounter.getDate(), criterion.getIncludeDaysInPast(), -1);
-		Date lookForwardCutOffDate = getRelativeDate(baseEncounter.getDate(), criterion.getIncludeDaysInFuture(), 1);
+		Date lookBackCutOffDate = null;
+		Date lookForwardCutOffDate = null;
+		if (baseEncounter != null) {
+			lookBackCutOffDate = getRelativeDate(baseEncounter.getDate(), criterion.getIncludeDaysInPast(), -1);
+			lookForwardCutOffDate = getRelativeDate(baseEncounter.getDate(), criterion.getIncludeDaysInFuture(), 1);
+		}
 
 		for (ClinicalEncounter encounter : allEncounters) {
 			if (conceptIds.contains(encounter.getConceptId()) &&
 					((lookBackCutOffDate != null && encounter.getDate().after(lookBackCutOffDate)) ||
 							(lookForwardCutOffDate != null && encounter.getDate().before(lookForwardCutOffDate)))) {
+				if (!criterion.isHas()) {
+					return false;
+				}
 				return criterionStack.isEmpty() || recursiveEncounterMatch(encounter, criterionStack, allEncounters, criterionToConceptIdMap);
 			}
+		}
+
+		if (!criterion.isHas()) {
+			return criterionStack.isEmpty() || recursiveEncounterMatch(baseEncounter, criterionStack, allEncounters, criterionToConceptIdMap);
 		}
 
 		return false;

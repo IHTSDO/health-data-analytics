@@ -8,16 +8,26 @@ public class Criterion {
 
 	@Transient
 	private String id;// Id generated - only used as a key in maps.
+	private boolean has;
 	private String subsetId;
 	private String ecl;
 
 	public Criterion() {
 		id = UUID.randomUUID().toString();
+		has = true;
 	}
 
 	public Criterion(String ecl) {
 		this();
 		this.ecl = ecl;
+	}
+
+	public boolean isHas() {
+		return has;
+	}
+
+	public void setHas(boolean has) {
+		this.has = has;
 	}
 
 	public String getSubsetId() {

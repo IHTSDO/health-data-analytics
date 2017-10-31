@@ -106,9 +106,16 @@ public class IntegrationTest {
 		// Extend search to 12 days after the primaryExposure
 		inclusionCriteria.setIncludeDaysInFuture(12);
 
-		// Now Bob is in the
+		// Now Bob is in the cohort
 		patients = queryService.fetchCohort(cohortCriteria);
 		Assert.assertEquals("[1]", toSortedPatientIdList(patients).toString());
+
+		// Switch to exclude patients who had Myocardial Infarction
+		inclusionCriteria.setHas(false);
+
+		// Now only Dave is in
+		patients = queryService.fetchCohort(cohortCriteria);
+		Assert.assertEquals("[2]", toSortedPatientIdList(patients).toString());
 	}
 
 	@Test

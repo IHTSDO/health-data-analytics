@@ -2,6 +2,7 @@ package org.snomed.heathanalytics.rest;
 
 import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.domain.CohortCriteria;
+import org.snomed.heathanalytics.pojo.EmptyPojo;
 import org.snomed.heathanalytics.service.QueryService;
 import org.snomed.heathanalytics.service.ServiceException;
 import org.snomed.heathanalytics.store.CohortCriteriaRepository;
@@ -48,6 +49,13 @@ public class CohortController {
 		CohortCriteria criteria = criteriaRepository.findOne(cohortId);
 		throwIfNotFound(criteria, "Cohort");
 		return criteria;
+	}
+
+	@RequestMapping(value = "/cohorts/{cohortId}", method = RequestMethod.DELETE, produces = "application/json")
+	@ResponseBody
+	public EmptyPojo deleteCohort(@PathVariable String cohortId) {
+		criteriaRepository.delete(cohortId);
+		return new EmptyPojo(); // This is a workaround for the frontend implementation.
 	}
 
 	@RequestMapping(value = "/cohorts/select", method = RequestMethod.POST, produces = "application/json")

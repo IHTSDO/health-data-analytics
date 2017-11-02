@@ -1,6 +1,7 @@
 package org.snomed.heathanalytics.rest;
 
 import org.snomed.heathanalytics.domain.Subset;
+import org.snomed.heathanalytics.pojo.EmptyPojo;
 import org.snomed.heathanalytics.service.ServiceException;
 import org.snomed.heathanalytics.store.SubsetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,8 +39,9 @@ public class SubsetController {
 
 	@RequestMapping(value = "/subsets/{subsetId}", method = RequestMethod.DELETE, produces = "application/json")
 	@ResponseBody
-	public void deleteSubset(@PathVariable String subsetId) throws ServiceException {
+	public EmptyPojo deleteSubset(@PathVariable String subsetId) throws ServiceException {
 		subsetRepository.delete(subsetId);
+		return new EmptyPojo(); // This is a workaround for the frontend implementation.
 	}
 
 }

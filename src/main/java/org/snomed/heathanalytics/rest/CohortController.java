@@ -3,8 +3,10 @@ package org.snomed.heathanalytics.rest;
 import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.domain.CohortCriteria;
 import org.snomed.heathanalytics.pojo.EmptyPojo;
+import org.snomed.heathanalytics.service.InputValidationHelper;
 import org.snomed.heathanalytics.service.QueryService;
 import org.snomed.heathanalytics.service.ServiceException;
+import org.snomed.heathanalytics.service.StatisticalTestResult;
 import org.snomed.heathanalytics.store.CohortCriteriaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -37,7 +39,7 @@ public class CohortController {
 	@RequestMapping(value = "/cohorts", method = RequestMethod.POST, produces = "application/json")
 	@ResponseBody
 	public ResponseEntity<Void> saveCohort(@RequestBody CohortCriteria cohortCriteria) {
-		ControllerHelper.checkInput("Cohort ID must be null or not empty.", cohortCriteria.getId() == null || !cohortCriteria.getId().isEmpty());
+		InputValidationHelper.checkInput("Cohort ID must be null or not empty.", cohortCriteria.getId() == null || !cohortCriteria.getId().isEmpty());
 		validateSelection(cohortCriteria);
 		criteriaRepository.save(cohortCriteria);
 		return getCreatedResponse(cohortCriteria.getId());
@@ -67,9 +69,16 @@ public class CohortController {
 		return queryService.fetchCohort(cohortCriteria, page, size);
 	}
 
+	@RequestMapping(value = "/cohorts/statistical-test", method = RequestMethod.POST, produces = "application/json")
+	@ResponseBody
+	public StatisticalTestResult runStatisticalTest(@RequestBody CohortCriteria cohortCriteria) throws ServiceException {
+		validateSelection(cohortCriteria);
+		return queryService.fetchStatisticalTestResult(cohortCriteria);
+	}
+
 	private void validateSelection(@RequestBody CohortCriteria cohortCriteria) {
-		ControllerHelper.checkInput("There must be a Primary Criterion", cohortCriteria.getPrimaryCriterion() != null);
-		ControllerHelper.checkInput("The Primary Criterion can not be an exclusion.", cohortCriteria.getPrimaryCriterion().isHas());
+		InputValidationHelper.checkInput("There must be a Primary Criterion", cohortCriteria.getPrimaryCriterion() != null);
+		InputValidationHelper.checkInput("The Primary Criterion can not be an exclusion.", cohortCriteria.getPrimaryCriterion().isHas());
 	}
 
 }

@@ -37,6 +37,10 @@ public class CohortCriteria {
 	@Field(type = FieldType.Object)
 	private List<RelativeCriterion> additionalCriteria;
 
+	private RelativeCriterion testVariable;
+
+	private RelativeCriterion testOutcome;
+
 	public CohortCriteria() {
 	}
 
@@ -113,5 +117,21 @@ public class CohortCriteria {
 
 	public void setAdditionalCriteria(List<RelativeCriterion> additionalCriteria) {
 		this.additionalCriteria = additionalCriteria;
+	}
+
+	public RelativeCriterion getTestVariable() {
+		return testVariable;
+	}
+
+	public void setTestVariable(RelativeCriterion testVariable) {
+		this.testVariable = testVariable;
+	}
+
+	public RelativeCriterion getTestOutcome() {
+		return testOutcome;
+	}
+
+	public void setTestOutcome(RelativeCriterion testOutcome) {
+		this.testOutcome = testOutcome;
 	}
 }

@@ -2,6 +2,7 @@ package org.snomed.heathanalytics.rest;
 
 import org.snomed.heathanalytics.domain.Subset;
 import org.snomed.heathanalytics.pojo.EmptyPojo;
+import org.snomed.heathanalytics.service.InputValidationHelper;
 import org.snomed.heathanalytics.service.ServiceException;
 import org.snomed.heathanalytics.store.SubsetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +34,7 @@ public class SubsetController {
 	@RequestMapping(value = "/subsets", method = RequestMethod.POST, produces = "application/json")
 	@ResponseBody
 	public Subset saveSubset(@RequestBody Subset subset) throws ServiceException {
-		ControllerHelper.checkInput("Subset ID must be null or not empty.", subset.getId() == null || !subset.getId().isEmpty());
+		InputValidationHelper.checkInput("Subset ID must be null or not empty.", subset.getId() == null || !subset.getId().isEmpty());
 		return subsetRepository.save(subset);
 	}
 

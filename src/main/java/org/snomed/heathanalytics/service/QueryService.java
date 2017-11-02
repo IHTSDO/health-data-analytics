@@ -27,6 +27,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.elasticsearch.index.query.QueryBuilders.*;
+import static org.snomed.heathanalytics.service.InputValidationHelper.checkInput;
 
 @Service
 public class QueryService {
@@ -133,7 +134,50 @@ public class QueryService {
 //			patientQuery.addAggregation(AggregationBuilders.dateHistogram("patient_birth_dates")
 //					.field(Patient.FIELD_DOB).interval(DateHistogramInterval.YEAR));
 
-		return new PageImpl<>(patientPage, new PageRequest(page, size), patientCount.get());
+		return new PageImpl<>(patientPage, new PageRequest(page, size > 0 ? size : 1), patientCount.get());
+	}
+
+	private int fetchCohortCount(CohortCriteria cohortCriteria) throws ServiceException {
+		return (int) fetchCohort(cohortCriteria, 0, 0).getTotalElements();
+	}
+
+	public StatisticalTestResult fetchStatisticalTestResult(CohortCriteria cohortCriteria) throws ServiceException {
+		RelativeCriterion testVariable = cohortCriteria.getTestVariable();
+		checkInput("testVariable is required for a statistical test.", testVariable != null);
+		RelativeCriterion testOutcome = cohortCriteria.getTestOutcome();
+		checkInput("testOutcome is required for a statistical test.", testOutcome != null);
+
+		// A. Count patients with test variable and test outcome
+		// B. Count patients with test variable
+		// Has test variable chance of outcome = A / B
+		List<RelativeCriterion> additionalCriteria = new ArrayList<>();
+		cohortCriteria.setAdditionalCriteria(additionalCriteria);
+		additionalCriteria.add(testVariable);
+		additionalCriteria.add(testOutcome);
+		int hasTestVariableHasOutcomeCount = fetchCohortCount(cohortCriteria);
+
+		removeLast(additionalCriteria);
+		int hasTestVariableCount = fetchCohortCount(cohortCriteria);
+
+		// C. Count patients without test variable and test outcome
+		// D. Count patients without test variable
+		// Has no test variable chance of outcome = C / D
+		testVariable.setHas(false);
+		additionalCriteria.add(testOutcome);
+		int hasNotTestVariableHasOutcomeCount = fetchCohortCount(cohortCriteria);
+
+		removeLast(additionalCriteria);
+		int hasNotTestVariableCount = fetchCohortCount(cohortCriteria);
+
+		return new StatisticalTestResult(
+				hasTestVariableHasOutcomeCount,
+				hasTestVariableCount,
+				hasNotTestVariableHasOutcomeCount,
+				hasNotTestVariableCount);
+	}
+
+	private void removeLast(List<RelativeCriterion> list) {
+		list.remove(list.size() - 1);
 	}
 
 	// Given set of encounters

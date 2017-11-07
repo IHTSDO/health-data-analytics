@@ -45,6 +45,18 @@ public class CohortController {
 		return getCreatedResponse(cohortCriteria.getId());
 	}
 
+	@RequestMapping(value = "/cohorts/{cohortId}", method = RequestMethod.PUT, produces = "application/json")
+	@ResponseBody
+	public CohortCriteria updateCohort(@PathVariable String cohortId, @RequestBody CohortCriteria cohortCriteria) throws ServiceException {
+		InputValidationHelper.checkInput("Cohort ID not be empty.",
+				cohortId != null && !cohortId.isEmpty());
+		InputValidationHelper.checkInput("Cohort ID in path does not match the request body.",
+				cohortId.equals(cohortCriteria.getId()));
+
+		return criteriaRepository.save(cohortCriteria);
+	}
+
+
 	@RequestMapping(value = "/cohorts/{cohortId}", method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
 	public CohortCriteria getCohort(@PathVariable String cohortId) {

@@ -38,6 +38,17 @@ public class SubsetController {
 		return subsetRepository.save(subset);
 	}
 
+	@RequestMapping(value = "/subsets/{subsetId}", method = RequestMethod.PUT, produces = "application/json")
+	@ResponseBody
+	public Subset updateSubset(@PathVariable String subsetId, @RequestBody Subset subset) throws ServiceException {
+		InputValidationHelper.checkInput("Subset ID not be empty.",
+				subsetId != null && !subsetId.isEmpty());
+		InputValidationHelper.checkInput("Subset ID in path does not match the request body.",
+				subsetId.equals(subset.getId()));
+
+		return subsetRepository.save(subset);
+	}
+
 	@RequestMapping(value = "/subsets/{subsetId}", method = RequestMethod.DELETE, produces = "application/json")
 	@ResponseBody
 	public EmptyPojo deleteSubset(@PathVariable String subsetId) throws ServiceException {

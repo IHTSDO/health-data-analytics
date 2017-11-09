@@ -91,6 +91,13 @@ public class CohortController {
 		return queryService.fetchStatisticalTestResult(cohortCriteria);
 	}
 
+	@ApiOperation("For development purposes only. Has hardcoded results.")
+	@RequestMapping(value = "/cohorts/statistical-test-dev", method = RequestMethod.POST, produces = "application/json")
+	@ResponseBody
+	public StatisticalTestResult runStatisticalTestDevResults(@RequestBody CohortCriteria cohortCriteria) throws ServiceException {
+		return new StatisticalTestResult(21876987, 63, 641, 373, 8832);
+	}
+
 	private void validateSelection(@RequestBody CohortCriteria cohortCriteria) {
 		InputValidationHelper.checkInput("There must be a Primary Criterion", cohortCriteria.getPrimaryCriterion() != null);
 		InputValidationHelper.checkInput("The Primary Criterion can not be an exclusion.", cohortCriteria.getPrimaryCriterion().isHas());

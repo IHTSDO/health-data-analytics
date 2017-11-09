@@ -239,12 +239,15 @@ public class QueryService {
 		if (days != null) {
 			GregorianCalendar lookBackCutOff = new GregorianCalendar();
 			lookBackCutOff.setTime(baseDate);
+			if (days == -1) {
+				// This means an unlimited search during the patient's lifetime
+				days = 365 * 200;
+			}
 			lookBackCutOff.add(Calendar.DAY_OF_YEAR, days * multiplier);
 			return lookBackCutOff.getTime();
 		}
 		return null;
 	}
-
 
 	private String getCriterionEcl(Criterion criterion) throws ServiceException {
 		if (criterion != null) {

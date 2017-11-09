@@ -1,5 +1,6 @@
 package org.snomed.heathanalytics.rest;
 
+import io.swagger.annotations.ApiOperation;
 import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.domain.CohortCriteria;
 import org.snomed.heathanalytics.pojo.EmptyPojo;
@@ -72,6 +73,8 @@ public class CohortController {
 		return new EmptyPojo(); // This is a workaround for the frontend implementation.
 	}
 
+	@ApiOperation("Retrieve patients which match the given cohort criteria. " +
+			"Within additionalCriteria a days value of '-1' can be used as an unbounded value.")
 	@RequestMapping(value = "/cohorts/select", method = RequestMethod.POST, produces = "application/json")
 	@ResponseBody
 	public Page<Patient> runCohortSelection(@RequestBody CohortCriteria cohortCriteria,

@@ -170,6 +170,7 @@ public class QueryService {
 		int hasNotTestVariableCount = fetchCohortCount(cohortCriteria);
 
 		return new StatisticalTestResult(
+				(int) getStats().getPatientCount(),
 				hasTestVariableHasOutcomeCount,
 				hasTestVariableCount,
 				hasNotTestVariableHasOutcomeCount,

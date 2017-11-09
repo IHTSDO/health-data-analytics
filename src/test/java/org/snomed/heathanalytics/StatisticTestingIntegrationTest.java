@@ -142,10 +142,10 @@ public class StatisticTestingIntegrationTest {
 		StatisticalTestResult result = queryService.fetchStatisticalTestResult(cohortCriteria);
 		assertEquals(2, result.getHasTestVariableHasOutcomeCount());
 		assertEquals(5, result.getHasTestVariableCount());
-		assertEquals("0.4", "" + result.getHasTestVariableChanceOfOutcome());
+		assertEquals("40.0", result.getHasTestVariableChanceOfOutcome());
 		assertEquals(4, result.getHasNotTestVariableHasOutcomeCount());
 		assertEquals(6, result.getHasNotTestVariableCount());
-		assertEquals("0.67", "" + result.getHasNotTestVariableChanceOfOutcome());
+		assertEquals("66.7", result.getHasNotTestVariableChanceOfOutcome());
 	}
 
 	private Patient createPatient(String roleId) {

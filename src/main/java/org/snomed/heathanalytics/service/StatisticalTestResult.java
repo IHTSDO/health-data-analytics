@@ -82,11 +82,15 @@ public class StatisticalTestResult {
 	}
 
 	public String getVariableOutcomeHazardRatio() {
+		if (hasTestVariableHasOutcomeCount == 0 || hasTestVariableCount == 0 ||
+				hasNotTestVariableHasOutcomeCount == 0 || hasNotTestVariableCount == 0) return "-";
+
 		return new BigDecimal(((float)hasTestVariableHasOutcomeCount / (float)hasTestVariableCount)/
 				((float)hasNotTestVariableHasOutcomeCount / (float)hasNotTestVariableCount)).setScale(2, BigDecimal.ROUND_HALF_UP).toString();
 	}
 
 	private String getFractionAsPercentage(int a, int b) {
+		if (a == 0 || b == 0) return "-";
 		return new BigDecimal(((float) a / (float) b) * 100f).setScale(1, BigDecimal.ROUND_HALF_UP).toString();
 	}
 

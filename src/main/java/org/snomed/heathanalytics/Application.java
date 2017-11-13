@@ -63,7 +63,6 @@ public class Application implements ApplicationRunner {
 	@Override
 	public void run(ApplicationArguments applicationArguments) throws Exception {
 		if (applicationArguments.containsOption(DEMO_MODE)) {
-			// Force Demo Mode
 			runDemo(demoPatientCount);
 		} else if (applicationArguments.containsOption(GENERATE_POPULATION)) {
 			List<String> values = applicationArguments.getOptionValues(GENERATE_POPULATION);

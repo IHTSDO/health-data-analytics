@@ -24,13 +24,19 @@ public class ExampleDataGeneratorTest {
 
 	@Before
 	public void setup() throws IOException, ParseException {
+		// Create tiny dataset for unit test only.
 		SnomedQueryService snomedQueryService = TestSnomedQueryServiceBuilder.createWithConcepts(
 				TestSnomedQueryServiceBuilder.concept("716020005", "420868002"),
 				TestSnomedQueryServiceBuilder.concept("422426003", "302226006"),
 				TestSnomedQueryServiceBuilder.concept("42531007", "22298006"),
 				TestSnomedQueryServiceBuilder.concept("230645003", "302226006"),
 				TestSnomedQueryServiceBuilder.concept("84094009", "38341003"),
-				TestSnomedQueryServiceBuilder.concept("385682008", "108972005", "373873005", "138875005")
+				TestSnomedQueryServiceBuilder.concept("385682008", "108972005", "373873005", "138875005"),
+				TestSnomedQueryServiceBuilder.concept("201791009", "69896004"),
+				TestSnomedQueryServiceBuilder.concept("52661003", "69896004"),
+				TestSnomedQueryServiceBuilder.concept("313296004", "13645005"),
+				TestSnomedQueryServiceBuilder.concept("398728003", "416897008"),
+				TestSnomedQueryServiceBuilder.concept("276693005", "53084003")
 		);
 
 		exampleDataGenerator = new ExampleDataGenerator(new ExampleConceptService(snomedQueryService));

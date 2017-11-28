@@ -141,26 +141,26 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("69896004")));// Rheumatoid Arthritis
 			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("13645005")));// COPD
 
-			// 10% of patients over 15 with Rheumatoid Arthritis and COPD are prescribed an Anti-TNF
-			if (chance(0.1f)) {
+			// 50% of patients over 15 with Rheumatoid Arthritis and COPD are prescribed an Anti-TNF
+			if (chance(0.5f)) {
 				// Prescribed an Anti-TNF agent
 				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.MEDICATION, concepts.selectRandomChildOf("416897008")));// Anti-TNF agent (product)
 
 				// After 1 - 6 months
 				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
 
-				// 9% of patients with RA and COPD who have been prescribed an AntiTNF agent have a Lung Infection.
-				if (chance(0.09f)) {
+				// 10% of patients with RA and COPD who have been prescribed an AntiTNF agent have a Lung Infection.
+				if (chance(0.1f)) {
 					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("53084003")));// Bacterial Lung Infection
 				}
-			} else {
+			} else { // other 50%
 				// No medication prescribed
 
 				// After 1 - 6 months
 				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
 
-				// 3% of patients with RA and COPD who have NOT been prescribed an Anti-TNF agent have a Bacterial Lung Infection.
-				if (chance(0.03f)) {
+				// 2% of patients with RA and COPD who have NOT been prescribed an Anti-TNF agent have a Bacterial Lung Infection.
+				if (chance(0.02f)) {
 					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("53084003")));// Bacterial Lung Infection
 				}
 			}
@@ -168,7 +168,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		// End of section of RA and COPD ---------------------
 
 		// Begin section RA only  ----------------------------
-		if (age > 15 && chance(0.3f)) {//Patients with RA only
+		if (age > 15 && chance(0.03f)) {//Patients with RA only
 			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("69896004")));// Rheumatoid Arthritis
 
 			if (chance(0.5f)) {// about half of them get TNF inhibitor
@@ -198,7 +198,8 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		// End of section of RA only ----------------------
 
 		// Begin section of COPD only ---------------------
-		if (age > 15 && chance(0.6f)) {//Patients with COPD only
+		// 6% with COPD
+		if (age > 15 && chance(0.06f)) {//Patients with COPD only
 			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("13645005")));// COPD
 
 			// None with COPD alone would get anti-TNF so remove those lines
@@ -207,7 +208,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 			date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
 
 			// 2% of p	atients with COPD only have a Lung Infection.
-			if (chance(0.2f)) {
+			if (chance(0.02f)) {
 				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("53084003")));// Bacterial Lung Infection
 			}
 		}

@@ -41,6 +41,7 @@ public class StatisticTestingIntegrationTest {
 	private ElasticsearchTemplate elasticsearchTemplate;
 
 	private ConceptImpl hypertension;
+	private ConceptImpl diabetes;
 	private ConceptImpl myocardialInfarction;
 	private ConceptImpl acuteQWaveMyocardialInfarction;
 	private ConceptImpl paracetamol;
@@ -56,6 +57,9 @@ public class StatisticTestingIntegrationTest {
 
 		// 38341003 |Hypertensive disorder, systemic arterial (disorder)|
 		hypertension = createConcept("38341003", allConcepts);
+
+		// 73211009 |Diabetes mellitus (disorder)|
+		diabetes = createConcept("73211009", allConcepts);
 
 		// 22298006 |Myocardial infarction (disorder)|
 		// Also known as "heart attack"
@@ -110,19 +114,21 @@ public class StatisticTestingIntegrationTest {
 		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2015, 0, 1), ClinicalEncounterType.FINDING, hypertension.getId()));
 		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2017, 3, 10), ClinicalEncounterType.FINDING, paracetamol.getId()));
 
-		// 2 patients with hypertension and Paracetamol and subsequent heart attack
+		// 2 patients with hypertension, diabetes and Paracetamol and subsequent heart attack
 		patient = createPatient("11");
 		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2016, 0, 1), ClinicalEncounterType.FINDING, hypertension.getId()));
+		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2016, 0, 1), ClinicalEncounterType.FINDING, diabetes.getId()));
 		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2016, 3, 10), ClinicalEncounterType.FINDING, paracetamol.getId()));
 		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2017, 0, 1), ClinicalEncounterType.FINDING, acuteQWaveMyocardialInfarction.getId()));
 		patient = createPatient("12");
 		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2016, 0, 1), ClinicalEncounterType.FINDING, hypertension.getId()));
+		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2016, 0, 1), ClinicalEncounterType.FINDING, diabetes.getId()));
 		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2016, 3, 10), ClinicalEncounterType.FINDING, paracetamol.getId()));
 		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2017, 2, 1), ClinicalEncounterType.FINDING, acuteQWaveMyocardialInfarction.getId()));
 	}
 
 	@Test
-	public void testMultiCohortStatisticalTesting() throws ServiceException {
+	public void testMultiCohortStatisticalTest() throws ServiceException {
 		// Calculate the statistical chance of patients with hypertension encountering a heart attack
 
 		// Within our data test how administering Paracetamol effects the statistical chance of patients with hypertension encountering a heart attack.
@@ -146,6 +152,25 @@ public class StatisticTestingIntegrationTest {
 		assertEquals(4, result.getHasNotTestVariableHasOutcomeCount());
 		assertEquals(6, result.getHasNotTestVariableCount());
 		assertEquals("66.7", result.getHasNotTestVariableChanceOfOutcome());
+	}
+
+	@Test
+	public void testMultiCohortStatisticalTestWithRefinement() throws ServiceException {
+		CohortCriteria cohortCriteria = new CohortCriteria(new Criterion("<<" + hypertension.getId()));
+
+		// Here is the additional criterion
+		cohortCriteria.addAdditionalCriterion(new RelativeCriterion("<<" + myocardialInfarction.getId().toString(), null, -1));
+		cohortCriteria.setTestVariable(new RelativeCriterion("<<" + paracetamol.getId().toString(), null, 5 * year));
+		cohortCriteria.setTestOutcome(new RelativeCriterion("<<" + myocardialInfarction.getId().toString(), null, 5 * year));
+
+		// The additional criterion means that our cohort is reduced to 2 patients, both the the same outcome.
+		StatisticalTestResult result = queryService.fetchStatisticalTestResult(cohortCriteria);
+		assertEquals(2, result.getHasTestVariableHasOutcomeCount());
+		assertEquals(2, result.getHasTestVariableCount());
+		assertEquals("100.0", result.getHasTestVariableChanceOfOutcome());
+		assertEquals(4, result.getHasNotTestVariableHasOutcomeCount());
+		assertEquals(4, result.getHasNotTestVariableCount());
+		assertEquals("100.0", result.getHasNotTestVariableChanceOfOutcome());
 	}
 
 	private Patient createPatient(String roleId) {

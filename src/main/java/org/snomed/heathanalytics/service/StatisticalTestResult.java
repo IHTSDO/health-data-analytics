@@ -94,4 +94,14 @@ public class StatisticalTestResult {
 		return new BigDecimal(((float) a / (float) b) * 100f).setScale(1, BigDecimal.ROUND_HALF_UP).toString();
 	}
 
+	@Override
+	public String toString() {
+		return "StatisticalTestResult{" +
+				"patientTotal=" + patientTotal +
+				", hasTestVariableCount=" + hasTestVariableCount +
+				", hasTestVariableHasOutcomeCount=" + hasTestVariableHasOutcomeCount +
+				", hasNotTestVariableCount=" + hasNotTestVariableCount +
+				", hasNotTestVariableHasOutcomeCount=" + hasNotTestVariableHasOutcomeCount +
+				'}';
+	}
 }

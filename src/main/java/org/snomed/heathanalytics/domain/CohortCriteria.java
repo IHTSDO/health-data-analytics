@@ -42,16 +42,15 @@ public class CohortCriteria {
 	private RelativeCriterion testOutcome;
 
 	public CohortCriteria() {
+		additionalCriteria = new ArrayList<>();
 	}
 
 	public CohortCriteria(Criterion primaryCriterion) {
+		this();
 		this.primaryCriterion = primaryCriterion;
 	}
 
 	public void addAdditionalCriterion(RelativeCriterion criterion) {
-		if (additionalCriteria == null) {
-			additionalCriteria = new ArrayList<>();
-		}
 		additionalCriteria.add(criterion);
 	}
 
@@ -112,7 +111,7 @@ public class CohortCriteria {
 	}
 
 	public List<RelativeCriterion> getAdditionalCriteria() {
-		return additionalCriteria != null ? additionalCriteria : Collections.emptyList();
+		return additionalCriteria;
 	}
 
 	public void setAdditionalCriteria(List<RelativeCriterion> additionalCriteria) {

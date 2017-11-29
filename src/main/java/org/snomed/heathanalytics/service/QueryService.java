@@ -150,8 +150,7 @@ public class QueryService {
 		// A. Count patients with test variable and test outcome
 		// B. Count patients with test variable
 		// Has test variable chance of outcome = A / B
-		List<RelativeCriterion> additionalCriteria = new ArrayList<>();
-		cohortCriteria.setAdditionalCriteria(additionalCriteria);
+		List<RelativeCriterion> additionalCriteria = cohortCriteria.getAdditionalCriteria();
 		additionalCriteria.add(testVariable);
 		additionalCriteria.add(testOutcome);
 		int hasTestVariableHasOutcomeCount = fetchCohortCount(cohortCriteria);

@@ -11,6 +11,7 @@ import org.snomed.heathanalytics.ingestion.HealthDataIngestionSource;
 import org.snomed.heathanalytics.ingestion.HealthDataIngestionSourceConfiguration;
 import org.snomed.heathanalytics.ingestion.HealthDataOutputStream;
 
+import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
@@ -32,8 +33,8 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		long start = new Date().getTime();
 		List<Exception> exceptions = new ArrayList<>();
 		IntStream.range(0, generatorConfiguration.getDemoPatientCount()).parallel().forEach(i -> {
-			if (i % 10000 == 0) {
-				System.out.print(".");
+			if (i % 10_000 == 0) {
+				System.out.println(NumberFormat.getNumberInstance().format(i) + "/" + NumberFormat.getNumberInstance().format(generatorConfiguration.getDemoPatientCount()));
 			}
 			try {
 				generateExamplePatientAndActs(i + "", healthDataOutputStream);
@@ -221,7 +222,6 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 	}
 
 	private boolean chance(float probability) {
-		System.out.println(probability);
 		return probability >= Math.random();
 	}
 

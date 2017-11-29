@@ -146,8 +146,8 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("69896004")));// Rheumatoid Arthritis
 			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("13645005")));// COPD
 
-			// 50% of patients over 15 with Rheumatoid Arthritis and COPD are prescribed an Anti-TNF
-			if (chancePercent(50)) {
+			// 10% of patients over 15 with Rheumatoid Arthritis and COPD are prescribed an Anti-TNF
+			if (chancePercent(10)) {
 				// Prescribed an Anti-TNF agent
 				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.MEDICATION, concepts.selectRandomChildOf("416897008")));// Anti-TNF agent (product)
 
@@ -158,7 +158,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 				if (chancePercent(10)) {
 					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("53084003")));// Bacterial Lung Infection
 				}
-			} else { // other 50%
+			} else { // other 90%
 				// No medication prescribed
 
 				// After 1 - 6 months

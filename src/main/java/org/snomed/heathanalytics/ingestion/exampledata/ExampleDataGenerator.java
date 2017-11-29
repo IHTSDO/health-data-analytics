@@ -14,6 +14,7 @@ import org.snomed.heathanalytics.ingestion.HealthDataOutputStream;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 import static org.snomed.heathanalytics.ingestion.exampledata.ExampleDataGenerator.DateUtil.dateOfBirthFromAge;
@@ -32,9 +33,12 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		ExampleDataGeneratorConfiguration generatorConfiguration = (ExampleDataGeneratorConfiguration) configuration;
 		long start = new Date().getTime();
 		List<Exception> exceptions = new ArrayList<>();
+		AtomicInteger progress = new AtomicInteger();
+		int progressChunk = 10_000;
 		IntStream.range(0, generatorConfiguration.getDemoPatientCount()).parallel().forEach(i -> {
-			if (i % 10_000 == 0) {
-				System.out.println(NumberFormat.getNumberInstance().format(i) + "/" + NumberFormat.getNumberInstance().format(generatorConfiguration.getDemoPatientCount()));
+			if (i % progressChunk == 0) {
+				int progressToReport = progress.addAndGet(progressChunk);
+				System.out.println(NumberFormat.getNumberInstance().format(progressToReport) + "/" + NumberFormat.getNumberInstance().format(generatorConfiguration.getDemoPatientCount()));
 			}
 			try {
 				generateExamplePatientAndActs(i + "", healthDataOutputStream);

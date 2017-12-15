@@ -76,32 +76,26 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		// add 1 - 6 months
 		date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
 
-		// 10% of patients have diabetes.
-		if (chancePercent(10)) {
-			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("420868002")));// Disorder due to type 1 diabetes mellitus
-
-			// After 1 - 2 months
-			date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 2));
-
-			// 7% of the diabetic patients also have Peripheral Neuropathy.
-			if (chancePercent(7)) {
-				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("302226006")));// Peripheral Neuropathy
-			}
-
-			// 10% of the diabetic patients have a Myocardial Infarction.
-			if (chancePercent(10)) {
-				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("22298006")));// Myocardial Infarction
-			}
-		} else {
-			// 1% of the non-diabetic patients have Peripheral Neuropathy.
-			if (chancePercent(1)) {
-				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("302226006")));// Peripheral Neuropathy
-			}
-		}
+		generateBackgroundData(patient, date);
 
 		// After 1 - 3 months
 		date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 3));
 
+		if (chancePercent(20)) {
+			// 20% of total
+			scenarioHypertensionAntiplatelet(patient, age, date);
+		} else if (chancePercent(50)) {
+			// 40% of total
+			scenarioRaCOPD(patient, age, date);
+		} else {
+			// 40% of total
+			scenarioAfibGIBleed(patient, age, date);
+		}
+
+		healthDataOutputStream.createPatient(patient);
+	}
+
+	private void scenarioHypertensionAntiplatelet(Patient patient, int age, GregorianCalendar date) throws ServiceException {
 		// 30 % of patients over 40 years old have hypertension.
 		if (age > 40 && chancePercent(30)) {
 			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("38341003")));// Hypertension
@@ -138,11 +132,13 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		if (age > 55 && chancePercent(5)) {
 			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("22298006")));// Myocardial Infarction
 		}
+	}
 
+	private void scenarioRaCOPD(Patient patient, int age, GregorianCalendar date) throws ServiceException {
 		//
 		// Begin section RA and COPD ------------------------
 		//
-		if (age > 15 && chancePercent(6)) {// Patients with both RA and COPD very small
+		if (age > 15 && chancePercent(12)) {// Patients with both RA and COPD very small
 			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("69896004")));// Rheumatoid Arthritis
 			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("13645005")));// COPD
 
@@ -173,7 +169,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		// End of section of RA and COPD ---------------------
 
 		// Begin section RA only  ----------------------------
-		if (age > 15 && chancePercent(3)) {//Patients with RA only
+		if (age > 15 && chancePercent(6)) {//Patients with RA only
 			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("69896004")));// Rheumatoid Arthritis
 
 			if (chancePercent(50)) {// about half of them get TNF inhibitor
@@ -204,7 +200,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 
 		// Begin section of COPD only ---------------------
 		// 6% with COPD
-		if (age > 15 && chancePercent(6)) {//Patients with COPD only
+		if (age > 15 && chancePercent(12)) {//Patients with COPD only
 			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("13645005")));// COPD
 
 			// None with COPD alone would get anti-TNF so remove those lines
@@ -217,8 +213,122 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("53084003")));// Bacterial Lung Infection
 			}
 		}
+	}
 
-		healthDataOutputStream.createPatient(patient);
+	private void scenarioAfibGIBleed(Patient patient, int age, GregorianCalendar date) throws ServiceException {
+		//
+		// Begin section Afib and GI Bleed (GIB)------------------------
+		//
+		if (age > 15 && chancePercent(0.015f)) {// Patients with both Afib and GIB very small
+			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("49436004")));// Afib
+			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("74474003")));// GIB
+
+			// 15% of patients over 15 with Afib and GIB are prescribed an Antiplatelet agent
+			if (chancePercent(15)) {
+				// Prescribed an AntiPlatelet
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.MEDICATION, concepts.selectRandomChildOf("108972005")));// Antiplatelet Agent
+
+				// After 1 - 6 months
+				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+
+				// 4% of patients with Afib and GIB who have been prescribed an Antiplatelt agent have a CVA.
+				if (chancePercent(4)) {
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("230690007")));// CVA
+				}
+				//  And 32% get subsequent GIB
+				if (chancePercent(32))
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("74474003")));// GIB
+			} else { // other 85%
+				// No medication prescribed
+
+				// After 1 - 6 months
+				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+
+				// 35% of patients with Afib and GIB and no Antiplatelet agent get CVA
+				if (chancePercent(35))
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("230690007")));// CVA
+				// and 9% get GIB
+				if (chancePercent(9))
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("74474003")));// GIB
+
+			}
+		}
+
+		// End of section of Afib and GIB ---------------------
+
+		// Begin section Afib only  ----------------------------
+		if (age > 15 && chancePercent(1)) {//Patients with Afib only
+			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("49436004")));// Afib
+
+			if (chancePercent(89)) {// Get antiplatelet agent
+				// Prescribed an Antiplatelet
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.MEDICATION, concepts.selectRandomChildOf("108972005")));// Antiplatelet agent (product)
+
+
+				// After 1 - 6 months
+				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+
+				// 3% of patients with Afib only who have been prescribed an AntiTNF agent have a CVA.
+				if (chancePercent(3)) {
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("230690007")));// CVA
+				}
+				if (chancePercent(0.1f)) {  // get GIB
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("74474003")));// GIB
+				}
+			} else {
+				// No medication prescribed
+
+				// After 1 - 6 months
+				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+
+				// 31% get CVA.
+				if (chancePercent(31)) {
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("230690007")));// CVA
+				}
+			}
+		}
+		// End of section of Afib only ----------------------
+
+		// Begin section of GIB only ---------------------
+		// 0.13% with COPD
+		if (age > 15 && chancePercent(0.13f)) {//Patients with GIB only
+			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("74474003")));// GIB
+
+			// None with GIB alone would get antiplatelet so remove those lines
+
+			// After 1 - 6 months
+			date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+
+			// 9% of p atients with GIB only will get recurrent GIB.
+			if (chancePercent(9)) {
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("74474003")));// GIB
+			}
+		}
+	}
+
+	private void generateBackgroundData(Patient patient, GregorianCalendar date) throws ServiceException {
+		// 10% of patients have diabetes.
+		if (chancePercent(10)) {
+			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("420868002")));// Disorder due to type 1 diabetes mellitus
+
+			// After 1 - 2 months
+			date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 2));
+
+			// 7% of the diabetic patients also have Peripheral Neuropathy.
+			if (chancePercent(7)) {
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("302226006")));// Peripheral Neuropathy
+			}
+
+			// 10% of the diabetic patients have a Myocardial Infarction.
+			if (chancePercent(10)) {
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("22298006")));// Myocardial Infarction
+			}
+		} else {
+			// 1% of the non-diabetic patients have Peripheral Neuropathy.
+			if (chancePercent(1)) {
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("302226006")));// Peripheral Neuropathy
+			}
+		}
 	}
 
 	private boolean chancePercent(float probability) {

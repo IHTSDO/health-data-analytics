@@ -291,7 +291,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 
 		// Begin section of GIB only ---------------------
 		// 0.13% with COPD
-		if (age > 15 && chancePercent(0.13f)) {//Patients with GIB only
+		if (age > 15 && chancePercent(13f)) {//Patients with GIB only
 			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("74474003")));// GIB
 
 			// None with GIB alone would get antiplatelet so remove those lines

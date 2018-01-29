@@ -36,7 +36,8 @@ public class ExampleDataGeneratorTest {
 				TestSnomedQueryServiceBuilder.concept("52661003", "69896004"),
 				TestSnomedQueryServiceBuilder.concept("313296004", "13645005"),
 				TestSnomedQueryServiceBuilder.concept("398728003", "416897008"),
-				TestSnomedQueryServiceBuilder.concept("276693005", "53084003")
+				TestSnomedQueryServiceBuilder.concept("276693005", "53084003"),
+				TestSnomedQueryServiceBuilder.concept("13200003", "404684003")
 		);
 
 		exampleDataGenerator = new ExampleDataGenerator(new ExampleConceptService(snomedQueryService));

@@ -96,7 +96,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		//
 		// Begin section RA and COPD ------------------------
 		//
-		if (age > 15 && chancePercent(12)) {// Patients with both RA and COPD very small
+		if (age > 15 && chancePercent(0.12f)) {// Patients with both RA and COPD very small
 			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("69896004")));// Rheumatoid Arthritis
 			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("13645005")));// COPD
 

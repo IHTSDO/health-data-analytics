@@ -1,6 +1,14 @@
 package org.snomed.heathanalytics.ingestion.exampledata;
 
+import com.google.common.collect.Lists;
+import com.google.common.io.Files;
+import org.ihtsdo.otf.sqs.service.ReleaseWriter;
 import org.ihtsdo.otf.sqs.service.SnomedQueryService;
+import org.ihtsdo.otf.sqs.service.dto.ConceptIdResults;
+import org.ihtsdo.otf.sqs.service.exception.ServiceException;
+import org.ihtsdo.otf.sqs.service.store.DiskReleaseStore;
+import org.ihtsdo.otf.sqs.service.store.RamReleaseStore;
+import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -25,20 +33,7 @@ public class ExampleDataGeneratorTest {
 	@Before
 	public void setup() throws IOException, ParseException {
 		// Create tiny dataset for unit test only.
-		SnomedQueryService snomedQueryService = TestSnomedQueryServiceBuilder.createWithConcepts(
-				TestSnomedQueryServiceBuilder.concept("716020005", "420868002"),
-				TestSnomedQueryServiceBuilder.concept("422426003", "302226006"),
-				TestSnomedQueryServiceBuilder.concept("42531007", "22298006"),
-				TestSnomedQueryServiceBuilder.concept("230645003", "302226006"),
-				TestSnomedQueryServiceBuilder.concept("84094009", "38341003"),
-				TestSnomedQueryServiceBuilder.concept("385682008", "108972005", "373873005", "138875005"),
-				TestSnomedQueryServiceBuilder.concept("201791009", "69896004"),
-				TestSnomedQueryServiceBuilder.concept("52661003", "69896004"),
-				TestSnomedQueryServiceBuilder.concept("313296004", "13645005"),
-				TestSnomedQueryServiceBuilder.concept("398728003", "416897008"),
-				TestSnomedQueryServiceBuilder.concept("276693005", "53084003"),
-				TestSnomedQueryServiceBuilder.concept("13200003", "404684003")
-		);
+		SnomedQueryService snomedQueryService = new FakeQueryService();
 
 		exampleDataGenerator = new ExampleDataGenerator(new ExampleConceptService(snomedQueryService));
 	}
@@ -66,4 +61,24 @@ public class ExampleDataGeneratorTest {
 		assertEquals(20, patientData.size());
 	}
 
+	private static final class FakeQueryService extends SnomedQueryService {
+
+		public FakeQueryService() throws IOException {
+			super(getReleaseStore());
+		}
+
+		@Override
+		// Respond to any query with the same dummy concept id
+		public ConceptIdResults eclQueryReturnConceptIdentifiers(String ecQuery, int offset, int limit) throws ServiceException {
+			return new ConceptIdResults(Lists.newArrayList(123L), 0, 1, 1);
+		}
+
+		// Initiate dummy ram release store, just to make Lucene happy
+		private static RamReleaseStore getReleaseStore() throws IOException {
+			RamReleaseStore ramReleaseStore = new RamReleaseStore();
+			ReleaseWriter writer = new ReleaseWriter(ramReleaseStore);
+			writer.close();
+			return ramReleaseStore;
+		}
+	}
 }

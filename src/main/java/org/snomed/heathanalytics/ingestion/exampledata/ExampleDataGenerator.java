@@ -86,7 +86,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 			scenarioRaCOPD(patient, age, date);
 		} else {
 			// 50% of total
-			scenarioAfibGIBleed(patient, age, date);
+			scenarioAfibPepticUcler(patient, age, date);
 		}
 
 		healthDataOutputStream.createPatient(patient);
@@ -173,46 +173,46 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		}
 	}
 
-	private void scenarioAfibGIBleed(Patient patient, int age, GregorianCalendar date) throws ServiceException {
+	private void scenarioAfibPepticUcler(Patient patient, int age, GregorianCalendar date) throws ServiceException {
 		//
-		// Begin section Afib and GI Bleed (GIB)------------------------
+		// Begin section Afib and Peptic Ucler ------------------------
 		//
-		if (age > 15 && chancePercent(0.015f)) {// Patients with both Afib and GIB very small
+		if (age > 15 && chancePercent(0.015f)) {// Patients with both Afib and Ulcer very small
 			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("49436004")));// Afib
-			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("74474003")));// GIB
+			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("13200003")));// Peptic Ulcer
 
-			// 15% of patients over 15 with Afib and GIB are prescribed an Antiplatelet agent
-			if (chancePercent(15)) {
+			// 25% of patients over 15 with Afib and Ulcer are prescribed an Antiplatelet agent
+			if (chancePercent(25)) {
 				// Prescribed an AntiPlatelet
 				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.MEDICATION, concepts.selectRandomChildOf("108972005")));// Antiplatelet Agent
 
 				// After 1 - 6 months
 				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
 
-				// 4% of patients with Afib and GIB who have been prescribed an Antiplatelt agent have a CVA.
+				// 4% of patients with Afib and Ulcer who have been prescribed an Antiplatelt agent have a CVA.
 				if (chancePercent(4)) {
 					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("230690007")));// CVA
 				}
-				//  And 32% get subsequent GIB
-				if (chancePercent(32))
-					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("74474003")));// GIB
+				//  And 14% get subsequent UGIB
+				if (chancePercent(14))
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("37372002")));// UGIB
 			} else { // other 85%
 				// No medication prescribed
 
 				// After 1 - 6 months
 				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
 
-				// 35% of patients with Afib and GIB and no Antiplatelet agent get CVA
-				if (chancePercent(35))
+				// 12% of patients with Afib and UGIB and no Antiplatelet agent get CVA
+				if (chancePercent(12))
 					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("230690007")));// CVA
-				// and 9% get GIB
-				if (chancePercent(9))
-					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("74474003")));// GIB
+				// and 8% get UGIB
+				if (chancePercent(8))
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("37372002")));// UGIB
 
 			}
 		}
 
-		// End of section of Afib and GIB ---------------------
+		// End of section of Afib and Ucler ---------------------
 
 		// Begin section Afib only  ----------------------------
 		if (age > 15 && chancePercent(1)) {//Patients with Afib only
@@ -226,12 +226,12 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 				// After 1 - 6 months
 				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
 
-				// 3% of patients with Afib only who have been prescribed an AntiTNF agent have a CVA.
-				if (chancePercent(3)) {
+				// 4% of patients with Afib only who have been prescribed an AntiTNF agent have a CVA.
+				if (chancePercent(4)) {
 					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("230690007")));// CVA
 				}
-				if (chancePercent(0.1f)) {  // get GIB
-					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("74474003")));// GIB
+				if (chancePercent(1)) {  // get UGIB
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("37372002")));// UGIB
 				}
 			} else {
 				// No medication prescribed
@@ -239,27 +239,27 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 				// After 1 - 6 months
 				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
 
-				// 31% get CVA.
-				if (chancePercent(31)) {
+				// 12% get CVA.
+				if (chancePercent(12)) {
 					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("230690007")));// CVA
 				}
 			}
 		}
 		// End of section of Afib only ----------------------
 
-		// Begin section of GIB only ---------------------
-		// 0.13% with COPD
-		if (age > 15 && chancePercent(13f)) {//Patients with GIB only
-			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("74474003")));// GIB
+		// Begin section of Ulcer only ---------------------
+		// 9% with Ulcer
+		if (age > 15 && chancePercent(9)) {//Patients with Ulcer only
+			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("13200003")));// Ulcer
 
-			// None with GIB alone would get antiplatelet so remove those lines
+			// None with Ulcer alone would get antiplatelet so remove those lines
 
 			// After 1 - 6 months
 			date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
 
-			// 9% of p atients with GIB only will get recurrent GIB.
-			if (chancePercent(9)) {
-				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("74474003")));// GIB
+			// 8% of patients with Ulcer only will get recurrent UGIB.
+			if (chancePercent(8)) {
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("37372002")));// UGIB
 			}
 		}
 	}

@@ -81,57 +81,15 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		// After 1 - 3 months
 		date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 3));
 
-		if (chancePercent(20)) {
-			// 20% of total
-			scenarioHypertensionAntiplatelet(patient, age, date);
-		} else if (chancePercent(50)) {
-			// 40% of total
+		if (chancePercent(50)) {
+			// 50% of total
 			scenarioRaCOPD(patient, age, date);
 		} else {
-			// 40% of total
+			// 50% of total
 			scenarioAfibGIBleed(patient, age, date);
 		}
 
 		healthDataOutputStream.createPatient(patient);
-	}
-
-	private void scenarioHypertensionAntiplatelet(Patient patient, int age, GregorianCalendar date) throws ServiceException {
-		// 30 % of patients over 40 years old have hypertension.
-		if (age > 40 && chancePercent(30)) {
-			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("38341003")));// Hypertension
-
-			// 50% of patients over 40 with hypertension are prescribed an Antiplatelet agent
-			if (chancePercent(50)) {
-				// Prescribed an Antiplatelet agent
-				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.MEDICATION, concepts.selectRandomChildOf("108972005")));// Antiplatelet agent (product)
-
-				// After 1 - 6 months
-				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
-
-				// 2% of patients with hypertension who have been prescribed an Antiplatelet agent have a Myocardial Infarction.
-				if (chancePercent(2)) {
-					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("22298006")));// Myocardial Infarction
-				}
-			} else {
-				// No medication prescribed
-
-				// After 1 - 6 months
-				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
-
-				// 8% of patients with hypertension who have NOT been prescribed an Antiplatelet agent have a Myocardial Infarction.
-				if (chancePercent(8)) {
-					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("22298006")));// Myocardial Infarction
-				}
-			}
-		}
-
-		// After 1 - 2 months
-		date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 2));
-
-		// 5% of all patients over 55 years old have Myocardial Infarction.
-		if (age > 55 && chancePercent(5)) {
-			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("22298006")));// Myocardial Infarction
-		}
 	}
 
 	private void scenarioRaCOPD(Patient patient, int age, GregorianCalendar date) throws ServiceException {

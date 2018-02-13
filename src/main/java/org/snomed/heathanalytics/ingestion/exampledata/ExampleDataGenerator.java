@@ -81,13 +81,9 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		// After 1 - 3 months
 		date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 3));
 
-		if (chancePercent(50)) {
-			// 50% of total
-			scenarioRaCOPD(patient, age, date);
-		} else {
-			// 50% of total
-			scenarioAfibPepticUcler(patient, age, date);
-		}
+		// All patients enter both of the following scenarios
+		scenarioRaCOPD(patient, age, date);
+		scenarioPulmEmbGIBleed(patient, age, date);
 
 		healthDataOutputStream.createPatient(patient);
 	}

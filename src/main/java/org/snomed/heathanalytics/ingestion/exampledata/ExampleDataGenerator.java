@@ -264,6 +264,88 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		}
 	}
 
+	private void scenarioPulmEmbGIBleed(Patient patient, int age, GregorianCalendar date) throws ServiceException {
+		//
+		// Begin section Pulm Embolus and GI Ulcer ------------------------
+		// Disease codes for this are  GI Ulcer 40845000,  GI Bleed 74474003, Pulm Embolus 59282003, and direct Anti Coag agent 350468007
+		if (age > 15 && chancePercent(0.15f)) {// Patients with both Pulm Embolous and Ulcer very small
+			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("59282003")));// Pulm Embolism
+			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("40845000")));// GI ULcer Disease
+
+			// 75% of patients over 15 with Pulm Emb and Ulcer are prescribed an AntiCoagulant agent
+			if (chancePercent(75)) {
+				// Prescribed an AntiCoag Agent
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.MEDICATION, concepts.selectRandomChildOf("350468007")));// AntiCoagulant Agent
+
+				// After 1 - 6 months
+				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+				// 25% get GI bleed
+				if (chancePercent(25)) {
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("74474003")));// GI Bleed
+				}
+
+			} else { // other 25%
+				// No medication prescribed
+
+				// After 1 - 6 months
+				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+
+				// and 4% get GIB
+				if (chancePercent(4)) {
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("74474003")));// GIB
+				}
+			}
+		}
+
+		// End of section of pulm emb and GI ulcer ---------------------
+
+		// Begin section Pulm Emb only  ----------------------------
+		if (age > 15 && chancePercent(2)) {// Patients with Pulm Emb only
+			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("59282003")));// Pulm Embolism
+
+			if (chancePercent(92)) {// Get AntiCoag agent
+				// Prescribed an Antiplatelet
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.MEDICATION, concepts.selectRandomChildOf("350468007")));// AntiCoag agent (product)
+
+
+				// After 1 - 6 months
+				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+
+				// 0.5% get GI Bleed
+				if (chancePercent(0.5f)) {
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("74474003")));// GIB
+				}
+			} else {
+				// No medication prescribed
+
+				// After 1 - 6 months
+				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+
+				// 0.01% get GIB
+				if (chancePercent(0.01f)) {
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("74474003")));// GIB
+				}
+			}
+		}
+		// End of section of Pulm Emb only ----------------------
+
+		// Begin section of Ulcer only ---------------------
+		// 4% with Ulcer
+		if (age > 15 && chancePercent(4)) {// Patients with Ulcer only
+			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("40845000")));// GI Ulcer
+
+			// None with Ulcer alone would get antiCoag so those lines are removed
+
+			// After 1 - 6 months
+			date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+
+			// 1% of patients with Ulcer only will get recurrent GIB.
+			if (chancePercent(1)) {
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("74474003")));// GIB
+			}
+		}
+	}
+
 	private void generateBackgroundData(Patient patient, GregorianCalendar date) throws ServiceException {
 		// 10% of patients have diabetes.
 		if (chancePercent(10)) {

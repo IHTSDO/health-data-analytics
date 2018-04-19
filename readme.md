@@ -15,13 +15,13 @@ When these types of data analysis are done with ICD or other non-SNOMED terminol
 
 In SNOMED because of its logical structure, you can search hierarchies and do logical role based searches. This allows you to create value sets without arbitrary knowledge of which synonyms are used to describe a term.
 
- 
+
 
 These data analysis tasks require three steps that we can define as a High Value Implementation of SNOMED.
 
 First an organization must be able to create value sets by using SNOMED subsumption searches.  This task is independent of any patient data.  If the patient data is linked to SNOMED directly, then the cohort of patients can be found without any further processing.  But if the EMR uses a non-SNOMED interface terminology, then there must be an intermediate step mapping the SNOMED value set to the interface terms.  For the purposes of our demo tool, we will use SNOMED terms directly linked to patient data.
 
- 
+
 
 These principles are difficult to explain to clinicians, in order to demonstrate these advantages to them,  it is necessary to have a tool that is populated with SNOMED coded patient data.  With such a tool we can highlight the advantages of SNOMED compared to ICD (or any other terminology).
 
@@ -32,7 +32,7 @@ This demo tool is a real tool. If we were to get some real patient data and stre
 
 ## Technical Information
 
-A frontend web application for this API is available [here](https://github.com/IHTSDO/health-data-analytics-frontend). 
+A frontend web application for this API is available [here](https://github.com/IHTSDO/health-data-analytics-frontend).
 
 ### Data Store
 The datasource is an embedded Elasticsearch instance which holds a Snomed Edition to support subsumption testing and the patient data.
@@ -51,19 +51,27 @@ The data points are:
   - type (FINDING / MEDICATION / PROCEDURE)
 
 ### Local API Setup
-#### Prerequisites 
+#### Prerequisites
 - Java 8
 - 3G of memory
 - A Snomed RF2 archive
 
 #### Setup
-1. Create a folder for this tool. 
-2. Add the jar file of the [latest release](https://github.com/IHTSDO/health-data-analytics/releases/latest). 
+1. Create a folder for this tool.
+2. Add the application .jar file by downloading the [latest release](https://github.com/IHTSDO/health-data-analytics/releases/latest).
+  1. Alternatively build your own jar file using maven ```mvn clean package```.
 3. Unzip the Snomed RF2 archive into a sub-folder called 'release'.
 
-The final step is to run the tool to import Snomed and generate the population.
+The final step is to run the tool to import Snomed and generate the population. In the terminal go to the folder for the application and run the following:  
+```java -Xmx3g -jar health-data-analytics*.jar --generate-population=10000```
 
- 
+The application will first import Snomed from the release folder. Then it will generate the patients.
+The '--generate-population' argument tells the application how many patients to generate. It takes about 45 seconds per 10K patients on a 2.2 GHz Intel Core i7.
+
+The Snomed data is imported into Lucene indices under a 'data' folder. The patient data is stored in Elasticsearch indices under an 'index' folder. This data will remain accessible to the application even after restarts until you delete the folder.
+
+The next time you run the application remove the '--generate-population' unless you want to generate more.
+
 
 ### Load your own data
-If you create a new class which implements HealthDataIngestionSource which writes to the HealthDataOutputStream you could then replace the ExampleDataGenerator [here](https://github.com/IHTSDO/health-data-analytics/blob/1a46ded/src/main/java/org/snomed/heathanalytics/Application.java#L91).
+If you create a new class which implements HealthDataIngestionSource which writes to the HealthDataOutputStream you could then replace the ExampleDataGenerator [here](https://github.com/IHTSDO/health-data-analytics/blob/1a46ded/src/main/java/org/snomed/heathanalytics/Application.java#L91) with your own data source.

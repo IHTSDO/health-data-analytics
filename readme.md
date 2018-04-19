@@ -50,5 +50,20 @@ The data points are:
   - conceptId
   - type (FINDING / MEDICATION / PROCEDURE)
 
+### Local API Setup
+#### Prerequisites 
+- Java 8
+- 3G of memory
+- A Snomed RF2 archive
+
+#### Setup
+1. Create a folder for this tool. 
+2. Add the jar file of the [latest release](https://github.com/IHTSDO/health-data-analytics/releases/latest). 
+3. Unzip the Snomed RF2 archive into a sub-folder called 'release'.
+
+The final step is to run the tool to import Snomed and generate the population.
+
+ 
+
 ### Load your own data
 If you create a new class which implements HealthDataIngestionSource which writes to the HealthDataOutputStream you could then replace the ExampleDataGenerator [here](https://github.com/IHTSDO/health-data-analytics/blob/1a46ded/src/main/java/org/snomed/heathanalytics/Application.java#L91).

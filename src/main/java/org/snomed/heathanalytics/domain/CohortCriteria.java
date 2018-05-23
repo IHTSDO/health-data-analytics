@@ -16,10 +16,10 @@ public class CohortCriteria {
 	@Id
 	private String id;
 
-	@Field(index = FieldIndex.not_analyzed)
+	@Field(type = FieldType.String, index = FieldIndex.not_analyzed)
 	private String name;
 
-	@Field(index = FieldIndex.not_analyzed)
+	@Field(type = FieldType.String, index = FieldIndex.not_analyzed)
 	private String description;
 
 	@Field(type = FieldType.String)

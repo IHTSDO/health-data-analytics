@@ -15,13 +15,13 @@ public class Patient {
 	@Id
 	private String roleId;
 
-	@Field(index = FieldIndex.not_analyzed)
+	@Field(type = FieldType.Date, index = FieldIndex.not_analyzed)
 	private Date dob;
 
 	@Field(type = FieldType.Integer)
 	private int dobYear;
 
-	@Field(index = FieldIndex.not_analyzed)
+	@Field(type = FieldType.String, index = FieldIndex.not_analyzed)
 	private Gender gender;
 
 	private Set<ClinicalEncounter> encounters;

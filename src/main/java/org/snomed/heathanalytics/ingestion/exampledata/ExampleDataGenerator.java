@@ -17,8 +17,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
-import static org.snomed.heathanalytics.ingestion.exampledata.ExampleDataGenerator.DateUtil.dateOfBirthFromAge;
-
 public class ExampleDataGenerator implements HealthDataIngestionSource {
 
 	private final ExampleConceptService concepts;
@@ -60,7 +58,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 
 		//  All patients are over the age of 30 and under the age of 85.
 		int age = ThreadLocalRandom.current().nextInt(30, 85);
-		patient.setDob(dateOfBirthFromAge(age));
+		patient.setDob(DateUtil.dateOfBirthFromAge(age));
 
 		//  50% of patients are Male.
 		if (chancePercent(50)) {
@@ -375,29 +373,4 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		return probability >= Math.random();
 	}
 
-	static final class DateUtil {
-
-		static long millisecondsInAYear;
-		static {
-			GregorianCalendar calendar = new GregorianCalendar();
-			calendar.setTime(new Date(0));
-			calendar.add(Calendar.YEAR, 1);
-			millisecondsInAYear = calendar.getTime().getTime();
-		}
-
-		static Date dateOfBirthFromAge(int ageInYears) {
-			GregorianCalendar date = new GregorianCalendar();
-			date.add(Calendar.YEAR, -ageInYears);
-			clearTime(date);
-			return date.getTime();
-		}
-
-		static GregorianCalendar clearTime(GregorianCalendar calendar) {
-			calendar.clear(Calendar.HOUR);
-			calendar.clear(Calendar.MINUTE);
-			calendar.clear(Calendar.SECOND);
-			calendar.clear(Calendar.MILLISECOND);
-			return calendar;
-		}
-	}
 }

@@ -84,6 +84,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		scenarioPulmEmbGIBleed(patient, age, date);
 		scenarioBrcaTamoxifen(patient, age, date);
 		scenarioDiabSmokeFootAmp(patient, age, date);
+		scenarioLymphAnthCHF(patient, age, date);
 
 		healthDataOutputStream.createPatient(patient);
 	}
@@ -393,6 +394,84 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 				if (chancePercent(0.5f)) {
 					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("180030006")));// 180030006 |Amputation of the foot (procedure)|
 				}
+			}
+		}
+	}
+
+	private void scenarioLymphAnthCHF(Patient patient, int age, GregorianCalendar date) throws ServiceException {
+		if (age > 30 && chancePercent(0.1f)) {// Both Diseases
+			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("109979007")));// 109979007 |B-cell lymphoma (disorder)|
+			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("57809008")));// 57809008 |Myocardial disease (disorder)|
+
+
+			// Percent that get the product or procedure
+			if (chancePercent(20)) {
+				// got product or procedure  types include FINDING, MEDICATION, PROCEDURE
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.MEDICATION, concepts.selectRandomChildOf("108787006")));// 108787006 |Product containing anthracycline (product)|
+
+				// After 1 - 6 months
+				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+
+				// Percent with both diseases that got the outcome
+				if (chancePercent(20)) {
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("42343007")));// 42343007 |Congestive heart failure (disorder)|
+				}
+			} else { // did not get drug or procedure
+
+
+				// After 1 - 6 months
+				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+
+
+				if (chancePercent(5)) {
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("42343007")));// 42343007 |Congestive heart failure (disorder)|
+				}
+			}
+		}
+		// End of section of both diseases section ---------------------
+
+		// Begin section First disease only  ----------------------------
+		if (age > 15 && chancePercent(2)) {
+			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("109979007")));// 109979007 |B-cell lymphoma (disorder)|
+
+			if (chancePercent(20)) {// ### who got antracycline
+
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.MEDICATION, concepts.selectRandomChildOf("108787006")));// 108787006 |Product containing anthracycline (product)|
+
+				// After 1 - 6 months
+				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+
+				// # first disease and gets product and complication
+				if (chancePercent(3)) {
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("42343007")));// 42343007 |Congestive heart failure (disorder)|
+				}
+			} else {
+				// No product or procedure
+
+				// After 1 - 6 months
+				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+
+				// first disease no product and gets complication
+				if (chancePercent(0.3f)) {
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("42343007")));// 42343007 |Congestive heart failure (disorder)|
+				}
+			}
+		}
+		// End of section of disease one only----------------------
+
+		// Begin section of disease two only ---------------------
+		// percent with disease two
+		if (age > 15 && chancePercent(3)) {
+			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("57809008")));// 57809008 |Myocardial disease (disorder)|
+
+			// none with only disease two get product.
+
+			// After 1 - 6 months
+			date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+
+			// get complication naturally
+			if (chancePercent(5)) {
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("42343007")));// 42343007 |Congestive heart failure (disorder)|
 			}
 		}
 	}

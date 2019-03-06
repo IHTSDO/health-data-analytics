@@ -83,6 +83,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		scenarioRaCOPD(patient, age, date);
 		scenarioPulmEmbGIBleed(patient, age, date);
 		scenarioBrcaTamoxifen(patient, age, date);
+		scenarioDiabSmokeFootAmp(patient, age, date);
 
 		healthDataOutputStream.createPatient(patient);
 	}
@@ -365,6 +366,32 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 				// did not get tamoxifen
 				if (chancePercent(72)){
 					patient.addEncounter(new ClinicalEncounter(date.getTime(),ClinicalEncounterType.FINDING,concepts.selectRandomChildOf("254837009")));// 254837009 |Malignant neoplasm of breast (disorder)|
+				}
+			}
+		}
+	}
+
+	private void scenarioDiabSmokeFootAmp(Patient patient, int age, GregorianCalendar date) throws ServiceException {
+		if (age > 30 && chancePercent(2)) {
+			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("44054006")));// 44054006 |Diabetes mellitus type 2 (disorder)|
+
+			if (chancePercent(5)) {
+				// ### got product or procedure types include FINDING, MEDICATION, PROCEDURE
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("77176002")));// 77176002 |Smoker (finding)|
+
+				// After 1 - 6 months
+				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+
+				// ### Percent with both diseases that got the outcome
+				if (chancePercent(1.5f)) {
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("180030006")));// 180030006 |Amputation of the foot (procedure)|
+				}
+			} else { // not smoker
+				// After 1 - 6 months
+				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+
+				if (chancePercent(0.5f)) {
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("180030006")));// 180030006 |Amputation of the foot (procedure)|
 				}
 			}
 		}

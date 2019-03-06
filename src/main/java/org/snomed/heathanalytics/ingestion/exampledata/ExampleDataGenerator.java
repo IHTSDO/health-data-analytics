@@ -79,9 +79,10 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		// After 1 - 3 months
 		date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 3));
 
-		// All patients enter both of the following scenarios
+		// All patients enter each scenario. These have their own probability gates.
 		scenarioRaCOPD(patient, age, date);
 		scenarioPulmEmbGIBleed(patient, age, date);
+		scenarioBrcaTamoxifen(patient, age, date);
 
 		healthDataOutputStream.createPatient(patient);
 	}
@@ -167,6 +168,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		}
 	}
 
+	// This scenario is not used at the moment.
 	private void scenarioAfibPepticUcler(Patient patient, int age, GregorianCalendar date) throws ServiceException {
 		//
 		// Begin section Afib and Peptic Ucler ------------------------
@@ -336,6 +338,34 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 			// 1% of patients with Ulcer only will get recurrent GIB.
 			if (chancePercent(1)) {
 				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("74474003")));// GIB
+			}
+		}
+	}
+
+	private void scenarioBrcaTamoxifen(Patient patient, int age, GregorianCalendar date) throws ServiceException {
+		if (age > 30 && patient.getGender() == Gender.FEMALE && chancePercent(0.2f)) {// females with brca1 gene
+			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("412734009")));// 412734009 |BRCA1 gene mutation positive (finding)|
+
+			// Percent that get Tamoxifen
+			if (chancePercent(60)) {
+				// got product or procedure  types include FINDING, MEDICATION, PROCEDURE
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.MEDICATION, concepts.selectRandomChildOf("75959001")));// 75959001 |Product containing tamoxifen (medicinal product)|
+				// After 1 - 6 months
+				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+
+				// Percent with Breast Cancer
+				if (chancePercent(29)) {
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("254837009")));// 254837009 |Malignant neoplasm of breast (disorder)|
+				}
+			} else {// did not get drug or procedure
+
+				// After 1 - 6 months
+				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+
+				// did not get tamoxifen
+				if (chancePercent(72)){
+					patient.addEncounter(new ClinicalEncounter(date.getTime(),ClinicalEncounterType.FINDING,concepts.selectRandomChildOf("254837009")));// 254837009 |Malignant neoplasm of breast (disorder)|
+				}
 			}
 		}
 	}

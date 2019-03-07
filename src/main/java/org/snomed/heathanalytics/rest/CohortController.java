@@ -1,8 +1,8 @@
 package org.snomed.heathanalytics.rest;
 
 import io.swagger.annotations.ApiOperation;
-import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.domain.CohortCriteria;
+import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.pojo.EmptyPojo;
 import org.snomed.heathanalytics.service.InputValidationHelper;
 import org.snomed.heathanalytics.service.QueryService;
@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.snomed.heathanalytics.rest.ControllerHelper.getCreatedResponse;
 import static org.snomed.heathanalytics.rest.ControllerHelper.throwIfNotFound;
@@ -23,7 +24,7 @@ import static org.snomed.heathanalytics.rest.ControllerHelper.throwIfNotFound;
 @RestController
 public class CohortController {
 
-	private static final PageRequest LARGE_PAGE = new PageRequest(0, 1000);
+	private static final PageRequest LARGE_PAGE = PageRequest.of(0, 1000);
 
 	@Autowired
 	private QueryService queryService;
@@ -61,15 +62,15 @@ public class CohortController {
 	@RequestMapping(value = "/cohorts/{cohortId}", method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
 	public CohortCriteria getCohort(@PathVariable String cohortId) {
-		CohortCriteria criteria = criteriaRepository.findOne(cohortId);
+		Optional<CohortCriteria> criteria = criteriaRepository.findById(cohortId);
 		throwIfNotFound(criteria, "Cohort");
-		return criteria;
+		return criteria.get();
 	}
 
 	@RequestMapping(value = "/cohorts/{cohortId}", method = RequestMethod.DELETE, produces = "application/json")
 	@ResponseBody
 	public EmptyPojo deleteCohort(@PathVariable String cohortId) {
-		criteriaRepository.delete(cohortId);
+		criteriaRepository.deleteById(cohortId);
 		return new EmptyPojo(); // This is a workaround for the frontend implementation.
 	}
 

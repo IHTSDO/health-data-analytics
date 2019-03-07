@@ -6,8 +6,10 @@ import org.snomed.heathanalytics.service.InputValidationHelper;
 import org.snomed.heathanalytics.service.ServiceException;
 import org.snomed.heathanalytics.store.SubsetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Optional;
 
 import static org.snomed.heathanalytics.rest.ControllerHelper.aggregatedPageWorkaround;
 
@@ -22,13 +24,14 @@ public class SubsetController {
 	public org.springframework.data.domain.Page<Subset> listSubsets(
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "100") int size) throws ServiceException {
-		return aggregatedPageWorkaround(subsetRepository.findAll(new PageRequest(page, size)));
+		return aggregatedPageWorkaround(subsetRepository.findAll(PageRequest.of(page, size)));
 	}
 
 	@RequestMapping(value = "/subsets/{subsetId}", method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
 	public Subset getSubset(@PathVariable String subsetId) throws ServiceException {
-		return subsetRepository.findOne(subsetId);
+		Optional<Subset> subset = subsetRepository.findById(subsetId);
+		return subset.orElse(null);
 	}
 
 	@RequestMapping(value = "/subsets", method = RequestMethod.POST, produces = "application/json")
@@ -52,7 +55,7 @@ public class SubsetController {
 	@RequestMapping(value = "/subsets/{subsetId}", method = RequestMethod.DELETE, produces = "application/json")
 	@ResponseBody
 	public EmptyPojo deleteSubset(@PathVariable String subsetId) throws ServiceException {
-		subsetRepository.delete(subsetId);
+		subsetRepository.deleteById(subsetId);
 		return new EmptyPojo(); // This is a workaround for the frontend implementation.
 	}
 

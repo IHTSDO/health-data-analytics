@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
-import org.springframework.data.elasticsearch.annotations.FieldIndex;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.util.*;
@@ -15,13 +14,13 @@ public class Patient {
 	@Id
 	private String roleId;
 
-	@Field(type = FieldType.Date, index = FieldIndex.not_analyzed)
+	@Field(type = FieldType.Date)
 	private Date dob;
 
-	@Field(type = FieldType.Integer)
+	@Field(type = FieldType.keyword)
 	private int dobYear;
 
-	@Field(type = FieldType.String, index = FieldIndex.not_analyzed)
+	@Field(type = FieldType.keyword)
 	private Gender gender;
 
 	private Set<ClinicalEncounter> encounters;

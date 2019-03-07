@@ -32,7 +32,7 @@ import static org.snomed.heathanalytics.service.InputValidationHelper.checkInput
 @Service
 public class QueryService {
 
-	private static final PageRequest LARGE_PAGE = new PageRequest(0, 1000);
+	private static final PageRequest LARGE_PAGE = PageRequest.of(0, 1000);
 
 	@Autowired
 	private ElasticsearchTemplate elasticsearchTemplate;
@@ -134,7 +134,7 @@ public class QueryService {
 //			patientQuery.addAggregation(AggregationBuilders.dateHistogram("patient_birth_dates")
 //					.field(Patient.FIELD_DOB).interval(DateHistogramInterval.YEAR));
 
-		return new PageImpl<>(patientPage, new PageRequest(page, size > 0 ? size : 1), patientCount.get());
+		return new PageImpl<>(patientPage, PageRequest.of(page, size > 0 ? size : 1), patientCount.get());
 	}
 
 	private int fetchCohortCount(CohortCriteria cohortCriteria) throws ServiceException {
@@ -253,11 +253,11 @@ public class QueryService {
 		if (criterion != null) {
 			String subsetId = criterion.getSubsetId();
 			if (!Strings.isNullOrEmpty(subsetId)) {
-				Subset subset = subsetRepository.findOne(subsetId);
-				if (subset == null) {
+				Optional<Subset> subset = subsetRepository.findById(subsetId);
+				if (!subset.isPresent()) {
 					throw new ServiceException("Referenced subset does not exist. ROLE_ID:" + subsetId);
 				}
-				return subset.getEcl();
+				return subset.get().getEcl();
 			}
 			return criterion.getEcl();
 		}

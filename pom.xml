@@ -29,9 +29,16 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>1.5.1.RELEASE</version>
+		<version>2.0.1.RELEASE</version>
 	</parent>
 	<properties>
+		<!--
+			Snomed International's Fork of Spring Data Elasticsearch 4.0.0 includes an up to date REST client
+				- uses Elasticsearch 6.0.1
+			N.B. Remember to keep test version in sync in TestConfig.ELASTIC_SEARCH_VERSION
+		-->
+		<snomed-spring-data-elasticsearch.version>4.0.0</snomed-spring-data-elasticsearch.version>
+
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>1.8</java.version>
@@ -42,7 +49,7 @@
 		<dependency>
 			<groupId>org.ihtsdo.otf</groupId>
 			<artifactId>snomed-query-service</artifactId>
-			<version>1.2.1</version>
+			<version>1.4.0</version>
 			<exclusions>
 				<exclusion>
 					<groupId>com.mangofactory</groupId>
@@ -51,9 +58,39 @@
 			</exclusions>
 		</dependency>
 		<dependency>
-			<groupId>org.ihtsdo.otf</groupId>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-core</artifactId>
+			<version>7.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-queries</artifactId>
+			<version>7.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-analyzers-common</artifactId>
+			<version>7.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-queryparser</artifactId>
+			<version>7.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-join</artifactId>
+			<version>7.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.snomed.oft</groupId>
+			<artifactId>spring-data-elasticsearch</artifactId>
+			<version>${snomed-spring-data-elasticsearch.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.snomed.otf</groupId>
 			<artifactId>snomed-boot</artifactId>
-			<version>1.1.0</version>
+			<version>1.11.0</version>
 			<exclusions>
 				<exclusion>
 					<groupId>com.google.collections</groupId>
@@ -61,19 +98,15 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-		<!-- Spring Dependencies -->
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-elasticsearch</artifactId>
+			<groupId>org.elasticsearch</groupId>
+			<artifactId>elasticsearch</artifactId>
+			<version>6.0.1</version>
+			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>net.java.dev.jna</groupId>
@@ -89,6 +122,17 @@
 			<groupId>io.springfox</groupId>
 			<artifactId>springfox-swagger-ui</artifactId>
 			<version>2.5.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>pl.allegro.tech</groupId>
+			<artifactId>embedded-elasticsearch</artifactId>
+			<version>RELEASE</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 	<build>

@@ -4,19 +4,19 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import org.snomed.heathanalytics.pojo.TermHolder;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.elasticsearch.annotations.Field;
-import org.springframework.data.elasticsearch.annotations.FieldIndex;
+import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.util.Date;
 
 public class ClinicalEncounter implements Act {
 
-	@Field(index = FieldIndex.not_analyzed)
+	@Field(type = FieldType.Date)
 	private Date date;
 
-	@Field(index = FieldIndex.not_analyzed)
+	@Field(type = FieldType.Long)
 	private Long conceptId;
 
-	@Field(index = FieldIndex.not_analyzed)
+	@Field(type = FieldType.keyword)
 	private ClinicalEncounterType type;
 
 	@Transient

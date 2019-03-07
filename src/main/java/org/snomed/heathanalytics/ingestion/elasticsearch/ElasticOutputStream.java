@@ -26,7 +26,7 @@ public class ElasticOutputStream implements HealthDataOutputStream {
 
 	@Override
 	public void addClinicalEncounter(String roleId, ClinicalEncounter encounter) {
-		Patient patient = patientRepository.findOne(roleId);
+		Patient patient = patientRepository.findById(roleId).orElse(null);
 		if (patient != null) {
 			patient.addEncounter(encounter);
 			patientRepository.save(patient);

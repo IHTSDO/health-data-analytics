@@ -3,11 +3,9 @@ package org.snomed.heathanalytics.domain;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
-import org.springframework.data.elasticsearch.annotations.FieldIndex;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 @Document(indexName = "cohort")
@@ -16,13 +14,13 @@ public class CohortCriteria {
 	@Id
 	private String id;
 
-	@Field(type = FieldType.String, index = FieldIndex.not_analyzed)
+	@Field(type = FieldType.keyword)
 	private String name;
 
-	@Field(type = FieldType.String, index = FieldIndex.not_analyzed)
+	@Field(type = FieldType.keyword)
 	private String description;
 
-	@Field(type = FieldType.String)
+	@Field(type = FieldType.keyword)
 	private Gender gender;
 
 	@Field(type = FieldType.Integer)

@@ -1,5 +1,9 @@
 package org.snomed.heathanalytics;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import org.apache.http.HttpHost;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.index.query.MatchAllQueryBuilder;
 import org.ihtsdo.otf.snomedboot.ReleaseImportException;
 import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
@@ -7,6 +11,8 @@ import org.ihtsdo.otf.sqs.service.ReleaseImportManager;
 import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.heathanalytics.config.ElasticsearchProperties;
+import org.snomed.heathanalytics.config.PatientMixin;
 import org.snomed.heathanalytics.domain.CohortCriteria;
 import org.snomed.heathanalytics.domain.Criterion;
 import org.snomed.heathanalytics.domain.Patient;
@@ -24,7 +30,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
+import org.springframework.data.elasticsearch.core.EntityMapper;
 import org.springframework.data.elasticsearch.core.query.DeleteQuery;
+import org.springframework.data.elasticsearch.rest.ElasticsearchRestClient;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
@@ -32,6 +41,8 @@ import springfox.documentation.spring.web.plugins.Docket;
 import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import static com.google.common.base.Predicates.not;
@@ -90,6 +101,54 @@ public class Application implements ApplicationRunner {
 	@Bean
 	public ExampleDataGenerator exampleDataSource() throws IOException, ReleaseImportException {
 		return new ExampleDataGenerator(new ExampleConceptService(snomedQueryService()));
+	}
+
+	@Bean
+	public ElasticsearchTemplate elasticsearchTemplate() {
+		final com.fasterxml.jackson.databind.ObjectMapper elasticSearchMapper = Jackson2ObjectMapperBuilder
+				.json()
+				.defaultViewInclusion(false)
+				.failOnUnknownProperties(false)
+				.serializationInclusion(JsonInclude.Include.NON_NULL)
+				.build();
+
+		EntityMapper entityMapper = new EntityMapper() {
+			@Override
+			public String mapToString(Object o) throws IOException {
+				return elasticSearchMapper.writeValueAsString(o);
+			}
+
+			@Override
+			public <T> T mapToObject(String s, Class<T> aClass) throws IOException {
+				return elasticSearchMapper.readValue(s, aClass);
+			}
+		};
+
+		return new ElasticsearchTemplate(elasticsearchClient(), entityMapper);
+	}
+
+	@Bean
+	public ElasticsearchRestClient elasticsearchClient() {
+		RestClientBuilder restClientBuilder = RestClient.builder(getHttpHosts(elasticsearchProperties().getUrls()));
+		restClientBuilder.setRequestConfigCallback(builder -> {
+			builder.setConnectionRequestTimeout(0); //Disable lease handling for the connection pool! See https://github.com/elastic/elasticsearch/issues/24069
+			return builder;
+		});
+
+		return new ElasticsearchRestClient(new HashMap<>(), restClientBuilder);
+	}
+
+	@Bean
+	public ElasticsearchProperties elasticsearchProperties() {
+		return new ElasticsearchProperties();
+	}
+
+	private static HttpHost[] getHttpHosts(String[] hosts) {
+		List<HttpHost> httpHosts = new ArrayList<>();
+		for (String host : hosts) {
+			httpHosts.add(HttpHost.create(host));
+		}
+		return httpHosts.toArray(new HttpHost[]{});
 	}
 
 	private void runDemo(int demoPatientCount) throws ServiceException, IOException, ReleaseImportException {

@@ -1,18 +1,18 @@
 package org.snomed.heathanalytics;
 
+import org.elasticsearch.index.query.MatchAllQueryBuilder;
 import org.ihtsdo.otf.snomedboot.ReleaseImportException;
 import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
 import org.ihtsdo.otf.sqs.service.ReleaseImportManager;
 import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.heathanalytics.domain.ClinicalEncounter;
 import org.snomed.heathanalytics.domain.CohortCriteria;
+import org.snomed.heathanalytics.domain.Criterion;
 import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.ingestion.exampledata.ExampleConceptService;
 import org.snomed.heathanalytics.ingestion.exampledata.ExampleDataGenerator;
-import org.snomed.heathanalytics.domain.Criterion;
 import org.snomed.heathanalytics.ingestion.exampledata.ExampleDataGeneratorConfiguration;
 import org.snomed.heathanalytics.service.QueryService;
 import org.snomed.heathanalytics.service.ServiceException;
@@ -24,6 +24,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
+import org.springframework.data.elasticsearch.core.query.DeleteQuery;
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
@@ -115,7 +116,9 @@ public class Application implements ApplicationRunner {
 	}
 
 	private void deleteExistingPatientData() {
-		elasticsearchTemplate.deleteIndex(Patient.class);
+		DeleteQuery deleteQuery = new DeleteQuery();
+		deleteQuery.setQuery(new MatchAllQueryBuilder());
+		elasticsearchTemplate.delete(deleteQuery, Patient.class);
 	}
 
 	@Bean

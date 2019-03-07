@@ -77,4 +77,6 @@ The patient data is stored in Elasticsearch.
 The next time you run the application remove the '--generate-population' unless you want to generate a new set.
 
 ### Load your own data
-If you create a new class which implements HealthDataIngestionSource which writes to the HealthDataOutputStream you could then replace the ExampleDataGenerator [here](https://github.com/IHTSDO/health-data-analytics/blob/1a46ded/src/main/java/org/snomed/heathanalytics/Application.java#L91) with your own data source.
+You can stream your own patient data into this application by writing an implementation of HealthDataIngestionSource.
+
+We would love to here from you if you are thinking of using this project to load your own data. [Get in touch](mailto:techsupport@snomed.org).

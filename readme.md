@@ -35,7 +35,8 @@ This demo tool is a real tool. If we were to get some real patient data and stre
 A frontend web application for this API is available [here](https://github.com/IHTSDO/health-data-analytics-frontend).
 
 ### Data Store
-The datasource is an embedded Elasticsearch instance which holds a Snomed Edition to support subsumption testing and the patient data.
+A standalone Elasticsearch instance is required to hold the patient data. 
+There is also a Lucene index within the application to hold a SNOMED CT Edition to support subsumption testing.
 
 ### Data Model
 The data points are:
@@ -53,25 +54,27 @@ The data points are:
 ### Local API Setup
 #### Prerequisites
 - Java 8
-- 3G of memory
-- A Snomed RF2 archive
+- Min 3G of memory for the application
+- Min 2G of memory for Elasticsearch
+- A SNOMED CT RF2 archive
 
 #### Setup
 1. Create a folder for this tool.
 2. Add the application .jar file by downloading the [latest release](https://github.com/IHTSDO/health-data-analytics/releases/latest).
   1. Alternatively build your own jar file using maven ```mvn clean package```.
-3. Unzip the Snomed RF2 archive into a sub-folder called 'release'.
+3. Unzip the SNOMED RF2 archive into a sub-folder called 'release'.
+4. Download and run [Elasticsearch 6.0.1](https://www.elastic.co/downloads/past-releases/elasticsearch-6-0-1).
 
-The final step is to run the tool to import Snomed and generate the population. In the terminal go to the folder for the application and run the following:  
+Now you are ready to run the tool to import SNOMED CT into Lucene and to generate a demonstration population. In the terminal go to the folder for the application and run the following:  
 ```java -Xmx3g -jar health-data-analytics*.jar --generate-population=10000```
 
-The application will first import Snomed from the release folder. Then it will generate the patients.
+The application will first import SNOMED CT from the release folder. Then it will generate the patients.
 The '--generate-population' argument tells the application how many patients to generate. It takes about 45 seconds per 10K patients on a 2.2 GHz Intel Core i7.
 
-The Snomed data is imported into Lucene indices under a 'data' folder. The patient data is stored in Elasticsearch indices under an 'index' folder. This data will remain accessible to the application even after restarts until you delete the folder.
+The SNOMED data is imported into Lucene indices in the 'data' folder. 
+The patient data is stored in Elasticsearch.
 
-The next time you run the application remove the '--generate-population' unless you want to generate more.
-
+The next time you run the application remove the '--generate-population' unless you want to generate a new set.
 
 ### Load your own data
 If you create a new class which implements HealthDataIngestionSource which writes to the HealthDataOutputStream you could then replace the ExampleDataGenerator [here](https://github.com/IHTSDO/health-data-analytics/blob/1a46ded/src/main/java/org/snomed/heathanalytics/Application.java#L91) with your own data source.

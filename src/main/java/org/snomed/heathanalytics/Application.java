@@ -110,6 +110,7 @@ public class Application implements ApplicationRunner {
 				.defaultViewInclusion(false)
 				.failOnUnknownProperties(false)
 				.serializationInclusion(JsonInclude.Include.NON_NULL)
+				.mixIn(Patient.class, PatientMixin.class)
 				.build();
 
 		EntityMapper entityMapper = new EntityMapper() {

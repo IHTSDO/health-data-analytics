@@ -73,15 +73,20 @@ public class Application implements ApplicationRunner {
 	}
 
 	@Override
-	public void run(ApplicationArguments applicationArguments) throws Exception {
-		if (applicationArguments.containsOption(DEMO_MODE)) {
-			runDemo(demoPatientCount);
-		} else if (applicationArguments.containsOption(GENERATE_POPULATION)) {
-			List<String> values = applicationArguments.getOptionValues(GENERATE_POPULATION);
-			if (values.size() != 1 || !values.get(0).matches("\\d*")) {
-				throw new IllegalArgumentException("Option " + GENERATE_POPULATION + " requires one numeric value after the equals character.");
+	public void run(ApplicationArguments applicationArguments) throws ServiceException {
+		try {
+			if (applicationArguments.containsOption(DEMO_MODE)) {
+				runDemo(demoPatientCount);
+			} else if (applicationArguments.containsOption(GENERATE_POPULATION)) {
+				List<String> values = applicationArguments.getOptionValues(GENERATE_POPULATION);
+				if (values.size() != 1 || !values.get(0).matches("\\d*")) {
+					throw new IllegalArgumentException("Option " + GENERATE_POPULATION + " requires one numeric value after the equals character.");
+				}
+				generatePopulation(Integer.parseInt(values.get(0)));
 			}
-			generatePopulation(Integer.parseInt(values.get(0)));
+		} catch (Exception e) {
+			logger.error("Application error", e);
+			throw new ServiceException("Application error", e);
 		}
 	}
 

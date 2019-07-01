@@ -266,7 +266,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 	private void scenarioPulmEmbGIBleed(Patient patient, int age, GregorianCalendar date) throws ServiceException {
 		//
 		// Begin section Pulm Embolus and GI Ulcer ------------------------
-		// Disease codes for this are  GI Ulcer 40845000, GI Bleed 74474003, Pulmonary thromboembolism 233935004, and Anticoagulant agent 81839001
+		// Disease codes for this are GI Ulcer 40845000, GI Bleed 74474003, Pulmonary thromboembolism 233935004, and Product containing warfarin 48603004
 		if (age > 15 && chancePercent(0.15f)) {// Patients with both Pulm Embolous and Ulcer very small
 			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("233935004")));// Pulmonary thromboembolism (disorder)
 			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("40845000")));// GI ULcer Disease
@@ -274,7 +274,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 			// 75% of patients over 15 with Pulm Emb and Ulcer are prescribed an AntiCoagulant agent
 			if (chancePercent(75)) {
 				// Prescribed an AntiCoag Agent
-				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.MEDICATION, concepts.selectRandomChildOf("81839001")));// Anticoagulant agent
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.MEDICATION, concepts.selectRandomChildOf("48603004")));// Product containing warfarin (medicinal product)
 
 				// After 1 - 6 months
 				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
@@ -304,7 +304,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 
 			if (chancePercent(92)) {// Get AntiCoag agent
 				// Prescribed an Antiplatelet
-				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.MEDICATION, concepts.selectRandomChildOf("81839001")));// Medicinal product acting as anticoagulant agent (product)
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.MEDICATION, concepts.selectRandomChildOf("48603004")));// Product containing warfarin (medicinal product)
 
 
 				// After 1 - 6 months

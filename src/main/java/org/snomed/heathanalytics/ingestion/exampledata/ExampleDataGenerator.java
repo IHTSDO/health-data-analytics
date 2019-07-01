@@ -163,7 +163,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 			// After 1 - 6 months
 			date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
 
-			// 2% of p	atients with COPD only have a Lung Infection.
+			// 2% of patients with COPD only have a Lung Infection.
 			if (chancePercent(2)) {
 				patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("53084003")));// Bacterial Lung Infection
 			}
@@ -171,6 +171,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 	}
 
 	// This scenario is not used at the moment.
+	@SuppressWarnings("unused")
 	private void scenarioAfibPepticUcler(Patient patient, int age, GregorianCalendar date) throws ServiceException {
 		//
 		// Begin section Afib and Peptic Ucler ------------------------
@@ -265,9 +266,9 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 	private void scenarioPulmEmbGIBleed(Patient patient, int age, GregorianCalendar date) throws ServiceException {
 		//
 		// Begin section Pulm Embolus and GI Ulcer ------------------------
-		// Disease codes for this are  GI Ulcer 40845000,  GI Bleed 74474003, Pulm Embolus 59282003, and Anticoagulant agent 81839001
+		// Disease codes for this are  GI Ulcer 40845000, GI Bleed 74474003, Pulmonary thromboembolism 233935004, and Anticoagulant agent 81839001
 		if (age > 15 && chancePercent(0.15f)) {// Patients with both Pulm Embolous and Ulcer very small
-			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("59282003")));// Pulm Embolism
+			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("233935004")));// Pulmonary thromboembolism (disorder)
 			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("40845000")));// GI ULcer Disease
 
 			// 75% of patients over 15 with Pulm Emb and Ulcer are prescribed an AntiCoagulant agent
@@ -299,7 +300,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 
 		// Begin section Pulm Emb only  ----------------------------
 		if (age > 15 && chancePercent(2)) {// Patients with Pulm Emb only
-			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("59282003")));// Pulm Embolism
+			patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("233935004")));// Pulmonary thromboembolism (disorder)
 
 			if (chancePercent(92)) {// Get AntiCoag agent
 				// Prescribed an Antiplatelet

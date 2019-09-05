@@ -8,6 +8,8 @@ import org.snomed.heathanalytics.ingestion.HealthDataOutputStream;
 import org.snomed.heathanalytics.store.PatientRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
+
 @Service
 public class ElasticOutputStream implements HealthDataOutputStream {
 
@@ -22,6 +24,11 @@ public class ElasticOutputStream implements HealthDataOutputStream {
 	@Override
 	public void createPatient(Patient patient) {
 		patientRepository.save(patient);
+	}
+
+	@Override
+	public void createPatients(Collection<Patient> patients) {
+		patientRepository.save(patients);
 	}
 
 	@Override

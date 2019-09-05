@@ -52,6 +52,16 @@ public class ExampleDataGeneratorTest {
 			}
 
 			@Override
+			public void createPatients(Collection<Patient> patients) {
+				logger.info("New patient batch of {}", patients.size());
+				synchronized (patientData) {
+					for (Patient patient : patients) {
+						patientData.put(patient.getRoleId(), patient.getEncounters());
+					}
+				}
+			}
+
+			@Override
 			public void addClinicalEncounter(String roleId, ClinicalEncounter encounter) {
 				logger.info("New clinical encounter {} {}", roleId, encounter);
 				patientData.get(roleId).add(encounter);

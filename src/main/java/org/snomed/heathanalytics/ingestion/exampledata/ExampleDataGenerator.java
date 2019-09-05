@@ -15,7 +15,6 @@ import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.IntStream;
 
 public class ExampleDataGenerator implements HealthDataIngestionSource {
 
@@ -33,19 +32,27 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		List<Exception> exceptions = new ArrayList<>();
 		AtomicInteger progress = new AtomicInteger();
 		int progressChunk = 10_000;
-		IntStream.range(0, generatorConfiguration.getDemoPatientCount()).parallel().forEach(i -> {
+		List<Patient> patientBatch = new ArrayList<>();
+		for (int i = 0; i < generatorConfiguration.getDemoPatientCount(); i++) {
 			if (i % progressChunk == 0) {
 				int progressToReport = progress.addAndGet(progressChunk);
 				System.out.println(NumberFormat.getNumberInstance().format(progressToReport) + "/" + NumberFormat.getNumberInstance().format(generatorConfiguration.getDemoPatientCount()));
 			}
 			try {
-				generateExamplePatientAndActs(i + "", healthDataOutputStream);
+				patientBatch.add(generateExamplePatientAndActs(i + ""));
+				if (patientBatch.size() == 1000) {
+					healthDataOutputStream.createPatients(patientBatch);
+					patientBatch.clear();
+				}
 			} catch (ServiceException e) {
 				if (exceptions.size() < 10) {
 					exceptions.add(e);
 				}
 			}
-		});
+		}
+		if (!patientBatch.isEmpty()) {
+			healthDataOutputStream.createPatients(patientBatch);
+		}
 		System.out.println();
 		if (!exceptions.isEmpty()) {
 			logger.error("There were errors generating patent data.", exceptions.get(0));
@@ -53,7 +60,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		logger.info("Generating patient data took {} seconds.", (new Date().getTime() - start) / 1000);
 	}
 
-	private void generateExamplePatientAndActs(String roleId, HealthDataOutputStream healthDataOutputStream) throws ServiceException {
+	private Patient generateExamplePatientAndActs(String roleId) throws ServiceException {
 		Patient patient = new Patient(roleId);
 
 		//  All patients are over the age of 30 and under the age of 85.
@@ -85,8 +92,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 		scenarioBrcaTamoxifen(patient, age, date);
 		scenarioDiabSmokeFootAmp(patient, age, date);
 		scenarioLymphAnthCHF(patient, age, date);
-
-		healthDataOutputStream.createPatient(patient);
+		return patient;
 	}
 
 	private void scenarioRaCOPD(Patient patient, int age, GregorianCalendar date) throws ServiceException {

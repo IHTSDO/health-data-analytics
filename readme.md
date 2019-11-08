@@ -66,7 +66,7 @@ The final step is to run the tool to import Snomed and generate the population. 
 ```java -Xmx3g -jar health-data-analytics*.jar --generate-population=10000```
 
 The application will first import Snomed from the release folder. Then it will generate the patients.
-The '--generate-population' argument tells the application how many patients to generate. It takes about 45 seconds per 10K patients on a 2.2 GHz Intel Core i7.
+The '--generate-population' argument tells the application how many patients to generate. It takes about 15 seconds per 100K patients on a 2.2 GHz Intel Core i7.
 
 The Snomed data is imported into Lucene indices under a 'data' folder. The patient data is stored in Elasticsearch indices under an 'index' folder. This data will remain accessible to the application even after restarts until you delete the folder.
 

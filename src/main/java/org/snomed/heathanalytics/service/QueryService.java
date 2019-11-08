@@ -56,7 +56,7 @@ public class QueryService {
 		BoolQueryBuilder patientQuery = boolQuery();
 
 		if (cohortCriteria.getGender() != null) {
-			patientQuery.must(termQuery(Patient.Fields.GENDER, cohortCriteria.getGender().toString().toLowerCase()));
+			patientQuery.must(termQuery(Patient.Fields.GENDER, cohortCriteria.getGender()));
 		}
 		Integer minAge = cohortCriteria.getMinAge();
 		Integer maxAge = cohortCriteria.getMaxAge();

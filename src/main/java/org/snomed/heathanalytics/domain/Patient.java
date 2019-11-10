@@ -48,9 +48,6 @@ public class Patient {
 	}
 
 	public void addEncounter(ClinicalEncounter encounter) {
-		if (encounters == null) {
-			encounters = new HashSet<>();
-		}
 		encounters.add(encounter);
 	}
 
@@ -96,6 +93,10 @@ public class Patient {
 
 	public void setGender(Gender gender) {
 		this.gender = gender;
+	}
+
+	public void setEncounters(Set<ClinicalEncounter> encounters) {
+		this.encounters = encounters;
 	}
 
 	@Override

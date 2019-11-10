@@ -82,12 +82,14 @@ public class QueryService {
 		Map<Criterion, List<Long>> criterionToConceptIdMap = new HashMap<>();
 		for (Criterion criterion : criteria) {
 			String criterionEcl = getCriterionEcl(criterion);
-			timer.split("Fetching concepts for ECL " + criterionEcl);
-			List<Long> conceptIds = getConceptIds(criterionEcl);
-			if (criterion.isHas()) {
-				patientFilter.must(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
+			if (criterionEcl != null) {
+				timer.split("Fetching concepts for ECL " + criterionEcl);
+				List<Long> conceptIds = getConceptIds(criterionEcl);
+				if (criterion.isHas()) {
+					patientFilter.must(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
+				}
+				criterionToConceptIdMap.put(criterion, conceptIds);
 			}
-			criterionToConceptIdMap.put(criterion, conceptIds);
 		}
 
 		List<Patient> patientPage = new ArrayList<>();
@@ -102,6 +104,9 @@ public class QueryService {
 						.build(),
 				Patient.class)) {
 			patientStream.forEachRemaining(patient -> {
+				if (patient.getEncounters() == null) {
+					patient.setEncounters(Collections.emptySet());
+				}
 				if (checkEncounterDatesAndExclusions(patient.getEncounters(), cohortCriteria.getPrimaryCriterion(), cohortCriteria.getAdditionalCriteria(), criterionToConceptIdMap)) {
 					long number = patientCount.incrementAndGet();
 					if (number > offset && number <= limit) {
@@ -189,14 +194,15 @@ public class QueryService {
 
 	private boolean checkEncounterDatesAndExclusions(Set<ClinicalEncounter> allEncounters, Criterion primaryCriterion, List<RelativeCriterion> relativeCriteria, Map<Criterion, List<Long>> criterionToConceptIdMap) {
 		for (ClinicalEncounter encounter : allEncounters) {
-			if (criterionToConceptIdMap.get(primaryCriterion).contains(encounter.getConceptId())) {
+			List<Long> conceptIds = criterionToConceptIdMap.get(primaryCriterion);
+			if (conceptIds == null || conceptIds.contains(encounter.getConceptId())) {
 				if (relativeCriteria.isEmpty() || recursiveEncounterMatch(encounter, getCriteriaStack(relativeCriteria), allEncounters, criterionToConceptIdMap)) {
 					encounter.setPrimaryExposure(true);
 					return true;
 				}
 			}
 		}
-		return false;
+		return allEncounters.isEmpty();
 	}
 
 	private Stack<RelativeCriterion> getCriteriaStack(List<RelativeCriterion> relativeCriteria) {

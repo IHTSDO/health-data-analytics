@@ -49,6 +49,10 @@ public class StatisticalTestResult {
 		return getFractionAsPercentage(hasTestVariableCount, getCohortTotal());
 	}
 
+	public String getHasNotTestVariablePercentage() {
+		return getFractionAsPercentage(hasNotTestVariableCount, getCohortTotal());
+	}
+
 	public int getHasTestVariableHasOutcomeCount() {
 		return hasTestVariableHasOutcomeCount;
 	}

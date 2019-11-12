@@ -41,14 +41,18 @@ public class Patient {
 		this.roleId = roleId;
 	}
 
-	public Patient(String roleId, String name, Date dob, Gender gender) {
+	public Patient(String roleId, Date dob, Gender gender) {
 		this.roleId = roleId;
 		setDob(dob);
 		this.gender = gender;
 	}
 
-	public void addEncounter(ClinicalEncounter encounter) {
+	public Patient addEncounter(ClinicalEncounter encounter) {
+		if (encounters == null) {
+			encounters = new HashSet<>();
+		}
 		encounters.add(encounter);
+		return this;
 	}
 
 	public Set<ClinicalEncounter> getEncounters() {

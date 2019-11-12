@@ -8,7 +8,6 @@ import org.springframework.data.elasticsearch.annotations.FieldIndex;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 @Document(indexName = "cohort")
@@ -60,7 +59,7 @@ public class CohortCriteria {
 	}
 
 	public boolean isRelativeEncounterCheckNeeded() {
-		return !isEmptyPrimaryCriterion() && testVariable != null;
+		return !isEmptyPrimaryCriterion() && testVariable != null || additionalCriteria.stream().anyMatch(RelativeCriterion::hasTimeConstraint);
 	}
 
 	public String getId() {

@@ -174,7 +174,7 @@ public class StatisticTestingIntegrationTest {
 	}
 
 	private Patient createPatient(String roleId) {
-		Patient patient = new Patient(roleId, "", TestUtils.getDob(35), Gender.FEMALE);
+		Patient patient = new Patient(roleId, TestUtils.getDob(35), Gender.FEMALE);
 		healthDataStream.createPatient(patient);
 		return patient;
 	}

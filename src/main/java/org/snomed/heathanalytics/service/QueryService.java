@@ -109,7 +109,7 @@ public class QueryService {
 			List<Patient> patientList = new ArrayList<>();
 			try (CloseableIterator<Patient> patientStream = elasticsearchTemplate.stream(patientElasticQuery.build(), Patient.class)) {
 				patientStream.forEachRemaining(patient ->
-						processPatient(patient, cohortCriteria, encounterCollector, criterionToConceptIdMap, patientCount, offset, limit, conceptTerms, patientList));
+						processPatient(patient, cohortCriteria, criterionToConceptIdMap, patientCount, offset, limit, conceptTerms, patientList));
 			}
 			finalPatientPage = new PageImpl<>(patientList, new PageRequest(page, size > 0 ? size : 1), patientCount.get());
 		} else {
@@ -118,7 +118,7 @@ public class QueryService {
 			AggregatedPage<Patient> patients = elasticsearchTemplate.queryForPage(patientElasticQuery.build(), Patient.class);
 			List<Patient> patientList = new ArrayList<>();
 			patients.getContent().forEach(patient -> {
-				processPatient(patient, cohortCriteria, encounterCollector, criterionToConceptIdMap, patientCount, offset, limit, conceptTerms, patientList);
+				processPatient(patient, cohortCriteria, criterionToConceptIdMap, patientCount, offset, limit, conceptTerms, patientList);
 			});
 			finalPatientPage = new PageImpl<>(patients.getContent(), pageRequest, patients.getTotalElements());
 		}
@@ -149,12 +149,12 @@ public class QueryService {
 		return (int) fetchCohort(cohortCriteria, 0, 0).getTotalElements();
 	}
 
-	private void processPatient(Patient patient, CohortCriteria cohortCriteria, ConceptCountMatrix encounterCollector, Map<Criterion, List<Long>> criterionToConceptIdMap, AtomicInteger patientCount, int offset, int limit, Map<Long, TermHolder> conceptTerms, List<Patient> patientList) {
+	private void processPatient(Patient patient, CohortCriteria cohortCriteria, Map<Criterion, List<Long>> criterionToConceptIdMap, AtomicInteger patientCount, int offset, int limit, Map<Long, TermHolder> conceptTerms, List<Patient> patientList) {
 		if (patient.getEncounters() == null) {
 			patient.setEncounters(Collections.emptySet());
 		}
 		if (checkEncounterDatesAndExclusions(patient.getEncounters(), cohortCriteria.getPrimaryCriterion(), cohortCriteria.getAdditionalCriteria(),
-				criterionToConceptIdMap, encounterCollector)) {
+				criterionToConceptIdMap)) {
 			long number = patientCount.incrementAndGet();
 			if (number > offset && number <= limit) {
 				patient.getEncounters().forEach(encounter ->

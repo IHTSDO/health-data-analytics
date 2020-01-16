@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.domain.CohortCriteria;
 import org.snomed.heathanalytics.domain.Criterion;
 import org.snomed.heathanalytics.domain.Patient;
+import org.snomed.heathanalytics.ingestion.bartshealth.BartsHealthCSVLoader;
 import org.snomed.heathanalytics.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.ingestion.exampledata.ExampleConceptService;
 import org.snomed.heathanalytics.ingestion.exampledata.ExampleDataGenerator;
@@ -32,6 +33,7 @@ import springfox.documentation.spring.web.plugins.Docket;
 import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.Date;
 import java.util.List;
 
 import static com.google.common.base.Predicates.not;
@@ -42,6 +44,7 @@ public class Application implements ApplicationRunner {
 
 	public static final String GENERATE_POPULATION = "generate-population";
 	public static final String DEMO_MODE = "demo-mode";
+	public static final String LOAD_BARTS_CSV = "load-barts-csv";
 
 	private static final File INDEX_DIRECTORY = new File("index");
 
@@ -53,6 +56,9 @@ public class Application implements ApplicationRunner {
 
 	@Autowired
 	private ElasticsearchTemplate elasticsearchTemplate;
+
+	@Autowired
+	private BartsHealthCSVLoader bartsHealthTSVLoader;
 
 	private int demoPatientCount = 1000 * 10;
 	private Logger logger = LoggerFactory.getLogger(getClass());
@@ -71,6 +77,13 @@ public class Application implements ApplicationRunner {
 				throw new IllegalArgumentException("Option " + GENERATE_POPULATION + " requires one numeric value after the equals character.");
 			}
 			generatePopulation(Integer.parseInt(values.get(0)));
+		} else if (applicationArguments.containsOption(LOAD_BARTS_CSV)) {
+			List<String> values = applicationArguments.getOptionValues(LOAD_BARTS_CSV);
+			if (values.size() != 1) {
+				throw new IllegalArgumentException("Option " + LOAD_BARTS_CSV + " requires one file path after the equals character, maybe quotes are needed?");
+			}
+			File tsvFile = new File(values.get(0));
+			bartsHealthTSVLoader.load(tsvFile, elasticOutputStream);
 		}
 	}
 

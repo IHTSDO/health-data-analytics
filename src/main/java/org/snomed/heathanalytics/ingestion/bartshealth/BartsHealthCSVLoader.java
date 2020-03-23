@@ -27,15 +27,25 @@ public class BartsHealthCSVLoader {
 			throw new FileNotFoundException("No file accessible at " + tsvFile.getAbsolutePath());
 		}
 
-		Long rowsLoaded = 0L;
+		long rowsLoaded = 0L;
 
 		Map<String, AtomicLong> issues = new HashMap<>();
 		try (BufferedReader reader = new BufferedReader(new FileReader(tsvFile))) {
 			String line;
 			reader.readLine();
+			long lineNumber = 1;
 			while ((line = reader.readLine()) != null) {
-				String[] columns = line.split(",");
+				lineNumber++;
+				if (line.isEmpty()) {
+					System.out.println(String.format("Line %s is blank. Ignoring.", lineNumber));
+					continue;
+				}
 				// 0=PseudoID 1=Sex 2=Birth_yr 3=Enc_Type 4=SNOMED_Cd 5=Enc_YM
+				String[] columns = line.split(",");
+				if (columns.length != 6) {
+					System.err.println(String.format("Line %s has %s comma separated columns, expecting 6. Ignoring.", lineNumber, columns.length));
+					continue;
+				}
 				String patientId = columns[0];
 				String snomedCode = columns[4];
 				if (SCTID_PATTERN.matcher(snomedCode).matches()) {// Ignore rows with ICD codes

@@ -76,22 +76,24 @@ public class QueryService {
 
 		BoolQueryBuilder patientFilter = boolQuery();
 
-		// Fetch conceptIds of each criterion
-		List<Criterion> criteria = new ArrayList<>();
-		criteria.add(cohortCriteria.getPrimaryCriterion());
-		criteria.addAll(cohortCriteria.getAdditionalCriteria());
 		Map<Criterion, List<Long>> criterionToConceptIdMap = new HashMap<>();
-		for (Criterion criterion : criteria) {
-			String criterionEcl = getCriterionEcl(criterion);
-			if (criterionEcl != null) {
-				timer.split("Fetching concepts for ECL " + criterionEcl);
-				List<Long> conceptIds = getConceptIds(criterionEcl);
-				if (criterion.isHas()) {
-					patientFilter.must(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
-				} else {
-					patientFilter.mustNot(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
+		if (cohortCriteria.getPrimaryCriterion() != null) {
+			// Fetch conceptIds of each criterion
+			List<Criterion> criteria = new ArrayList<>();
+			criteria.add(cohortCriteria.getPrimaryCriterion());
+			criteria.addAll(cohortCriteria.getAdditionalCriteria());
+			for (Criterion criterion : criteria) {
+				String criterionEcl = getCriterionEcl(criterion);
+				if (criterionEcl != null) {
+					timer.split("Fetching concepts for ECL " + criterionEcl);
+					List<Long> conceptIds = getConceptIds(criterionEcl);
+					if (criterion.isHas()) {
+						patientFilter.must(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
+					} else {
+						patientFilter.mustNot(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
+					}
+					criterionToConceptIdMap.put(criterion, conceptIds);
 				}
-				criterionToConceptIdMap.put(criterion, conceptIds);
 			}
 		}
 
@@ -117,9 +119,11 @@ public class QueryService {
 			patientElasticQuery.withPageable(pageRequest);
 			AggregatedPage<Patient> patients = elasticsearchTemplate.queryForPage(patientElasticQuery.build(), Patient.class);
 			List<Patient> patientList = new ArrayList<>();
-			patients.getContent().forEach(patient -> {
-				processPatient(patient, cohortCriteria, criterionToConceptIdMap, patientCount, offset, limit, conceptTerms, patientList);
-			});
+			if (!criterionToConceptIdMap.isEmpty()) {
+				patients.getContent().forEach(patient ->
+					processPatient(patient, cohortCriteria, criterionToConceptIdMap, patientCount, offset, limit, conceptTerms, patientList)
+				);
+			}
 			finalPatientPage = new PageImpl<>(patients.getContent(), pageRequest, patients.getTotalElements());
 		}
 		timer.split("Fetching patients");

@@ -113,7 +113,7 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 
 				// 10% of patients with RA and COPD who have been prescribed an AntiTNF agent have a Lung Infection.
 				if (chancePercent(10)) {
-					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("53084003")));// Bacterial Lung Infection
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("53084003")));// Bacterial pneumonia
 				}
 			} else { // other 90%
 				// No medication prescribed
@@ -121,9 +121,9 @@ public class ExampleDataGenerator implements HealthDataIngestionSource {
 				// After 1 - 6 months
 				date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
 
-				// 2% of patients with RA and COPD who have NOT been prescribed an Anti-TNF agent have a Bacterial Lung Infection.
+				// 2% of patients with RA and COPD who have NOT been prescribed an Anti-TNF agent have a Bacterial pneumonia
 				if (chancePercent(2)) {
-					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("53084003")));// Bacterial Lung Infection
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), ClinicalEncounterType.FINDING, concepts.selectRandomChildOf("53084003")));// Bacterial pneumonia
 				}
 			}
 		}

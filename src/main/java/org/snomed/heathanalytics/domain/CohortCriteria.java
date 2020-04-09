@@ -1,5 +1,6 @@
 package org.snomed.heathanalytics.domain;
 
+import org.elasticsearch.common.Strings;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
@@ -7,7 +8,6 @@ import org.springframework.data.elasticsearch.annotations.FieldIndex;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 @Document(indexName = "cohort")
@@ -52,6 +52,14 @@ public class CohortCriteria {
 
 	public void addAdditionalCriterion(RelativeCriterion criterion) {
 		additionalCriteria.add(criterion);
+	}
+
+	public boolean isEmptyPrimaryCriterion() {
+		return primaryCriterion == null || (Strings.isNullOrEmpty(primaryCriterion.getEcl()) && Strings.isNullOrEmpty(primaryCriterion.getSubsetId()));
+	}
+
+	public boolean isRelativeEncounterCheckNeeded() {
+		return !isEmptyPrimaryCriterion() && testVariable != null || additionalCriteria.stream().anyMatch(RelativeCriterion::hasTimeConstraint);
 	}
 
 	public String getId() {

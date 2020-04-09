@@ -18,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
+import org.springframework.data.elasticsearch.core.aggregation.AggregatedPage;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.data.util.CloseableIterator;
@@ -56,7 +57,7 @@ public class QueryService {
 		BoolQueryBuilder patientQuery = boolQuery();
 
 		if (cohortCriteria.getGender() != null) {
-			patientQuery.must(termQuery(Patient.Fields.GENDER, cohortCriteria.getGender().toString().toLowerCase()));
+			patientQuery.must(termQuery(Patient.Fields.GENDER, cohortCriteria.getGender()));
 		}
 		Integer minAge = cohortCriteria.getMinAge();
 		Integer maxAge = cohortCriteria.getMaxAge();
@@ -75,44 +76,55 @@ public class QueryService {
 
 		BoolQueryBuilder patientFilter = boolQuery();
 
-		// Fetch conceptIds of each criterion
-		List<Criterion> criteria = new ArrayList<>();
-		criteria.add(cohortCriteria.getPrimaryCriterion());
-		criteria.addAll(cohortCriteria.getAdditionalCriteria());
 		Map<Criterion, List<Long>> criterionToConceptIdMap = new HashMap<>();
-		for (Criterion criterion : criteria) {
-			String criterionEcl = getCriterionEcl(criterion);
-			timer.split("Fetching concepts for ECL " + criterionEcl);
-			List<Long> conceptIds = getConceptIds(criterionEcl);
-			if (criterion.isHas()) {
-				patientFilter.must(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
+		if (cohortCriteria.getPrimaryCriterion() != null) {
+			// Fetch conceptIds of each criterion
+			List<Criterion> criteria = new ArrayList<>();
+			criteria.add(cohortCriteria.getPrimaryCriterion());
+			criteria.addAll(cohortCriteria.getAdditionalCriteria());
+			for (Criterion criterion : criteria) {
+				String criterionEcl = getCriterionEcl(criterion);
+				if (criterionEcl != null) {
+					timer.split("Fetching concepts for ECL " + criterionEcl);
+					List<Long> conceptIds = getConceptIds(criterionEcl);
+					if (criterion.isHas()) {
+						patientFilter.must(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
+					} else {
+						patientFilter.mustNot(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
+					}
+					criterionToConceptIdMap.put(criterion, conceptIds);
+				}
 			}
-			criterionToConceptIdMap.put(criterion, conceptIds);
 		}
 
-		List<Patient> patientPage = new ArrayList<>();
 		AtomicInteger patientCount = new AtomicInteger();
 		int offset = page * size;
 		int limit = offset + size;
 		Map<Long, TermHolder> conceptTerms = new Long2ObjectOpenHashMap<>();
-		try (CloseableIterator<Patient> patientStream = elasticsearchTemplate.stream(new NativeSearchQueryBuilder()
-						.withQuery(patientQuery)
-						.withFilter(patientFilter)
-						.withPageable(LARGE_PAGE)
-						.build(),
-				Patient.class)) {
-			patientStream.forEachRemaining(patient -> {
-				if (checkEncounterDatesAndExclusions(patient.getEncounters(), cohortCriteria.getPrimaryCriterion(), cohortCriteria.getAdditionalCriteria(), criterionToConceptIdMap)) {
-					long number = patientCount.incrementAndGet();
-					if (number > offset && number <= limit) {
-						for (ClinicalEncounter encounter : patient.getEncounters()) {
-							// Assign a TermHolder to avoid opening a try block within this loop
-							encounter.setConceptTerm(conceptTerms.computeIfAbsent(encounter.getConceptId(), conceptId -> new TermHolder()));
-						}
-						patientPage.add(patient);
-					}
-				}
-			});
+		NativeSearchQueryBuilder patientElasticQuery = new NativeSearchQueryBuilder()
+				.withQuery(patientQuery)
+				.withFilter(patientFilter)
+				.withPageable(LARGE_PAGE);
+
+		Page<Patient> finalPatientPage;
+		if (cohortCriteria.isRelativeEncounterCheckNeeded()) {
+			List<Patient> patientList = new ArrayList<>();
+			try (CloseableIterator<Patient> patientStream = elasticsearchTemplate.stream(patientElasticQuery.build(), Patient.class)) {
+				patientStream.forEachRemaining(patient ->
+						processPatient(patient, cohortCriteria, criterionToConceptIdMap, patientCount, offset, limit, conceptTerms, patientList));
+			}
+			finalPatientPage = new PageImpl<>(patientList, new PageRequest(page, size > 0 ? size : 1), patientCount.get());
+		} else {
+			PageRequest pageRequest = new PageRequest(page, size);
+			patientElasticQuery.withPageable(pageRequest);
+			AggregatedPage<Patient> patients = elasticsearchTemplate.queryForPage(patientElasticQuery.build(), Patient.class);
+			List<Patient> patientList = new ArrayList<>();
+			if (!criterionToConceptIdMap.isEmpty()) {
+				patients.getContent().forEach(patient ->
+					processPatient(patient, cohortCriteria, criterionToConceptIdMap, patientCount, offset, limit, conceptTerms, patientList)
+				);
+			}
+			finalPatientPage = new PageImpl<>(patients.getContent(), pageRequest, patients.getTotalElements());
 		}
 		timer.split("Fetching patients");
 
@@ -134,11 +146,26 @@ public class QueryService {
 //			patientQuery.addAggregation(AggregationBuilders.dateHistogram("patient_birth_dates")
 //					.field(Patient.FIELD_DOB).interval(DateHistogramInterval.YEAR));
 
-		return new PageImpl<>(patientPage, new PageRequest(page, size > 0 ? size : 1), patientCount.get());
+		return finalPatientPage;
 	}
 
 	private int fetchCohortCount(CohortCriteria cohortCriteria) throws ServiceException {
 		return (int) fetchCohort(cohortCriteria, 0, 0).getTotalElements();
+	}
+
+	private void processPatient(Patient patient, CohortCriteria cohortCriteria, Map<Criterion, List<Long>> criterionToConceptIdMap, AtomicInteger patientCount, int offset, int limit, Map<Long, TermHolder> conceptTerms, List<Patient> patientList) {
+		if (patient.getEncounters() == null) {
+			patient.setEncounters(Collections.emptySet());
+		}
+		if (checkEncounterDatesAndExclusions(patient.getEncounters(), cohortCriteria.getPrimaryCriterion(), cohortCriteria.getAdditionalCriteria(),
+				criterionToConceptIdMap)) {
+			long number = patientCount.incrementAndGet();
+			if (number > offset && number <= limit) {
+				patient.getEncounters().forEach(encounter ->
+						encounter.setConceptTerm(conceptTerms.computeIfAbsent(encounter.getConceptId(), conceptId -> new TermHolder())));
+				patientList.add(patient);
+			}
+		}
 	}
 
 	public StatisticalTestResult fetchStatisticalTestResult(CohortCriteria cohortCriteria) throws ServiceException {
@@ -189,14 +216,15 @@ public class QueryService {
 
 	private boolean checkEncounterDatesAndExclusions(Set<ClinicalEncounter> allEncounters, Criterion primaryCriterion, List<RelativeCriterion> relativeCriteria, Map<Criterion, List<Long>> criterionToConceptIdMap) {
 		for (ClinicalEncounter encounter : allEncounters) {
-			if (criterionToConceptIdMap.get(primaryCriterion).contains(encounter.getConceptId())) {
+			List<Long> conceptIds = criterionToConceptIdMap.get(primaryCriterion);
+			if (conceptIds == null || conceptIds.contains(encounter.getConceptId())) {
 				if (relativeCriteria.isEmpty() || recursiveEncounterMatch(encounter, getCriteriaStack(relativeCriteria), allEncounters, criterionToConceptIdMap)) {
 					encounter.setPrimaryExposure(true);
 					return true;
 				}
 			}
 		}
-		return false;
+		return allEncounters.isEmpty();
 	}
 
 	private Stack<RelativeCriterion> getCriteriaStack(List<RelativeCriterion> relativeCriteria) {
@@ -205,6 +233,7 @@ public class QueryService {
 		return criterionStack;
 	}
 
+	// TODO: try converting this to an Elasticsearch 'painless' script which runs on the nodes of the cluster. https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-script-query.html
 	private boolean recursiveEncounterMatch(ClinicalEncounter baseEncounter, Stack<RelativeCriterion> criterionStack, Set<ClinicalEncounter> allEncounters, Map<Criterion, List<Long>> criterionToConceptIdMap) {
 		RelativeCriterion criterion = criterionStack.pop();
 

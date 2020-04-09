@@ -99,8 +99,7 @@ public class CohortController {
 	}
 
 	private void validateSelection(@RequestBody CohortCriteria cohortCriteria) {
-		InputValidationHelper.checkInput("There must be a Primary Criterion", cohortCriteria.getPrimaryCriterion() != null);
-		InputValidationHelper.checkInput("The Primary Criterion can not be an exclusion.", cohortCriteria.getPrimaryCriterion().isHas());
+		InputValidationHelper.checkInput("The Primary Criterion can not be an exclusion.", cohortCriteria.getPrimaryCriterion() == null || cohortCriteria.getPrimaryCriterion().isHas());
 	}
 
 }

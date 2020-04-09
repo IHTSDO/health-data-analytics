@@ -32,4 +32,8 @@ public class RelativeCriterion extends Criterion {
 	public void setIncludeDaysInFuture(Integer includeDaysInFuture) {
 		this.includeDaysInFuture = includeDaysInFuture;
 	}
+
+	public boolean hasTimeConstraint() {
+		return includeDaysInFuture != null || includeDaysInPast != null;
+	}
 }

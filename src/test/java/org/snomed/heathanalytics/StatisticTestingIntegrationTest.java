@@ -141,7 +141,7 @@ public class StatisticTestingIntegrationTest {
 		//   Note: The Paracetamol prescription should have a date range but we haven't gone into that at this stage.
 		// Chance of heart attack with Paracetamol = D / C
 
-		CohortCriteria cohortCriteria = new CohortCriteria(new Criterion("<<" + hypertension.getId()));
+		CohortCriteria cohortCriteria = new CohortCriteria(new EncounterCriterion("<<" + hypertension.getId()));
 		cohortCriteria.setTestVariable(new RelativeCriterion("<<" + paracetamol.getId().toString(), null, 5 * year));
 		cohortCriteria.setTestOutcome(new RelativeCriterion("<<" + myocardialInfarction.getId().toString(), null, 5 * year));
 
@@ -156,7 +156,7 @@ public class StatisticTestingIntegrationTest {
 
 	@Test
 	public void testMultiCohortStatisticalTestWithRefinement() throws ServiceException {
-		CohortCriteria cohortCriteria = new CohortCriteria(new Criterion("<<" + hypertension.getId()));
+		CohortCriteria cohortCriteria = new CohortCriteria(new EncounterCriterion("<<" + hypertension.getId()));
 
 		// Here is the additional criterion
 		cohortCriteria.addAdditionalCriterion(new RelativeCriterion("<<" + myocardialInfarction.getId().toString(), null, -1));

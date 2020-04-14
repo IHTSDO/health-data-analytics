@@ -32,9 +32,9 @@ public class CohortCriteria {
 	private Integer maxAge;
 
 	@Field(type = FieldType.Object)
-	private Criterion primaryCriterion;
 
 	@Field(type = FieldType.Object)
+	private EncounterCriterion primaryCriterion;
 	private List<RelativeCriterion> additionalCriteria;
 
 	private RelativeCriterion testVariable;
@@ -45,7 +45,7 @@ public class CohortCriteria {
 		additionalCriteria = new ArrayList<>();
 	}
 
-	public CohortCriteria(Criterion primaryCriterion) {
+	public CohortCriteria(EncounterCriterion primaryCriterion) {
 		this();
 		this.primaryCriterion = primaryCriterion;
 	}
@@ -110,11 +110,11 @@ public class CohortCriteria {
 		this.maxAge = maxAge;
 	}
 
-	public Criterion getPrimaryCriterion() {
+	public EncounterCriterion getPrimaryCriterion() {
 		return primaryCriterion;
 	}
 
-	public void setPrimaryCriterion(Criterion primaryCriterion) {
+	public void setPrimaryCriterion(EncounterCriterion primaryCriterion) {
 		this.primaryCriterion = primaryCriterion;
 	}
 

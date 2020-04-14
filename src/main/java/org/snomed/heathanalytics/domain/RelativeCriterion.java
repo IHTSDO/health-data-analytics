@@ -1,6 +1,6 @@
 package org.snomed.heathanalytics.domain;
 
-public class RelativeCriterion extends Criterion {
+public class RelativeCriterion extends EncounterCriterion {
 
 	// Optional
 	private Integer includeDaysInPast;

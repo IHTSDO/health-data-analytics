@@ -8,7 +8,7 @@ import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.domain.CohortCriteria;
-import org.snomed.heathanalytics.domain.Criterion;
+import org.snomed.heathanalytics.domain.EncounterCriterion;
 import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.ingestion.exampledata.ExampleConceptService;
@@ -98,7 +98,7 @@ public class Application implements ApplicationRunner {
 
 		generatePopulation(demoPatientCount);
 
-		Page<Patient> cohort = queryService.fetchCohort(new CohortCriteria(new Criterion("<<420868002")), 0, 100);// Disorder due to type 1 diabetes mellitus
+		Page<Patient> cohort = queryService.fetchCohort(new CohortCriteria(new EncounterCriterion("<<420868002")), 0, 100);// Disorder due to type 1 diabetes mellitus
 		logger.info("******** Fetched 'Diabetes type 1' cohort, size:{}", cohort.getTotalElements());
 		System.out.println("First 100 results:");
 		for (Patient patient : cohort) {

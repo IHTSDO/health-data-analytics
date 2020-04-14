@@ -4,7 +4,7 @@ import org.springframework.data.annotation.Transient;
 
 import java.util.UUID;
 
-public class Criterion {
+public class EncounterCriterion {
 
 	@Transient
 	private String id;// Id generated - only used as a key in maps.
@@ -12,12 +12,12 @@ public class Criterion {
 	private String subsetId;
 	private String ecl;
 
-	public Criterion() {
+	public EncounterCriterion() {
 		id = UUID.randomUUID().toString();
 		has = true;
 	}
 
-	public Criterion(String ecl) {
+	public EncounterCriterion(String ecl) {
 		this();
 		this.ecl = ecl;
 	}
@@ -51,7 +51,7 @@ public class Criterion {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 
-		Criterion criterion = (Criterion) o;
+		EncounterCriterion criterion = (EncounterCriterion) o;
 
 		return id.equals(criterion.id);
 	}

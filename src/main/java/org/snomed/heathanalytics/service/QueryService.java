@@ -76,13 +76,13 @@ public class QueryService {
 
 		BoolQueryBuilder patientFilter = boolQuery();
 
-		Map<Criterion, List<Long>> criterionToConceptIdMap = new HashMap<>();
+		Map<EncounterCriterion, List<Long>> criterionToConceptIdMap = new HashMap<>();
 		if (cohortCriteria.getPrimaryCriterion() != null) {
 			// Fetch conceptIds of each criterion
-			List<Criterion> criteria = new ArrayList<>();
+			List<EncounterCriterion> criteria = new ArrayList<>();
 			criteria.add(cohortCriteria.getPrimaryCriterion());
 			criteria.addAll(cohortCriteria.getAdditionalCriteria());
-			for (Criterion criterion : criteria) {
+			for (EncounterCriterion criterion : criteria) {
 				String criterionEcl = getCriterionEcl(criterion);
 				if (criterionEcl != null) {
 					timer.split("Fetching concepts for ECL " + criterionEcl);
@@ -153,7 +153,7 @@ public class QueryService {
 		return (int) fetchCohort(cohortCriteria, 0, 0).getTotalElements();
 	}
 
-	private void processPatient(Patient patient, CohortCriteria cohortCriteria, Map<Criterion, List<Long>> criterionToConceptIdMap, AtomicInteger patientCount, int offset, int limit, Map<Long, TermHolder> conceptTerms, List<Patient> patientList) {
+	private void processPatient(Patient patient, CohortCriteria cohortCriteria, Map<EncounterCriterion, List<Long>> criterionToConceptIdMap, AtomicInteger patientCount, int offset, int limit, Map<Long, TermHolder> conceptTerms, List<Patient> patientList) {
 		if (patient.getEncounters() == null) {
 			patient.setEncounters(Collections.emptySet());
 		}
@@ -214,7 +214,7 @@ public class QueryService {
 	// cont
 	// if any found return true, else false
 
-	private boolean checkEncounterDatesAndExclusions(Set<ClinicalEncounter> allEncounters, Criterion primaryCriterion, List<RelativeCriterion> relativeCriteria, Map<Criterion, List<Long>> criterionToConceptIdMap) {
+	private boolean checkEncounterDatesAndExclusions(Set<ClinicalEncounter> allEncounters, EncounterCriterion primaryCriterion, List<RelativeCriterion> relativeCriteria, Map<EncounterCriterion, List<Long>> criterionToConceptIdMap) {
 		for (ClinicalEncounter encounter : allEncounters) {
 			List<Long> conceptIds = criterionToConceptIdMap.get(primaryCriterion);
 			if (conceptIds == null || conceptIds.contains(encounter.getConceptId())) {
@@ -234,7 +234,7 @@ public class QueryService {
 	}
 
 	// TODO: try converting this to an Elasticsearch 'painless' script which runs on the nodes of the cluster. https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-script-query.html
-	private boolean recursiveEncounterMatch(ClinicalEncounter baseEncounter, Stack<RelativeCriterion> criterionStack, Set<ClinicalEncounter> allEncounters, Map<Criterion, List<Long>> criterionToConceptIdMap) {
+	private boolean recursiveEncounterMatch(ClinicalEncounter baseEncounter, Stack<RelativeCriterion> criterionStack, Set<ClinicalEncounter> allEncounters, Map<EncounterCriterion, List<Long>> criterionToConceptIdMap) {
 		RelativeCriterion criterion = criterionStack.pop();
 
 		List<Long> conceptIds = criterionToConceptIdMap.get(criterion);
@@ -278,7 +278,7 @@ public class QueryService {
 		return null;
 	}
 
-	private String getCriterionEcl(Criterion criterion) throws ServiceException {
+	private String getCriterionEcl(EncounterCriterion criterion) throws ServiceException {
 		if (criterion != null) {
 			String subsetId = criterion.getSubsetId();
 			if (!Strings.isNullOrEmpty(subsetId)) {

@@ -74,7 +74,7 @@ public class IntegrationTest {
 
 	@Test
 	public void testCohortSelectionWithPrimaryExposureCriterion() throws ServiceException {
-		Criterion primaryExposureCriterion = new Criterion("<<" + myocardialInfarction.getId().toString());
+		EncounterCriterion primaryExposureCriterion = new EncounterCriterion("<<" + myocardialInfarction.getId().toString());
 		CohortCriteria cohortCriteria = new CohortCriteria(primaryExposureCriterion);
 
 		Page<Patient> patients = queryService.fetchCohort(cohortCriteria);
@@ -88,7 +88,7 @@ public class IntegrationTest {
 	@Test
 	public void testCohortSelectionWithPrimaryExposureAndInclusionCriteria() throws ServiceException {
 		// Fetch all patients with Hypertension
-		Criterion primaryExposureCriterion = new Criterion("<<" + hypertension.getId().toString());
+		EncounterCriterion primaryExposureCriterion = new EncounterCriterion("<<" + hypertension.getId().toString());
 		CohortCriteria cohortCriteria = new CohortCriteria(primaryExposureCriterion);
 
 		// We get both Bob and Dave
@@ -121,7 +121,7 @@ public class IntegrationTest {
 
 	@Test
 	public void testGenderSelection() throws ServiceException {
-		CohortCriteria cohortCriteria = new CohortCriteria(new Criterion("<<" + myocardialInfarction.getId().toString()));
+		CohortCriteria cohortCriteria = new CohortCriteria(new EncounterCriterion("<<" + myocardialInfarction.getId().toString()));
 
 		// No gender filter
 		Assert.assertEquals(1, queryService.fetchCohort(cohortCriteria).getTotalElements());
@@ -138,7 +138,7 @@ public class IntegrationTest {
 
 	@Test
 	public void testAgeSelection() throws ServiceException {
-		CohortCriteria cohortCriteria = new CohortCriteria(new Criterion("<<" + myocardialInfarction.getId().toString()));
+		CohortCriteria cohortCriteria = new CohortCriteria(new EncounterCriterion("<<" + myocardialInfarction.getId().toString()));
 
 		// No age filter
 		Assert.assertEquals(1, queryService.fetchCohort(cohortCriteria).getTotalElements());

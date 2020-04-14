@@ -10,35 +10,14 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 import java.util.ArrayList;
 import java.util.List;
 
-@Document(indexName = "cohort")
 public class CohortCriteria {
 
-	@Id
-	private String id;
-
-	@Field(type = FieldType.String, index = FieldIndex.not_analyzed)
-	private String name;
-
-	@Field(type = FieldType.String, index = FieldIndex.not_analyzed)
-	private String description;
-
-	@Field(type = FieldType.String)
 	private Gender gender;
-
-	@Field(type = FieldType.Integer)
 	private Integer minAge;
-
-	@Field(type = FieldType.Integer)
 	private Integer maxAge;
-
-	@Field(type = FieldType.Object)
-
-	@Field(type = FieldType.Object)
 	private EncounterCriterion primaryCriterion;
 	private List<RelativeCriterion> additionalCriteria;
-
 	private RelativeCriterion testVariable;
-
 	private RelativeCriterion testOutcome;
 
 	public CohortCriteria() {
@@ -60,30 +39,6 @@ public class CohortCriteria {
 
 	public boolean isRelativeEncounterCheckNeeded() {
 		return !isEmptyPrimaryCriterion() && testVariable != null || additionalCriteria.stream().anyMatch(RelativeCriterion::hasTimeConstraint);
-	}
-
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public String getDescription() {
-		return description;
-	}
-
-	public void setDescription(String description) {
-		this.description = description;
 	}
 
 	public Gender getGender() {

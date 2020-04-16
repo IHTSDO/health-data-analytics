@@ -1,22 +1,20 @@
 {
-	"primaryCriterion": {
-		"ecl": "<< 69896004"
+	"baseCriteria": {
+		"encounterCriteria": [
+			{
+				"has": true,
+				"conceptECL": "<< 69896004"
+			}
+		]
 	},
-	"additionalCriteria": [],
-	"testVariable": {
-		"ecl": "  << 416897008",
+	"treatmentCriterion": {
 		"has": true,
-		"includeDaysInFuture": -1,
-		"includeDaysInPast": 0,
-		"limitation": "373873005",
-		"fsn": "Anti TNF agent"
+		"conceptECL": "<< 416897008",
+		"withinDaysAfterPreviouslyMatchedEncounter": -1
 	},
-	"testOutcome": {
-		"ecl": "<< 64572001 : << 363698007 = << 39607008 , << 263502005 = << 90734009",
+	"negativeOutcomeCriterion": {
 		"has": true,
-		"includeDaysInFuture": -1,
-		"includeDaysInPast": 0,
-		"limitation": "64572001",
-		"fsn": "Chronic Lung Disease"
-		}
+		"conceptECL": "<< 64572001 : << 363698007 = << 39607008 , << 263502005 = << 90734009",
+		"withinDaysAfterPreviouslyMatchedEncounter": -1
+	}
 }

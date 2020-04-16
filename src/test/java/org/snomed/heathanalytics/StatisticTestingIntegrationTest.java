@@ -9,10 +9,9 @@ import org.snomed.heathanalytics.domain.*;
 import org.snomed.heathanalytics.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.service.QueryService;
 import org.snomed.heathanalytics.service.ServiceException;
-import org.snomed.heathanalytics.service.StatisticalTestResult;
+import org.snomed.heathanalytics.domain.StatisticalCorrelationReport;
 import org.snomed.heathanalytics.testutil.TestSnomedQueryServiceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -20,9 +19,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.snomed.heathanalytics.TestUtils.date;
@@ -46,7 +43,7 @@ public class StatisticTestingIntegrationTest {
 	private ConceptImpl acuteQWaveMyocardialInfarction;
 	private ConceptImpl paracetamol;
 
-	private int year = 365;
+	private static final int YEAR_IN_DAYS = 365;
 
 	@Before
 	public void setup() throws IOException, ParseException {
@@ -69,7 +66,6 @@ public class StatisticTestingIntegrationTest {
 		acuteQWaveMyocardialInfarction = createConcept("304914007", allConcepts);
 		acuteQWaveMyocardialInfarction.addInferredParent(myocardialInfarction);
 
-		// Todo: Get code for paracetamol
 		// 51234001 |Paracetamol|
 		paracetamol = createConcept("51234001", allConcepts);
 
@@ -141,48 +137,44 @@ public class StatisticTestingIntegrationTest {
 		//   Note: The Paracetamol prescription should have a date range but we haven't gone into that at this stage.
 		// Chance of heart attack with Paracetamol = D / C
 
-		CohortCriteria cohortCriteria = new CohortCriteria(new EncounterCriterion("<<" + hypertension.getId()));
-		cohortCriteria.setTestVariable(new RelativeCriterion("<<" + paracetamol.getId().toString(), null, 5 * year));
-		cohortCriteria.setTestOutcome(new RelativeCriterion("<<" + myocardialInfarction.getId().toString(), null, 5 * year));
+		StatisticalCorrelationReportDefinition statisticalCorrelationReportDefinition = new StatisticalCorrelationReportDefinition(new CohortCriteria(new EncounterCriterion("<<" + hypertension.getId())),
+				new EncounterCriterion("<<" + paracetamol.getId().toString(), 5 * YEAR_IN_DAYS, null),
+				new EncounterCriterion("<<" + myocardialInfarction.getId().toString(), 5 * YEAR_IN_DAYS, null));
 
-		StatisticalTestResult result = queryService.fetchStatisticalTestResult(cohortCriteria);
-		assertEquals(2, result.getHasTestVariableHasOutcomeCount());
-		assertEquals(5, result.getHasTestVariableCount());
-		assertEquals("40.0", result.getHasTestVariableChanceOfOutcome());
-		assertEquals(4, result.getHasNotTestVariableHasOutcomeCount());
-		assertEquals(6, result.getHasNotTestVariableCount());
-		assertEquals("66.7", result.getHasNotTestVariableChanceOfOutcome());
+		StatisticalCorrelationReport result = queryService.runStatisticalReport(statisticalCorrelationReportDefinition);
+		assertEquals(5, result.getWithTreatmentCount());
+		assertEquals(2, result.getWithTreatmentWithNegativeOutcomeCount());
+		assertEquals("40.0", result.getWithTreatmentChanceOfNegativeOutcome());
+		assertEquals(6, result.getWithoutTreatmentCount());
+		assertEquals(4, result.getWithoutTreatmentWithNegativeOutcomeCount());
+		assertEquals("66.7", result.getWithoutTreatmentChanceOfNegativeOutcome());
 	}
 
 	@Test
 	public void testMultiCohortStatisticalTestWithRefinement() throws ServiceException {
-		CohortCriteria cohortCriteria = new CohortCriteria(new EncounterCriterion("<<" + hypertension.getId()));
+		CohortCriteria patientCriteria = new CohortCriteria(new EncounterCriterion("<<" + hypertension.getId()));
 
 		// Here is the additional criterion
-		cohortCriteria.addAdditionalCriterion(new RelativeCriterion("<<" + myocardialInfarction.getId().toString(), null, -1));
-		cohortCriteria.setTestVariable(new RelativeCriterion("<<" + paracetamol.getId().toString(), null, 5 * year));
-		cohortCriteria.setTestOutcome(new RelativeCriterion("<<" + myocardialInfarction.getId().toString(), null, 5 * year));
+		patientCriteria.addEncounterCriterion(new EncounterCriterion("<<" + myocardialInfarction.getId().toString(), -1, null));
 
 		// The additional criterion means that our cohort is reduced to 2 patients, both the the same outcome.
-		StatisticalTestResult result = queryService.fetchStatisticalTestResult(cohortCriteria);
-		assertEquals(2, result.getHasTestVariableHasOutcomeCount());
-		assertEquals(2, result.getHasTestVariableCount());
-		assertEquals("100.0", result.getHasTestVariableChanceOfOutcome());
-		assertEquals(4, result.getHasNotTestVariableHasOutcomeCount());
-		assertEquals(4, result.getHasNotTestVariableCount());
-		assertEquals("100.0", result.getHasNotTestVariableChanceOfOutcome());
+		EncounterCriterion treatmentCriterion = new EncounterCriterion("<<" + paracetamol.getId().toString(), 5 * YEAR_IN_DAYS, null);
+		EncounterCriterion negativeOutcomeCriterion = new EncounterCriterion("<<" + myocardialInfarction.getId().toString(), 5 * YEAR_IN_DAYS, null);
+
+		StatisticalCorrelationReport result = queryService.runStatisticalReport(new StatisticalCorrelationReportDefinition(patientCriteria, treatmentCriterion, negativeOutcomeCriterion));
+
+		assertEquals(2, result.getWithTreatmentWithNegativeOutcomeCount());
+		assertEquals(2, result.getWithTreatmentCount());
+		assertEquals("100.0", result.getWithTreatmentChanceOfNegativeOutcome());
+		assertEquals(4, result.getWithoutTreatmentWithNegativeOutcomeCount());
+		assertEquals(4, result.getWithoutTreatmentCount());
+		assertEquals("100.0", result.getWithoutTreatmentChanceOfNegativeOutcome());
 	}
 
 	private Patient createPatient(String roleId) {
 		Patient patient = new Patient(roleId, TestUtils.getDob(35), Gender.FEMALE);
 		healthDataStream.createPatient(patient);
 		return patient;
-	}
-
-	private List<String> toSortedPatientIdList(Page<Patient> patients) {
-		List<String> list = patients.getContent().stream().map(Patient::getRoleId).collect(Collectors.toList());
-		Collections.sort(list);
-		return list;
 	}
 
 	private ConceptImpl createConcept(String id, List<ConceptImpl> allConcepts) {

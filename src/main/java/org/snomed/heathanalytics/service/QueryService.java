@@ -29,6 +29,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.elasticsearch.index.query.QueryBuilders.*;
+import static org.snomed.heathanalytics.service.InputValidationHelper.checkInput;
 
 @Service
 public class QueryService {
@@ -47,12 +48,63 @@ public class QueryService {
 	private final SimpleDateFormat debugDateFormat = new SimpleDateFormat("yyyy/MM/dd");
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
+	private int fetchCohortCount(CohortCriteria patientCriteria) throws ServiceException {
+		return (int) fetchCohort(patientCriteria, 0, 0).getTotalElements();
+	}
+
 	public Page<Patient> fetchCohort(CohortCriteria cohortCriteria) throws ServiceException {
 		return fetchCohort(cohortCriteria, 0, 100);
 	}
 
 	public Page<Patient> fetchCohort(CohortCriteria cohortCriteria, int page, int size) throws ServiceException {
 		return doFetchCohort(cohortCriteria, page, size, new GregorianCalendar(), new Timer());
+	}
+
+	public StatisticalCorrelationReport runStatisticalReport(StatisticalCorrelationReportDefinition reportDefinition) throws ServiceException {
+		CohortCriteria patientCriteria = new CohortCriteria();
+
+		// Copy base criteria
+		patientCriteria.copyCriteriaWhereMoreSpecific(reportDefinition.getBaseCriteria());
+
+		EncounterCriterion treatmentCriterion = reportDefinition.getTreatmentCriterion();
+		checkInput("treatmentCriterion is required for the statistical test.", treatmentCriterion != null);
+		EncounterCriterion negativeOutcomeCriterion = reportDefinition.getNegativeOutcomeCriterion();
+		checkInput("negativeOutcomeCriterion is required for a statistical test.", negativeOutcomeCriterion != null);
+
+		// A. Count patients WITH treatment, WITH negative outcome
+		List<EncounterCriterion> encounterCriteria = patientCriteria.getEncounterCriteria();
+		encounterCriteria.add(treatmentCriterion);
+		encounterCriteria.add(negativeOutcomeCriterion);
+		int withTreatmentWithNegativeOutcomeCount = fetchCohortCount(patientCriteria);
+
+		// B. Count patients WITH treatment
+		removeLast(encounterCriteria);
+		int withTreatmentCount = fetchCohortCount(patientCriteria);
+
+		// Has test variable chance of outcome = A / B
+
+		// C. Count patients WITHOUT treatment, WITH negative outcome
+		treatmentCriterion.setHas(false);
+		encounterCriteria.add(negativeOutcomeCriterion);
+		int withoutTreatmentWithNegativeOutcomeCount = fetchCohortCount(patientCriteria);
+
+		// D. Count patients WITHOUT test variable
+		removeLast(encounterCriteria);
+		int withoutTreatmentCount = fetchCohortCount(patientCriteria);
+		treatmentCriterion.setHas(true);// reset
+
+		// Has not test variable chance of outcome = C / D
+
+		return new StatisticalCorrelationReport(
+				(int) getStats().getPatientCount(),
+				withTreatmentCount,
+				withTreatmentWithNegativeOutcomeCount,
+				withoutTreatmentCount,
+				withoutTreatmentWithNegativeOutcomeCount);
+	}
+
+	private void removeLast(List<EncounterCriterion> list) {
+		list.remove(list.size() - 1);
 	}
 
 	private Page<Patient> doFetchCohort(CohortCriteria patientCriteria, int page, int size, GregorianCalendar now, Timer timer) throws ServiceException {

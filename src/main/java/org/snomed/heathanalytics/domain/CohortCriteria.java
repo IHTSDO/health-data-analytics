@@ -23,6 +23,29 @@ public class CohortCriteria {
 		encounterCriteria.add(criterion);
 	}
 
+	/**
+	 * Conditionally copies criterion from the supplied PatientCriteria to this one
+	 * if the supplied values are more specific.
+	 * @param criteriaToCopyFrom criteria to copy from.
+	 */
+	public void copyCriteriaWhereMoreSpecific(CohortCriteria criteriaToCopyFrom) {
+		if (criteriaToCopyFrom == null) {
+			return;
+		}
+		if (gender == null) {
+			gender = criteriaToCopyFrom.gender;
+		}
+		if (criteriaToCopyFrom.minAgeNow != null &&
+				(minAgeNow == null || minAgeNow < criteriaToCopyFrom.minAgeNow)) {
+			minAgeNow = criteriaToCopyFrom.minAgeNow;
+		}
+		if (criteriaToCopyFrom.maxAgeNow != null &&
+				(maxAgeNow == null || maxAgeNow > criteriaToCopyFrom.maxAgeNow)) {
+			maxAgeNow = criteriaToCopyFrom.maxAgeNow;
+		}
+		encounterCriteria.addAll(criteriaToCopyFrom.encounterCriteria);
+	}
+
 	public Gender getGender() {
 		return gender;
 	}

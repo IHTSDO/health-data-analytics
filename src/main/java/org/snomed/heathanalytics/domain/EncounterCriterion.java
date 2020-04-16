@@ -1,25 +1,37 @@
 package org.snomed.heathanalytics.domain;
 
-import org.springframework.data.annotation.Transient;
-
-import java.util.UUID;
+import java.util.Objects;
 
 public class EncounterCriterion {
 
-	@Transient
-	private String id;// Id generated - only used as a key in maps.
 	private boolean has;
-	private String subsetId;
-	private String ecl;
+	private String conceptECL;
+	private String conceptSubsetId;
+
+	// Value of -1 means apply constrain with unbounded value, otherwise use null.
+	private Integer withinDaysBeforePreviouslyMatchedEncounter;
+
+	// Value of -1 means apply constrain with unbounded value, otherwise use null
+	private Integer withinDaysAfterPreviouslyMatchedEncounter;
 
 	public EncounterCriterion() {
-		id = UUID.randomUUID().toString();
 		has = true;
 	}
 
-	public EncounterCriterion(String ecl) {
+	public EncounterCriterion(String conceptECL) {
 		this();
-		this.ecl = ecl;
+		this.conceptECL = conceptECL;
+	}
+
+	public EncounterCriterion(String conceptECL, Integer withinDaysAfterPreviouslyMatchedEncounter, Integer withinDaysBeforePreviouslyMatchedEncounter) {
+		this();
+		this.conceptECL = conceptECL;
+		this.withinDaysAfterPreviouslyMatchedEncounter = withinDaysAfterPreviouslyMatchedEncounter;
+		this.withinDaysBeforePreviouslyMatchedEncounter = withinDaysBeforePreviouslyMatchedEncounter;
+	}
+
+	public boolean hasTimeConstraint() {
+		return withinDaysAfterPreviouslyMatchedEncounter != null || withinDaysBeforePreviouslyMatchedEncounter != null;
 	}
 
 	public boolean isHas() {
@@ -30,34 +42,52 @@ public class EncounterCriterion {
 		this.has = has;
 	}
 
-	public String getSubsetId() {
-		return subsetId;
+	public String getConceptECL() {
+		return conceptECL;
 	}
 
-	public void setSubsetId(String subsetId) {
-		this.subsetId = subsetId;
+	public void setConceptECL(String conceptECL) {
+		this.conceptECL = conceptECL;
 	}
 
-	public String getEcl() {
-		return ecl;
+	public String getConceptSubsetId() {
+		return conceptSubsetId;
 	}
 
-	public void setEcl(String ecl) {
-		this.ecl = ecl;
+	public void setConceptSubsetId(String conceptSubsetId) {
+		this.conceptSubsetId = conceptSubsetId;
+	}
+
+	public Integer getWithinDaysBeforePreviouslyMatchedEncounter() {
+		return withinDaysBeforePreviouslyMatchedEncounter;
+	}
+
+	public void setWithinDaysBeforePreviouslyMatchedEncounter(Integer withinDaysBeforePreviouslyMatchedEncounter) {
+		this.withinDaysBeforePreviouslyMatchedEncounter = withinDaysBeforePreviouslyMatchedEncounter;
+	}
+
+	public Integer getWithinDaysAfterPreviouslyMatchedEncounter() {
+		return withinDaysAfterPreviouslyMatchedEncounter;
+	}
+
+	public void setWithinDaysAfterPreviouslyMatchedEncounter(Integer withinDaysAfterPreviouslyMatchedEncounter) {
+		this.withinDaysAfterPreviouslyMatchedEncounter = withinDaysAfterPreviouslyMatchedEncounter;
 	}
 
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
-
-		EncounterCriterion criterion = (EncounterCriterion) o;
-
-		return id.equals(criterion.id);
+		EncounterCriterion that = (EncounterCriterion) o;
+		return has == that.has &&
+				Objects.equals(conceptECL, that.conceptECL) &&
+				Objects.equals(conceptSubsetId, that.conceptSubsetId) &&
+				Objects.equals(withinDaysBeforePreviouslyMatchedEncounter, that.withinDaysBeforePreviouslyMatchedEncounter) &&
+				Objects.equals(withinDaysAfterPreviouslyMatchedEncounter, that.withinDaysAfterPreviouslyMatchedEncounter);
 	}
 
 	@Override
 	public int hashCode() {
-		return id.hashCode();
+		return Objects.hash(has, conceptECL, conceptSubsetId, withinDaysBeforePreviouslyMatchedEncounter, withinDaysAfterPreviouslyMatchedEncounter);
 	}
 }

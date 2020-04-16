@@ -24,16 +24,16 @@ import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.data.util.CloseableIterator;
 import org.springframework.stereotype.Service;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.elasticsearch.index.query.QueryBuilders.*;
-import static org.snomed.heathanalytics.service.InputValidationHelper.checkInput;
 
 @Service
 public class QueryService {
 
-	private static final PageRequest LARGE_PAGE = new PageRequest(0, 1000);
+	public static final PageRequest LARGE_PAGE = new PageRequest(0, 1000);
 
 	@Autowired
 	private ElasticsearchTemplate elasticsearchTemplate;
@@ -44,101 +44,78 @@ public class QueryService {
 	@Autowired
 	private SubsetRepository subsetRepository;
 
-	private Logger logger = LoggerFactory.getLogger(getClass());
+	private final SimpleDateFormat debugDateFormat = new SimpleDateFormat("yyyy/MM/dd");
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public Page<Patient> fetchCohort(CohortCriteria cohortCriteria) throws ServiceException {
 		return fetchCohort(cohortCriteria, 0, 100);
 	}
 
 	public Page<Patient> fetchCohort(CohortCriteria cohortCriteria, int page, int size) throws ServiceException {
-		GregorianCalendar now = new GregorianCalendar();
-		Timer timer = new Timer();
+		return doFetchCohort(cohortCriteria, page, size, new GregorianCalendar(), new Timer());
+	}
 
-		BoolQueryBuilder patientQuery = boolQuery();
-
-		if (cohortCriteria.getGender() != null) {
-			patientQuery.must(termQuery(Patient.Fields.GENDER, cohortCriteria.getGender()));
-		}
-		Integer minAge = cohortCriteria.getMinAge();
-		Integer maxAge = cohortCriteria.getMaxAge();
-		if (minAge != null || maxAge != null) {
-			// Crude match using birth year
-			RangeQueryBuilder rangeQueryBuilder = rangeQuery(Patient.Fields.DOB_YEAR);
-			int thisYear = now.get(Calendar.YEAR);
-			if (minAge != null) {
-				rangeQueryBuilder.lte(thisYear - minAge);
-			}
-			if (maxAge != null) {
-				rangeQueryBuilder.gte(thisYear - maxAge);
-			}
-			patientQuery.must(rangeQueryBuilder);
-		}
-
-		BoolQueryBuilder patientFilter = boolQuery();
+	private Page<Patient> doFetchCohort(CohortCriteria patientCriteria, int page, int size, GregorianCalendar now, Timer timer) throws ServiceException {
+		BoolQueryBuilder patientQuery = getPatientClauses(patientCriteria.getGender(), patientCriteria.getMinAgeNow(), patientCriteria.getMaxAgeNow(), now);
 
 		Map<EncounterCriterion, List<Long>> criterionToConceptIdMap = new HashMap<>();
-		if (cohortCriteria.getPrimaryCriterion() != null) {
-			// Fetch conceptIds of each criterion
-			List<EncounterCriterion> criteria = new ArrayList<>();
-			criteria.add(cohortCriteria.getPrimaryCriterion());
-			criteria.addAll(cohortCriteria.getAdditionalCriteria());
-			for (EncounterCriterion criterion : criteria) {
-				String criterionEcl = getCriterionEcl(criterion);
-				if (criterionEcl != null) {
-					timer.split("Fetching concepts for ECL " + criterionEcl);
-					List<Long> conceptIds = getConceptIds(criterionEcl);
-					if (criterion.isHas()) {
-						patientFilter.must(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
-					} else {
-						patientFilter.mustNot(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
-					}
-					criterionToConceptIdMap.put(criterion, conceptIds);
-				}
-			}
-		}
+		BoolQueryBuilder patientEncounterFilter = getPatientEncounterFilter(patientCriteria.getEncounterCriteria(), criterionToConceptIdMap, timer);
 
-		AtomicInteger patientCount = new AtomicInteger();
-		int offset = page * size;
-		int limit = offset + size;
 		Map<Long, TermHolder> conceptTerms = new Long2ObjectOpenHashMap<>();
 		NativeSearchQueryBuilder patientElasticQuery = new NativeSearchQueryBuilder()
 				.withQuery(patientQuery)
-				.withFilter(patientFilter)
+				.withFilter(patientEncounterFilter)
 				.withPageable(LARGE_PAGE);
 
 		Page<Patient> finalPatientPage;
-		if (cohortCriteria.isRelativeEncounterCheckNeeded()) {
+		if (patientCriteria.getEncounterCriteria().size() > 1 && patientCriteria.getEncounterCriteria().stream().anyMatch(EncounterCriterion::hasTimeConstraint)) {
+			// Stream through relevant Patients to apply relative date match in code.
+			// Also do manual pagination
 			List<Patient> patientList = new ArrayList<>();
+			AtomicInteger patientCount = new AtomicInteger();
+			int offset = page * size;
+			int limit = offset + size;
 			try (CloseableIterator<Patient> patientStream = elasticsearchTemplate.stream(patientElasticQuery.build(), Patient.class)) {
-				patientStream.forEachRemaining(patient ->
-						processPatient(patient, cohortCriteria, criterionToConceptIdMap, patientCount, offset, limit, conceptTerms, patientList));
+				patientStream.forEachRemaining(patient -> {
+					if (checkEncounterDatesAndExclusions(patient.getEncounters(), patientCriteria.getEncounterCriteria(), criterionToConceptIdMap)) {
+						long number = patientCount.incrementAndGet();
+						if (number > offset && number <= limit) {
+							patientList.add(patient);
+						}
+					}
+				});
 			}
 			finalPatientPage = new PageImpl<>(patientList, new PageRequest(page, size > 0 ? size : 1), patientCount.get());
 		} else {
+			// Grab page of Patients from Elasticsearch.
 			PageRequest pageRequest = new PageRequest(page, size);
 			patientElasticQuery.withPageable(pageRequest);
 			AggregatedPage<Patient> patients = elasticsearchTemplate.queryForPage(patientElasticQuery.build(), Patient.class);
-			List<Patient> patientList = new ArrayList<>();
-			if (!criterionToConceptIdMap.isEmpty()) {
-				patients.getContent().forEach(patient ->
-					processPatient(patient, cohortCriteria, criterionToConceptIdMap, patientCount, offset, limit, conceptTerms, patientList)
-				);
-			}
 			finalPatientPage = new PageImpl<>(patients.getContent(), pageRequest, patients.getTotalElements());
 		}
 		timer.split("Fetching patients");
 
-		try {
-			for (Long conceptId : conceptTerms.keySet()) {
-				ConceptResult conceptResult = snomedQueryService.retrieveConcept(conceptId.toString());
-				if (conceptResult != null) {
-					conceptTerms.get(conceptId).setTerm(conceptResult.getFsn());
-				}
+		// Process matching patients for display
+		finalPatientPage.getContent().forEach(patient -> {
+			if (patient.getEncounters() == null) {
+				patient.setEncounters(Collections.emptySet());
 			}
-		} catch (org.ihtsdo.otf.sqs.service.exception.ServiceException e) {
-			logger.warn("Failed to retrieve concept terms", e);
+			patient.getEncounters().forEach(encounter ->
+					encounter.setConceptTerm(conceptTerms.computeIfAbsent(encounter.getConceptId(), conceptId -> new TermHolder())));
+		});
+		if (!conceptTerms.isEmpty()) {
+			try {
+				for (Long conceptId : conceptTerms.keySet()) {
+					ConceptResult conceptResult = snomedQueryService.retrieveConcept(conceptId.toString());
+					if (conceptResult != null) {
+						conceptTerms.get(conceptId).setTerm(conceptResult.getFsn());
+					}
+				}
+			} catch (org.ihtsdo.otf.sqs.service.exception.ServiceException e) {
+				logger.warn("Failed to retrieve concept terms", e);
+			}
+			timer.split("Fetching concept terms");
 		}
-		timer.split("Fetching concept terms");
 
 		logger.info("Times: {}", timer.getTimes());
 
@@ -149,115 +126,91 @@ public class QueryService {
 		return finalPatientPage;
 	}
 
-	private int fetchCohortCount(CohortCriteria cohortCriteria) throws ServiceException {
-		return (int) fetchCohort(cohortCriteria, 0, 0).getTotalElements();
+	private BoolQueryBuilder getPatientClauses(Gender gender, Integer minAgeNow, Integer maxAgeNow, GregorianCalendar now) {
+		BoolQueryBuilder patientQuery = boolQuery();
+		if (gender != null) {
+			patientQuery.must(termQuery(Patient.Fields.GENDER, gender));
+		}
+		if (minAgeNow != null || maxAgeNow != null) {
+			// Crude match using birth year
+			RangeQueryBuilder rangeQueryBuilder = rangeQuery(Patient.Fields.DOB_YEAR);
+			int thisYear = now.get(Calendar.YEAR);
+			if (minAgeNow != null) {
+				rangeQueryBuilder.lte(thisYear - minAgeNow);
+			}
+			if (maxAgeNow != null) {
+				rangeQueryBuilder.gte(thisYear - maxAgeNow);
+			}
+			patientQuery.must(rangeQueryBuilder);
+		}
+		return patientQuery;
 	}
 
-	private void processPatient(Patient patient, CohortCriteria cohortCriteria, Map<EncounterCriterion, List<Long>> criterionToConceptIdMap, AtomicInteger patientCount, int offset, int limit, Map<Long, TermHolder> conceptTerms, List<Patient> patientList) {
-		if (patient.getEncounters() == null) {
-			patient.setEncounters(Collections.emptySet());
-		}
-		if (checkEncounterDatesAndExclusions(patient.getEncounters(), cohortCriteria.getPrimaryCriterion(), cohortCriteria.getAdditionalCriteria(),
-				criterionToConceptIdMap)) {
-			long number = patientCount.incrementAndGet();
-			if (number > offset && number <= limit) {
-				patient.getEncounters().forEach(encounter ->
-						encounter.setConceptTerm(conceptTerms.computeIfAbsent(encounter.getConceptId(), conceptId -> new TermHolder())));
-				patientList.add(patient);
+	private BoolQueryBuilder getPatientEncounterFilter(List<EncounterCriterion> encounterCriteria, Map<EncounterCriterion, List<Long>> criterionToConceptIdMap, Timer timer) throws ServiceException {
+		BoolQueryBuilder patientFilter = boolQuery();
+
+		// Fetch conceptIds of each criterion
+		for (EncounterCriterion criterion : encounterCriteria) {
+			String criterionEcl = getCriterionEcl(criterion);
+			if (criterionEcl != null) {
+				timer.split("Fetching concepts for ECL " + criterionEcl);
+				List<Long> conceptIds = getConceptIds(criterionEcl);
+				if (criterion.isHas()) {
+					patientFilter.must(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
+				} else {
+					patientFilter.mustNot(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
+				}
+				criterionToConceptIdMap.put(criterion, conceptIds);
 			}
 		}
+		return patientFilter;
 	}
 
-	public StatisticalTestResult fetchStatisticalTestResult(CohortCriteria cohortCriteria) throws ServiceException {
-		RelativeCriterion testVariable = cohortCriteria.getTestVariable();
-		checkInput("testVariable is required for a statistical test.", testVariable != null);
-		RelativeCriterion testOutcome = cohortCriteria.getTestOutcome();
-		checkInput("testOutcome is required for a statistical test.", testOutcome != null);
-
-		// A. Count patients with test variable and test outcome
-		// B. Count patients with test variable
-		// Has test variable chance of outcome = A / B
-		List<RelativeCriterion> additionalCriteria = cohortCriteria.getAdditionalCriteria();
-		additionalCriteria.add(testVariable);
-		additionalCriteria.add(testOutcome);
-		int hasTestVariableHasOutcomeCount = fetchCohortCount(cohortCriteria);
-
-		removeLast(additionalCriteria);
-		int hasTestVariableCount = fetchCohortCount(cohortCriteria);
-
-		// C. Count patients without test variable and test outcome
-		// D. Count patients without test variable
-		// Has no test variable chance of outcome = C / D
-		testVariable.setHas(false);
-		additionalCriteria.add(testOutcome);
-		int hasNotTestVariableHasOutcomeCount = fetchCohortCount(cohortCriteria);
-
-		removeLast(additionalCriteria);
-		int hasNotTestVariableCount = fetchCohortCount(cohortCriteria);
-
-		return new StatisticalTestResult(
-				(int) getStats().getPatientCount(),
-				hasTestVariableHasOutcomeCount,
-				hasTestVariableCount,
-				hasNotTestVariableHasOutcomeCount,
-				hasNotTestVariableCount);
-	}
-
-	private void removeLast(List<RelativeCriterion> list) {
-		list.remove(list.size() - 1);
-	}
-
-	// Given set of encounters
-	// Find encounters which match primary cri
+	// Given set of encounterCriteria
+	// Find encounters which match
 	// For each of these find encounters which match relative cri 1
 	// For each of these find encounters which match relative cri 2
 	// cont
 	// if any found return true, else false
-
-	private boolean checkEncounterDatesAndExclusions(Set<ClinicalEncounter> allEncounters, EncounterCriterion primaryCriterion, List<RelativeCriterion> relativeCriteria, Map<EncounterCriterion, List<Long>> criterionToConceptIdMap) {
-		for (ClinicalEncounter encounter : allEncounters) {
-			List<Long> conceptIds = criterionToConceptIdMap.get(primaryCriterion);
-			if (conceptIds == null || conceptIds.contains(encounter.getConceptId())) {
-				if (relativeCriteria.isEmpty() || recursiveEncounterMatch(encounter, getCriteriaStack(relativeCriteria), allEncounters, criterionToConceptIdMap)) {
-					encounter.setPrimaryExposure(true);
-					return true;
-				}
-			}
-		}
-		return allEncounters.isEmpty();
-	}
-
-	private Stack<RelativeCriterion> getCriteriaStack(List<RelativeCriterion> relativeCriteria) {
-		Stack<RelativeCriterion> criterionStack = new Stack<>();
-		criterionStack.addAll(relativeCriteria);
-		return criterionStack;
+	private boolean checkEncounterDatesAndExclusions(Set<ClinicalEncounter> allPatientEncounters, List<EncounterCriterion> encounterCriteria, Map<EncounterCriterion, List<Long>> criterionToConceptIdMap) {
+		return recursiveEncounterMatch(null, allPatientEncounters, CollectionUtils.createStack(encounterCriteria), criterionToConceptIdMap);
 	}
 
 	// TODO: try converting this to an Elasticsearch 'painless' script which runs on the nodes of the cluster. https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-script-query.html
-	private boolean recursiveEncounterMatch(ClinicalEncounter baseEncounter, Stack<RelativeCriterion> criterionStack, Set<ClinicalEncounter> allEncounters, Map<EncounterCriterion, List<Long>> criterionToConceptIdMap) {
-		RelativeCriterion criterion = criterionStack.pop();
+	private boolean recursiveEncounterMatch(ClinicalEncounter baseEncounter, Set<ClinicalEncounter> allEncounters, Stack<EncounterCriterion> criterionStack, Map<EncounterCriterion, List<Long>> criterionToConceptIdMap) {
+		if (criterionStack.isEmpty()) {
+			return true;
+		}
+		EncounterCriterion criterion = criterionStack.pop();
 
-		List<Long> conceptIds = criterionToConceptIdMap.get(criterion);
+		List<Long> criterionConceptIds = criterionToConceptIdMap.get(criterion);
 		Date lookBackCutOffDate = null;
 		Date lookForwardCutOffDate = null;
 		if (baseEncounter != null) {
-			lookBackCutOffDate = getRelativeDate(baseEncounter.getDate(), criterion.getIncludeDaysInPast(), -1);
-			lookForwardCutOffDate = getRelativeDate(baseEncounter.getDate(), criterion.getIncludeDaysInFuture(), 1);
+			lookForwardCutOffDate = getRelativeDate(baseEncounter.getDate(), criterion.getWithinDaysAfterPreviouslyMatchedEncounter(), 1);
+			lookBackCutOffDate = getRelativeDate(baseEncounter.getDate(), criterion.getWithinDaysBeforePreviouslyMatchedEncounter(), -1);
+			logger.debug("{} baseEncounter date", debugDateFormat.format(baseEncounter.getDate()));
+			logger.debug("{} lookForwardCutOffDate", lookForwardCutOffDate == null ? null : debugDateFormat.format(lookForwardCutOffDate));
+			logger.debug("{} lookBackCutOffDate", lookBackCutOffDate == null ? null : debugDateFormat.format(lookBackCutOffDate));
 		}
 
 		for (ClinicalEncounter encounter : allEncounters) {
-			if (conceptIds.contains(encounter.getConceptId()) &&
-					((lookBackCutOffDate != null && encounter.getDate().after(lookBackCutOffDate)) ||
-							(lookForwardCutOffDate != null && encounter.getDate().before(lookForwardCutOffDate)))) {
-				if (!criterion.isHas()) {
-					return false;
+			if (criterionConceptIds.contains(encounter.getConceptId())) {
+				if ((lookBackCutOffDate == null || encounter.getDate().equals(lookBackCutOffDate) || encounter.getDate().after(lookBackCutOffDate)) &&
+						(lookForwardCutOffDate == null || encounter.getDate().equals(lookForwardCutOffDate) || encounter.getDate().before(lookForwardCutOffDate))) {
+					if (!criterion.isHas()) {
+						return false;
+					}
+					logger.debug("Encounter {} with date {} MATCH", encounter.getConceptId(), debugDateFormat.format(encounter.getDate()));
+					return recursiveEncounterMatch(encounter, allEncounters, criterionStack, criterionToConceptIdMap);
+				} else {
+					logger.debug("Encounter {} with date {} NO match", encounter.getConceptId(), debugDateFormat.format(encounter.getDate()));
 				}
-				return criterionStack.isEmpty() || recursiveEncounterMatch(encounter, criterionStack, allEncounters, criterionToConceptIdMap);
 			}
 		}
 
 		if (!criterion.isHas()) {
-			return criterionStack.isEmpty() || recursiveEncounterMatch(baseEncounter, criterionStack, allEncounters, criterionToConceptIdMap);
+			return recursiveEncounterMatch(baseEncounter, allEncounters, criterionStack, criterionToConceptIdMap);
 		}
 
 		return false;
@@ -280,7 +233,7 @@ public class QueryService {
 
 	private String getCriterionEcl(EncounterCriterion criterion) throws ServiceException {
 		if (criterion != null) {
-			String subsetId = criterion.getSubsetId();
+			String subsetId = criterion.getConceptSubsetId();
 			if (!Strings.isNullOrEmpty(subsetId)) {
 				Subset subset = subsetRepository.findOne(subsetId);
 				if (subset == null) {
@@ -288,7 +241,7 @@ public class QueryService {
 				}
 				return subset.getEcl();
 			}
-			return criterion.getEcl();
+			return criterion.getConceptECL();
 		}
 		return null;
 	}

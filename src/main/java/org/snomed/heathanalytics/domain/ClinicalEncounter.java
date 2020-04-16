@@ -22,9 +22,6 @@ public class ClinicalEncounter implements Act {
 	@Transient
 	private TermHolder conceptTerm;
 
-	@Transient
-	private boolean primaryExposure;
-
 	public interface Fields {
 		String ROLE_ID = "roleId";
 		String DATE = "date";
@@ -77,14 +74,6 @@ public class ClinicalEncounter implements Act {
 
 	public void setConceptTerm(TermHolder conceptTerm) {
 		this.conceptTerm = conceptTerm;
-	}
-
-	public boolean isPrimaryExposure() {
-		return primaryExposure;
-	}
-
-	public void setPrimaryExposure(boolean primaryExposure) {
-		this.primaryExposure = primaryExposure;
 	}
 
 	@Override

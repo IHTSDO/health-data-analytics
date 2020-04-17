@@ -4,9 +4,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.RangeQueryBuilder;
-import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
-import org.ihtsdo.otf.sqs.service.dto.ConceptResults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.domain.*;
@@ -29,7 +27,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.elasticsearch.index.query.QueryBuilders.*;
-import static org.snomed.heathanalytics.service.InputValidationHelper.checkInput;
 
 @Service
 public class QueryService {
@@ -37,10 +34,10 @@ public class QueryService {
 	public static final PageRequest LARGE_PAGE = new PageRequest(0, 1000);
 
 	@Autowired
-	private ElasticsearchTemplate elasticsearchTemplate;
+	private SnomedService snomedService;
 
 	@Autowired
-	private SnomedQueryService snomedQueryService;
+	private ElasticsearchTemplate elasticsearchTemplate;
 
 	@Autowired
 	private SubsetRepository subsetRepository;
@@ -48,8 +45,14 @@ public class QueryService {
 	private final SimpleDateFormat debugDateFormat = new SimpleDateFormat("yyyy/MM/dd");
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	private int fetchCohortCount(CohortCriteria patientCriteria) throws ServiceException {
-		return (int) fetchCohort(patientCriteria, 0, 0).getTotalElements();
+	public Stats getStats() {
+		SearchQuery searchQuery = new NativeSearchQueryBuilder().build();
+		long patientCount = elasticsearchTemplate.count(searchQuery, Patient.class);
+		return new Stats(new Date(), patientCount);
+	}
+
+	public int fetchCohortCount(CohortCriteria patientCriteria) throws ServiceException {
+		return (int) fetchCohort(patientCriteria, 0, 1).getTotalElements();
 	}
 
 	public Page<Patient> fetchCohort(CohortCriteria cohortCriteria) throws ServiceException {
@@ -58,53 +61,6 @@ public class QueryService {
 
 	public Page<Patient> fetchCohort(CohortCriteria cohortCriteria, int page, int size) throws ServiceException {
 		return doFetchCohort(cohortCriteria, page, size, new GregorianCalendar(), new Timer());
-	}
-
-	public StatisticalCorrelationReport runStatisticalReport(StatisticalCorrelationReportDefinition reportDefinition) throws ServiceException {
-		CohortCriteria patientCriteria = new CohortCriteria();
-
-		// Copy base criteria
-		patientCriteria.copyCriteriaWhereMoreSpecific(reportDefinition.getBaseCriteria());
-
-		EncounterCriterion treatmentCriterion = reportDefinition.getTreatmentCriterion();
-		checkInput("treatmentCriterion is required for the statistical test.", treatmentCriterion != null);
-		EncounterCriterion negativeOutcomeCriterion = reportDefinition.getNegativeOutcomeCriterion();
-		checkInput("negativeOutcomeCriterion is required for a statistical test.", negativeOutcomeCriterion != null);
-
-		// A. Count patients WITH treatment, WITH negative outcome
-		List<EncounterCriterion> encounterCriteria = patientCriteria.getEncounterCriteria();
-		encounterCriteria.add(treatmentCriterion);
-		encounterCriteria.add(negativeOutcomeCriterion);
-		int withTreatmentWithNegativeOutcomeCount = fetchCohortCount(patientCriteria);
-
-		// B. Count patients WITH treatment
-		removeLast(encounterCriteria);
-		int withTreatmentCount = fetchCohortCount(patientCriteria);
-
-		// Has test variable chance of outcome = A / B
-
-		// C. Count patients WITHOUT treatment, WITH negative outcome
-		treatmentCriterion.setHas(false);
-		encounterCriteria.add(negativeOutcomeCriterion);
-		int withoutTreatmentWithNegativeOutcomeCount = fetchCohortCount(patientCriteria);
-
-		// D. Count patients WITHOUT test variable
-		removeLast(encounterCriteria);
-		int withoutTreatmentCount = fetchCohortCount(patientCriteria);
-		treatmentCriterion.setHas(true);// reset
-
-		// Has not test variable chance of outcome = C / D
-
-		return new StatisticalCorrelationReport(
-				(int) getStats().getPatientCount(),
-				withTreatmentCount,
-				withTreatmentWithNegativeOutcomeCount,
-				withoutTreatmentCount,
-				withoutTreatmentWithNegativeOutcomeCount);
-	}
-
-	private void removeLast(List<EncounterCriterion> list) {
-		list.remove(list.size() - 1);
 	}
 
 	private Page<Patient> doFetchCohort(CohortCriteria patientCriteria, int page, int size, GregorianCalendar now, Timer timer) throws ServiceException {
@@ -158,12 +114,12 @@ public class QueryService {
 		if (!conceptTerms.isEmpty()) {
 			try {
 				for (Long conceptId : conceptTerms.keySet()) {
-					ConceptResult conceptResult = snomedQueryService.retrieveConcept(conceptId.toString());
+					ConceptResult conceptResult = snomedService.findConcept(conceptId.toString());
 					if (conceptResult != null) {
 						conceptTerms.get(conceptId).setTerm(conceptResult.getFsn());
 					}
 				}
-			} catch (org.ihtsdo.otf.sqs.service.exception.ServiceException e) {
+			} catch (ServiceException e) {
 				logger.warn("Failed to retrieve concept terms", e);
 			}
 			timer.split("Fetching concept terms");
@@ -206,7 +162,7 @@ public class QueryService {
 			String criterionEcl = getCriterionEcl(criterion);
 			if (criterionEcl != null) {
 				timer.split("Fetching concepts for ECL " + criterionEcl);
-				List<Long> conceptIds = getConceptIds(criterionEcl);
+				List<Long> conceptIds = snomedService.getConceptIds(criterionEcl);
 				if (criterion.isHas()) {
 					patientFilter.must(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
 				} else {
@@ -298,37 +254,4 @@ public class QueryService {
 		return null;
 	}
 
-	private List<Long> getConceptIds(String ecl) throws ServiceException {
-		try {
-			return snomedQueryService.eclQueryReturnConceptIdentifiers(ecl, 0, -1).getConceptIds();
-		} catch (org.ihtsdo.otf.sqs.service.exception.ServiceException e) {
-			throw new ServiceException("Failed to process ECL query.", e);
-		}
-	}
-
-	public ConceptResult findConcept(String conceptId) throws ServiceException {
-		try {
-			return snomedQueryService.retrieveConcept(conceptId);
-		} catch (org.ihtsdo.otf.sqs.service.exception.ServiceException e) {
-			throw new ServiceException("Failed to find concept by id '" + conceptId + "'", e);
-		}
-	}
-
-	public ConceptResults findConcepts(String termPrefix, String ecQuery, int offset, int limit) throws ServiceException {
-		try {
-			return snomedQueryService.search(ecQuery, termPrefix, offset, limit);
-		} catch (org.ihtsdo.otf.sqs.service.exception.ServiceException e) {
-			throw new ServiceException("Failed to find concept by prefix '" + termPrefix + "'", e);
-		}
-	}
-
-	public Stats getStats() {
-		SearchQuery searchQuery = new NativeSearchQueryBuilder().build();
-		long patientCount = elasticsearchTemplate.count(searchQuery, Patient.class);
-		return new Stats(new Date(), patientCount);
-	}
-
-	public void setSnomedQueryService(SnomedQueryService snomedQueryService) {
-		this.snomedQueryService = snomedQueryService;
-	}
 }

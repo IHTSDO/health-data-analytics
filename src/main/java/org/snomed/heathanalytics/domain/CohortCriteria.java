@@ -2,6 +2,7 @@ package org.snomed.heathanalytics.domain;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class CohortCriteria {
 
@@ -72,5 +73,21 @@ public class CohortCriteria {
 
 	public List<EncounterCriterion> getEncounterCriteria() {
 		return encounterCriteria;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		CohortCriteria that = (CohortCriteria) o;
+		return gender == that.gender &&
+				Objects.equals(minAgeNow, that.minAgeNow) &&
+				Objects.equals(maxAgeNow, that.maxAgeNow) &&
+				Objects.equals(encounterCriteria, that.encounterCriteria);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(gender, minAgeNow, maxAgeNow, encounterCriteria);
 	}
 }

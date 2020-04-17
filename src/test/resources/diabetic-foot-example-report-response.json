@@ -1,0 +1,90 @@
+{
+	"name": "Diabetes Type 2",
+	"patientCount": 2154,
+	"criteria": {
+		"encounterCriteria": [
+			{
+				"has": true,
+				"conceptECL": "<<44054006"
+			}
+		]
+	},
+	"groups": [
+		{
+			"name": "Smoker",
+			"patientCount": 113,
+			"criteria": {
+				"encounterCriteria": [
+					{
+						"has": true,
+						"conceptECL": "<<44054006"
+					},
+					{
+						"has": true,
+						"conceptECL": "<<77176002"
+					}
+				]
+			},
+			"groups": [
+				{
+					"name": "Amputation of the foot",
+					"patientCount": 1,
+					"criteria": {
+						"encounterCriteria": [
+							{
+								"has": true,
+								"conceptECL": "<<44054006"
+							},
+							{
+								"has": true,
+								"conceptECL": "<<77176002"
+							},
+							{
+								"has": true,
+								"conceptECL": "<<180030006"
+							}
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Non Smoker",
+			"patientCount": 2041,
+			"criteria": {
+				"encounterCriteria": [
+					{
+						"has": true,
+						"conceptECL": "<<44054006"
+					},
+					{
+						"has": false,
+						"conceptECL": "<<77176002"
+					}
+				]
+			},
+			"groups": [
+				{
+					"name": "Amputation of the foot",
+					"patientCount": 8,
+					"criteria": {
+						"encounterCriteria": [
+							{
+								"has": true,
+								"conceptECL": "<<44054006"
+							},
+							{
+								"has": false,
+								"conceptECL": "<<77176002"
+							},
+							{
+								"has": true,
+								"conceptECL": "<<180030006"
+							}
+						]
+					}
+				}
+			]
+		}
+	]
+}

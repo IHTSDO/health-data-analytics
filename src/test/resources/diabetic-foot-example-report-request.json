@@ -1,0 +1,50 @@
+{
+	"name": "Diabetes Type 2",
+	"criteria": {
+		"encounterCriteria": [
+			{
+				"conceptECL": "<<44054006",
+				"has": true
+			}
+		]
+	},
+	"groups": [
+		[
+			{
+				"name": "Smoker",
+				"criteria": {
+					"encounterCriteria": [
+						{
+							"conceptECL": "<<77176002",
+							"has": true
+						}
+					]
+				}
+			},
+			{
+				"name": "Non Smoker",
+				"criteria": {
+					"encounterCriteria": [
+						{
+							"conceptECL": "<<77176002",
+							"has": false
+						}
+					]
+				}
+			}
+		],
+		[
+			{
+				"name": "Amputation of the foot",
+				"criteria": {
+					"encounterCriteria": [
+						{
+							"conceptECL": "<<180030006",
+							"has": true
+						}
+					]
+				}
+			}
+		]
+	]
+}

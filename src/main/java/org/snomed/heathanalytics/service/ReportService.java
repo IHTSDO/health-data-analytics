@@ -1,0 +1,96 @@
+package org.snomed.heathanalytics.service;
+
+import org.snomed.heathanalytics.domain.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+import static org.snomed.heathanalytics.service.InputValidationHelper.checkInput;
+
+@Service
+public class ReportService {
+
+	@Autowired
+	private QueryService queryService;
+
+	public Report runReport(ReportDefinition reportDefinition) throws ServiceException {
+		// Fetch page of patients matching top level criteria
+		CohortCriteria patientCriteria = reportDefinition.getCriteria();
+		int count = queryService.fetchCohortCount(patientCriteria);
+		Report report = new Report(reportDefinition.getName(), count, patientCriteria);
+
+		List<List<SubReportDefinition>> subGroupLists = reportDefinition.getGroups();
+		addReportGroups(report, subGroupLists, 0, patientCriteria);
+
+		return report;
+	}
+
+	public StatisticalCorrelationReport runStatisticalReport(StatisticalCorrelationReportDefinition reportDefinition) throws ServiceException {
+		CohortCriteria patientCriteria = new CohortCriteria();
+
+		// Copy base criteria
+		patientCriteria.copyCriteriaWhereMoreSpecific(reportDefinition.getBaseCriteria());
+
+		EncounterCriterion treatmentCriterion = reportDefinition.getTreatmentCriterion();
+		checkInput("treatmentCriterion is required for the statistical test.", treatmentCriterion != null);
+		EncounterCriterion negativeOutcomeCriterion = reportDefinition.getNegativeOutcomeCriterion();
+		checkInput("negativeOutcomeCriterion is required for a statistical test.", negativeOutcomeCriterion != null);
+
+		// A. Count patients WITH treatment, WITH negative outcome
+		List<EncounterCriterion> encounterCriteria = patientCriteria.getEncounterCriteria();
+		encounterCriteria.add(treatmentCriterion);
+		encounterCriteria.add(negativeOutcomeCriterion);
+		int withTreatmentWithNegativeOutcomeCount = queryService.fetchCohortCount(patientCriteria);
+
+		// B. Count patients WITH treatment
+		removeLast(encounterCriteria);
+		int withTreatmentCount = queryService.fetchCohortCount(patientCriteria);
+
+		// Has test variable chance of outcome = A / B
+
+		// C. Count patients WITHOUT treatment, WITH negative outcome
+		treatmentCriterion.setHas(false);
+		encounterCriteria.add(negativeOutcomeCriterion);
+		int withoutTreatmentWithNegativeOutcomeCount = queryService.fetchCohortCount(patientCriteria);
+
+		// D. Count patients WITHOUT test variable
+		removeLast(encounterCriteria);
+		int withoutTreatmentCount = queryService.fetchCohortCount(patientCriteria);
+		treatmentCriterion.setHas(true);// reset
+
+		// Has not test variable chance of outcome = C / D
+
+		return new StatisticalCorrelationReport(
+				(int) queryService.getStats().getPatientCount(),
+				withTreatmentCount,
+				withTreatmentWithNegativeOutcomeCount,
+				withoutTreatmentCount,
+				withoutTreatmentWithNegativeOutcomeCount);
+	}
+
+	private void addReportGroups(Report report, List<List<SubReportDefinition>> groupLists, int listsIndex, CohortCriteria patientCriteria) throws ServiceException {
+		if (groupLists != null && groupLists.size() > listsIndex) {
+			List<SubReportDefinition> groupList = groupLists.get(listsIndex);
+			for (SubReportDefinition reportDefinition : groupList) {
+				CohortCriteria combinedCriteria = combineCriteria(patientCriteria, reportDefinition.getCriteria());
+				int hitCount = queryService.fetchCohortCount(combinedCriteria);
+				Report reportGroup = new Report(reportDefinition.getName(), hitCount, combinedCriteria);
+				report.addGroup(reportGroup);
+				addReportGroups(reportGroup, groupLists, listsIndex + 1, combinedCriteria);
+			}
+		}
+	}
+
+	private CohortCriteria combineCriteria(CohortCriteria mainCriteria, CohortCriteria additionalCriteria) {
+		CohortCriteria combinedCriteria = new CohortCriteria();
+		combinedCriteria.copyCriteriaWhereMoreSpecific(mainCriteria);
+		combinedCriteria.copyCriteriaWhereMoreSpecific(additionalCriteria);
+		return combinedCriteria;
+	}
+
+	private void removeLast(List<EncounterCriterion> list) {
+		list.remove(list.size() - 1);
+	}
+
+}

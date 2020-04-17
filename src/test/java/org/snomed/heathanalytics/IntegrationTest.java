@@ -9,6 +9,7 @@ import org.snomed.heathanalytics.domain.*;
 import org.snomed.heathanalytics.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.service.QueryService;
 import org.snomed.heathanalytics.service.ServiceException;
+import org.snomed.heathanalytics.service.SnomedService;
 import org.snomed.heathanalytics.testutil.TestSnomedQueryServiceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -31,6 +32,9 @@ public class IntegrationTest {
 
 	@Autowired
 	private QueryService queryService;
+
+	@Autowired
+	private SnomedService snomedService;
 
 	@Autowired
 	private ElasticOutputStream healthDataStream;
@@ -59,7 +63,7 @@ public class IntegrationTest {
 		acuteQWaveMyocardialInfarction = newConcept("304914007", allConcepts);
 		acuteQWaveMyocardialInfarction.addInferredParent(myocardialInfarction);
 
-		queryService.setSnomedQueryService(TestSnomedQueryServiceBuilder.createWithConcepts(allConcepts.toArray(new ConceptImpl[]{})));
+		snomedService.setSnomedQueryService(TestSnomedQueryServiceBuilder.createWithConcepts(allConcepts.toArray(new ConceptImpl[]{})));
 
 		// Set up tiny set of integration test data.
 		// There is no attempt to make this realistic, we are just testing the logic.

@@ -7,9 +7,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.snomed.heathanalytics.domain.*;
 import org.snomed.heathanalytics.ingestion.elasticsearch.ElasticOutputStream;
-import org.snomed.heathanalytics.service.QueryService;
+import org.snomed.heathanalytics.service.ReportService;
 import org.snomed.heathanalytics.service.ServiceException;
-import org.snomed.heathanalytics.domain.StatisticalCorrelationReport;
+import org.snomed.heathanalytics.service.SnomedService;
 import org.snomed.heathanalytics.testutil.TestSnomedQueryServiceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
@@ -29,7 +29,10 @@ import static org.snomed.heathanalytics.TestUtils.date;
 public class StatisticTestingIntegrationTest {
 
 	@Autowired
-	private QueryService queryService;
+	private SnomedService snomedService;
+
+	@Autowired
+	private ReportService reportService;
 
 	@Autowired
 	private ElasticOutputStream healthDataStream;
@@ -69,7 +72,7 @@ public class StatisticTestingIntegrationTest {
 		// 51234001 |Paracetamol|
 		paracetamol = createConcept("51234001", allConcepts);
 
-		queryService.setSnomedQueryService(TestSnomedQueryServiceBuilder.createWithConcepts(allConcepts.toArray(new ConceptImpl[]{})));
+		snomedService.setSnomedQueryService(TestSnomedQueryServiceBuilder.createWithConcepts(allConcepts.toArray(new ConceptImpl[]{})));
 
 		//
 		// Set up some data for this test
@@ -141,7 +144,7 @@ public class StatisticTestingIntegrationTest {
 				new EncounterCriterion("<<" + paracetamol.getId().toString(), 5 * YEAR_IN_DAYS, null),
 				new EncounterCriterion("<<" + myocardialInfarction.getId().toString(), 5 * YEAR_IN_DAYS, null));
 
-		StatisticalCorrelationReport result = queryService.runStatisticalReport(statisticalCorrelationReportDefinition);
+		StatisticalCorrelationReport result = reportService.runStatisticalReport(statisticalCorrelationReportDefinition);
 		assertEquals(5, result.getWithTreatmentCount());
 		assertEquals(2, result.getWithTreatmentWithNegativeOutcomeCount());
 		assertEquals("40.0", result.getWithTreatmentChanceOfNegativeOutcome());
@@ -161,7 +164,7 @@ public class StatisticTestingIntegrationTest {
 		EncounterCriterion treatmentCriterion = new EncounterCriterion("<<" + paracetamol.getId().toString(), 5 * YEAR_IN_DAYS, null);
 		EncounterCriterion negativeOutcomeCriterion = new EncounterCriterion("<<" + myocardialInfarction.getId().toString(), 5 * YEAR_IN_DAYS, null);
 
-		StatisticalCorrelationReport result = queryService.runStatisticalReport(new StatisticalCorrelationReportDefinition(patientCriteria, treatmentCriterion, negativeOutcomeCriterion));
+		StatisticalCorrelationReport result = reportService.runStatisticalReport(new StatisticalCorrelationReportDefinition(patientCriteria, treatmentCriterion, negativeOutcomeCriterion));
 
 		assertEquals(2, result.getWithTreatmentWithNegativeOutcomeCount());
 		assertEquals(2, result.getWithTreatmentCount());

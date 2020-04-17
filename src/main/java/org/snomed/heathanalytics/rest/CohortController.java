@@ -1,5 +1,6 @@
 package org.snomed.heathanalytics.rest;
 
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.domain.CohortCriteria;
@@ -10,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@Api(tags = "Patients", description = "-")
 public class CohortController {
 
 	@Autowired

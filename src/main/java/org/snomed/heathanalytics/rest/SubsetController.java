@@ -1,5 +1,6 @@
 package org.snomed.heathanalytics.rest;
 
+import io.swagger.annotations.Api;
 import org.snomed.heathanalytics.domain.Subset;
 import org.snomed.heathanalytics.pojo.EmptyPojo;
 import org.snomed.heathanalytics.service.InputValidationHelper;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import static org.snomed.heathanalytics.rest.ControllerHelper.aggregatedPageWorkaround;
 
 @RestController
+@Api(tags = "Concept Subsets", description = "-")
 public class SubsetController {
 
 	@Autowired

@@ -1,5 +1,6 @@
 package org.snomed.heathanalytics.rest;
 
+import io.swagger.annotations.Api;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResults;
 import org.snomed.heathanalytics.service.ServiceException;
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@Api(tags = "Concepts", description = "-")
 public class ConceptController {
 
 	@Autowired

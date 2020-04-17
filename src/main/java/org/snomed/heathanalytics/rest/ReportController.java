@@ -1,5 +1,6 @@
 package org.snomed.heathanalytics.rest;
 
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.snomed.heathanalytics.domain.Report;
 import org.snomed.heathanalytics.domain.ReportDefinition;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@Api(tags = "Reports", description = "-")
 public class ReportController {
 
 	@Autowired

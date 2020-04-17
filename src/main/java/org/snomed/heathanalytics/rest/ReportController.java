@@ -5,6 +5,8 @@ import org.snomed.heathanalytics.domain.Report;
 import org.snomed.heathanalytics.domain.ReportDefinition;
 import org.snomed.heathanalytics.domain.StatisticalCorrelationReport;
 import org.snomed.heathanalytics.domain.StatisticalCorrelationReportDefinition;
+import org.snomed.heathanalytics.pojo.Stats;
+import org.snomed.heathanalytics.service.QueryService;
 import org.snomed.heathanalytics.service.ReportService;
 import org.snomed.heathanalytics.service.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +17,16 @@ public class ReportController {
 
 	@Autowired
 	private ReportService reportService;
+
+	@Autowired
+	private QueryService queryService;
+
+	@ApiOperation(value = "Service statistics.", notes = "Just reports the server date and number of patients in the store.")
+	@RequestMapping(value = "/stats", method = RequestMethod.GET, produces = "application/json")
+	@ResponseBody
+	public Stats getStats() {
+		return queryService.getStats();
+	}
 
 	@ApiOperation(value = "Create a report of patient counts using groups.",
 			notes = "A top level criteria can be defined for the overall cohort.\n" +

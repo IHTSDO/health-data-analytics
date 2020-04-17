@@ -15,7 +15,8 @@ import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.ingestion.exampledata.ExampleConceptService;
 import org.snomed.heathanalytics.ingestion.exampledata.ExampleDataGenerator;
-import org.snomed.heathanalytics.ingestion.exampledata.ExampleDataGeneratorConfiguration;
+import org.snomed.heathanalytics.ingestion.localdisk.LocalFileNDJsonIngestionSource;
+import org.snomed.heathanalytics.ingestion.localdisk.LocalFileNDJsonIngestionSourceConfiguration;
 import org.snomed.heathanalytics.service.QueryService;
 import org.snomed.heathanalytics.service.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -121,10 +122,14 @@ public class Application implements ApplicationRunner {
 		System.out.println();
 	}
 
-	private void generatePopulation(int demoPatientCount) throws IOException, ReleaseImportException {
+	private void generatePopulation(int demoPatientCount) throws IOException {
 		deleteExistingPatientData();
 		logger.info("******** Generating data for {} patients ...", new DecimalFormat( "#,###,###" ).format(demoPatientCount));
-		exampleDataSource().stream(new ExampleDataGeneratorConfiguration(demoPatientCount), elasticOutputStream);
+		File dataGenDir = new File("generated-patient-data");
+		dataGenDir.mkdirs();
+		File patientsNdJsonFile = new File(dataGenDir, "patients.ndjson");
+		exampleDataSource().createPatients(demoPatientCount, patientsNdJsonFile);
+		new LocalFileNDJsonIngestionSource(objectMapper()).stream(new LocalFileNDJsonIngestionSourceConfiguration(dataGenDir), elasticOutputStream);
 	}
 
 	private void deleteExistingPatientData() {

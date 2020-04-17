@@ -1,62 +1,76 @@
 package org.snomed.heathanalytics.ingestion.exampledata;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SequenceWriter;
 import org.ihtsdo.otf.sqs.service.exception.ServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.domain.ClinicalEncounter;
 import org.snomed.heathanalytics.domain.Gender;
 import org.snomed.heathanalytics.domain.Patient;
-import org.snomed.heathanalytics.ingestion.HealthDataIngestionSource;
-import org.snomed.heathanalytics.ingestion.HealthDataIngestionSourceConfiguration;
-import org.snomed.heathanalytics.ingestion.HealthDataOutputStream;
+import org.springframework.beans.factory.annotation.Autowired;
 
+import java.io.File;
+import java.io.IOException;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ExampleDataGenerator implements HealthDataIngestionSource {
+public class ExampleDataGenerator {
 
 	private final ExampleConceptService concepts;
+
+	@Autowired
+	private ObjectMapper objectMapper;
+
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public ExampleDataGenerator(ExampleConceptService exampleConceptService) {
 		this.concepts = exampleConceptService;
 	}
 
-	@Override
-	public void stream(HealthDataIngestionSourceConfiguration configuration, HealthDataOutputStream healthDataOutputStream) {
-		ExampleDataGeneratorConfiguration generatorConfiguration = (ExampleDataGeneratorConfiguration) configuration;
+	public void createPatients(int patientCount, File outputFile) throws IOException {
 		long start = new Date().getTime();
 		List<Exception> exceptions = new ArrayList<>();
-		AtomicInteger progress = new AtomicInteger();
-		int progressChunk = 10_000;
-		List<Patient> patientBatch = new ArrayList<>();
-		for (int i = 0; i < generatorConfiguration.getDemoPatientCount(); i++) {
-			if (i % progressChunk == 0) {
-				int progressToReport = progress.addAndGet(progressChunk);
-				System.out.println(NumberFormat.getNumberInstance().format(progressToReport) + "/" + NumberFormat.getNumberInstance().format(generatorConfiguration.getDemoPatientCount()));
-			}
-			try {
-				patientBatch.add(generateExamplePatientAndActs(i + ""));
-				if (patientBatch.size() == 1000) {
-					healthDataOutputStream.createPatients(patientBatch);
-					patientBatch.clear();
+
+		try (SequenceWriter patientWriter = objectMapper.writerFor(Patient.class).withRootValueSeparator("\n").writeValues(outputFile)) {
+
+			AtomicInteger progress = new AtomicInteger();
+			int progressChunk = 10_000;
+			List<Patient> patientBatch = new ArrayList<>();
+			for (int i = 0; i < patientCount; i++) {
+				if (i % progressChunk == 0) {
+					int progressToReport = progress.addAndGet(progressChunk);
+					System.out.println(NumberFormat.getNumberInstance().format(progressToReport) + "/" + NumberFormat.getNumberInstance().format(patientCount));
 				}
-			} catch (ServiceException e) {
-				if (exceptions.size() < 10) {
-					exceptions.add(e);
+				try {
+					patientBatch.add(generateExamplePatientAndActs(i + ""));
+					if (patientBatch.size() == 1000) {
+						patientWriter.writeAll(patientBatch);
+						patientBatch.clear();
+					}
+				} catch (ServiceException | IOException e) {
+					if (exceptions.size() < 10) {
+						exceptions.add(e);
+					}
 				}
 			}
-		}
-		if (!patientBatch.isEmpty()) {
-			healthDataOutputStream.createPatients(patientBatch);
+			if (!patientBatch.isEmpty()) {
+				try {
+					patientWriter.writeAll(patientBatch);
+				} catch (IOException e) {
+					if (exceptions.size() < 10) {
+						exceptions.add(e);
+					}
+				}
+			}
 		}
 		System.out.println();
 		if (!exceptions.isEmpty()) {
 			logger.error("There were errors generating patent data.", exceptions.get(0));
 		}
-		logger.info("Generating patient data took {} seconds.", (new Date().getTime() - start) / 1000);
+		logger.info("Generating patient data took {} seconds. All data written to NDJSON file {}.", (new Date().getTime() - start) / 1000, outputFile.getPath());
 	}
 
 	private Patient generateExamplePatientAndActs(String roleId) throws ServiceException {

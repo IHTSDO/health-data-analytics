@@ -48,9 +48,14 @@ public class ExampleConceptService {
 	}
 
 	Long selectRandomChildOf(String conceptId) throws ServiceException {
-		List<Long> descendants = conceptDescendantMap.get(parseLong(conceptId));
-		if (descendants.isEmpty()) {
+		long conceptIdLong = parseLong(conceptId);
+		List<Long> descendants = conceptDescendantMap.get(conceptIdLong);
+		if (descendants == null) {
 			throw new ServiceException("Concept " + conceptId + " could not be found.");
+		}
+		if (descendants.isEmpty()) {
+			// Concept is a leaf, return self
+			return conceptIdLong;
 		}
 		return descendants.get(ThreadLocalRandom.current().nextInt(0, descendants.size()));
 	}

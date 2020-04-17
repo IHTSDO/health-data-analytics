@@ -70,14 +70,14 @@ public class IntegrationTest {
 		// "Bob"
 		healthDataStream.createPatient(new Patient("1", TestUtils.getDob(35), Gender.MALE));
 		// Bob has hypertension.
-		healthDataStream.addClinicalEncounter("1", new ClinicalEncounter(date(2017, 0, 10), ClinicalEncounterType.FINDING, hypertension.getId()));
+		healthDataStream.addClinicalEncounter("1", new ClinicalEncounter(date(2017, 0, 10), hypertension.getId()));
 		// Bob has a type of myocardial infarction 10 days after the hypertension was recorded.
-		healthDataStream.addClinicalEncounter("1", new ClinicalEncounter(date(2017, 0, 20), ClinicalEncounterType.FINDING, acuteQWaveMyocardialInfarction.getId()));
+		healthDataStream.addClinicalEncounter("1", new ClinicalEncounter(date(2017, 0, 20), acuteQWaveMyocardialInfarction.getId()));
 
 		// "Dave"
 		healthDataStream.createPatient(new Patient("2", TestUtils.getDob(40), Gender.MALE));
 		// Dave has hypertension. No other recorded disorders.
-		healthDataStream.addClinicalEncounter("2", new ClinicalEncounter(date(2010, 5, 1), ClinicalEncounterType.FINDING, hypertension.getId()));
+		healthDataStream.addClinicalEncounter("2", new ClinicalEncounter(date(2010, 5, 1), hypertension.getId()));
 	}
 
 	@Test

@@ -1,6 +1,7 @@
 package org.snomed.heathanalytics.domain;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.snomed.heathanalytics.pojo.TermHolder;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.elasticsearch.annotations.Field;
@@ -16,9 +17,6 @@ public class ClinicalEncounter implements Act {
 	@Field(index = FieldIndex.not_analyzed)
 	private Long conceptId;
 
-	@Field(index = FieldIndex.not_analyzed)
-	private ClinicalEncounterType type;
-
 	@Transient
 	private TermHolder conceptTerm;
 
@@ -26,16 +24,14 @@ public class ClinicalEncounter implements Act {
 		String ROLE_ID = "roleId";
 		String DATE = "date";
 		String CONCEPT_ID = "conceptId";
-		String TYPE = "type";
 	}
 
 	public ClinicalEncounter() {
 	}
 
-	public ClinicalEncounter(Date date, ClinicalEncounterType type, Long conceptId) {
+	public ClinicalEncounter(Date date, Long conceptId) {
 		this.date = date;
 		this.conceptId = conceptId;
-		this.type = type;
 	}
 
 	@Override
@@ -45,6 +41,7 @@ public class ClinicalEncounter implements Act {
 	}
 
 	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddhhmmss")
+	@JsonProperty(defaultValue = "yyyyMMddhhmmss")
 	public Date getDateStamp() {
 		return date;
 	}
@@ -55,14 +52,6 @@ public class ClinicalEncounter implements Act {
 
 	public void setConceptId(Long conceptId) {
 		this.conceptId = conceptId;
-	}
-
-	public ClinicalEncounterType getType() {
-		return type;
-	}
-
-	public void setType(ClinicalEncounterType type) {
-		this.type = type;
 	}
 
 	public String getConceptTerm() {

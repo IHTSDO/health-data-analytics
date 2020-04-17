@@ -1,5 +1,7 @@
 package org.snomed.heathanalytics;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.elasticsearch.index.query.MatchAllQueryBuilder;
 import org.ihtsdo.otf.snomedboot.ReleaseImportException;
 import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
@@ -25,6 +27,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.core.query.DeleteQuery;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
@@ -90,6 +93,14 @@ public class Application implements ApplicationRunner {
 	@Bean
 	public ExampleDataGenerator exampleDataSource() throws IOException, ReleaseImportException {
 		return new ExampleDataGenerator(new ExampleConceptService(snomedQueryService()));
+	}
+
+	@Bean
+	public ObjectMapper objectMapper() {
+		return Jackson2ObjectMapperBuilder
+				.json()
+				.serializationInclusion(JsonInclude.Include.NON_NULL)
+				.build();
 	}
 
 	private void runDemo(int demoPatientCount) throws ServiceException, IOException, ReleaseImportException {

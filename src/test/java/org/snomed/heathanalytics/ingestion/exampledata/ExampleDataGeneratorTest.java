@@ -1,27 +1,25 @@
 package org.snomed.heathanalytics.ingestion.exampledata;
 
 import com.google.common.collect.Lists;
-import com.google.common.io.Files;
 import org.ihtsdo.otf.sqs.service.ReleaseWriter;
 import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.ihtsdo.otf.sqs.service.dto.ConceptIdResults;
 import org.ihtsdo.otf.sqs.service.exception.ServiceException;
-import org.ihtsdo.otf.sqs.service.store.DiskReleaseStore;
 import org.ihtsdo.otf.sqs.service.store.RamReleaseStore;
-import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.domain.ClinicalEncounter;
-import org.snomed.heathanalytics.domain.ClinicalEncounterType;
 import org.snomed.heathanalytics.domain.Patient;
 import org.snomed.heathanalytics.ingestion.HealthDataOutputStream;
-import org.snomed.heathanalytics.testutil.TestSnomedQueryServiceBuilder;
 
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 

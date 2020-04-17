@@ -91,8 +91,9 @@ public class Application implements ApplicationRunner {
 	}
 
 	@Bean
-	public ExampleDataGenerator exampleDataSource() throws IOException, ReleaseImportException {
-		return new ExampleDataGenerator(new ExampleConceptService(snomedQueryService()));
+	public ExampleDataGenerator exampleDataSource() {
+		File releaseDirectory = new File("release");
+		return new ExampleDataGenerator(new ExampleConceptService(releaseDirectory));
 	}
 
 	@Bean

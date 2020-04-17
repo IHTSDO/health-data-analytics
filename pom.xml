@@ -51,17 +51,6 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-		<dependency>
-			<groupId>org.ihtsdo.otf</groupId>
-			<artifactId>snomed-boot</artifactId>
-			<version>1.1.0</version>
-			<exclusions>
-				<exclusion>
-					<groupId>com.google.collections</groupId>
-					<artifactId>google-collections</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
 		<!-- Spring Dependencies -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -152,13 +141,13 @@
 			<id>ihtsdo-releases</id>
 			<releases><enabled>true</enabled></releases>
 			<snapshots><enabled>false</enabled></snapshots>
-			<url>https://maven.ihtsdotools.org/content/repositories/releases/</url>
+			<url>https://nexus3.ihtsdotools.org/repository/maven-releases/</url>
 		</repository>
 		<repository>
 			<id>ihtsdo-snapshots</id>
 			<releases><enabled>false</enabled></releases>
 			<snapshots><enabled>true</enabled></snapshots>
-			<url>https://maven.ihtsdotools.org/content/repositories/snapshots/</url>
+			<url>https://nexus3.ihtsdotools.org/repository/maven-snapshots/</url>
 		</repository>
 	</repositories>
 	<distributionManagement>

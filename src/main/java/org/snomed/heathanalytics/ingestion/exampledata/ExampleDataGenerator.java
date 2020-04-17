@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ExampleDataGenerator implements HealthDataIngestionSource {
 
 	private final ExampleConceptService concepts;
-	private Logger logger = LoggerFactory.getLogger(getClass());
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public ExampleDataGenerator(ExampleConceptService exampleConceptService) {
 		this.concepts = exampleConceptService;

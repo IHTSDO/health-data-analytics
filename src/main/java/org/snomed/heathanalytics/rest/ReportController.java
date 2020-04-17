@@ -29,18 +29,21 @@ public class ReportController {
 	}
 
 	@ApiOperation(value = "Create a report of patient counts using groups.",
-			notes = "A top level criteria can be defined for the overall cohort.\n" +
-					"Groups with more specific criteria can also be defined if required.\n" +
-					"A count of matching patients will be returned for the top level and each specified group.\n" +
-					"The top level criteria will be included in each group automatically so there is no need to repeat the top level criteria.\n" +
+			notes = "Create a report of patient counts using groups.\n" +
+					"\n" +
+					"A top level criteria can be defined for the overall cohort.  \n" +
+					"Groups with more specific criteria can also be defined if required.  \n" +
+					"A count of matching patients will be returned for the top level and each specified group.  \n" +
+					"The top level criteria will be included in each group automatically so there is no need to repeat the top level criteria.  \n" +
 					"\n" +
 					"In the report request the groups section is a list of lists. If a second list of groups is given " +
-					"these will become subgroups within each of the first list of groups.\n" +
-					"For example if the groups in the request are [Smoker, Non-Smoker][Foot Amputation]\n" +
-					"the groups in the results will be: [Smoker, [(Smoker +) Foot Amputation]], [Non-Smoker, [(Non-Smoker +) Foot Amputation]].\n" +
-					"The criteria of top level groups is inherited by subgroups." +
+					"these will become subgroups within each of the first list of groups.  \n" +
+					"For example if the groups in the request are: `[Smoker, Non-Smoker], [Foot Amputation]`  \n" +
+					"the groups in the results will be: `[Smoker, [(Smoker +) Foot Amputation]], [Non-Smoker, [(Non-Smoker +) Foot Amputation]]`.  \n" +
+					"The criteria of top level groups is inherited by subgroups. There is no limit to the number of subgroup levels.  \n" +
 					"\n" +
-					"Within encounterCriteria days value of '-1' can be used as an unbounded value.")
+					"Within 'encounterCriteria' either 'conceptECL' or 'conceptSubsetId' must be used, all other fields are optional.  \n" +
+					"In the days fields a value of `-1` means unbounded. For example .")
 	@RequestMapping(value = "/report", method = RequestMethod.POST, produces = "application/json")
 	@ResponseBody
 	public Report runReport(@RequestBody ReportDefinition reportDefinition) throws ServiceException {

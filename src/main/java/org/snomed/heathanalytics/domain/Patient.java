@@ -1,6 +1,7 @@
 package org.snomed.heathanalytics.domain;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
@@ -10,6 +11,7 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 import java.util.*;
 
 @Document(indexName = "patient")
+@JsonPropertyOrder({"roleId", "gender", "dobYear", "dob", "dobFormatted", "encounters"})
 public class Patient {
 
 	@Id
@@ -72,7 +74,7 @@ public class Patient {
 	}
 
 	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
-	public Date getDobFormated() {
+	public Date getDobFormatted() {
 		return dob;
 	}
 

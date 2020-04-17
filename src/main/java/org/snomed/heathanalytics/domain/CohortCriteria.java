@@ -1,9 +1,12 @@
 package org.snomed.heathanalytics.domain;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+@JsonPropertyOrder({"gender", "minAgeNow", "maxAgeNow", "encounterCriteria"})
 public class CohortCriteria {
 
 	private Gender gender;

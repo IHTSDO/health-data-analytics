@@ -1,7 +1,11 @@
 package org.snomed.heathanalytics.domain;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 import java.util.Objects;
 
+@JsonPropertyOrder({"has", "conceptECL", "conceptSubsetId",
+		"withinDaysBeforePreviouslyMatchedEncounter", "withinDaysAfterPreviouslyMatchedEncounter"})
 public class EncounterCriterion {
 
 	private boolean has;

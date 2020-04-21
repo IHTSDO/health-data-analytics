@@ -4,5 +4,4 @@ target
 data
 release
 index
-generated-patient-data
-
+patient-data-for-import

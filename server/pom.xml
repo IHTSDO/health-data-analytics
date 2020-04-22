@@ -10,11 +10,11 @@
 		<version>2.1.0-SNAPSHOT</version>
 	</parent>
 
-	<name>Analytics Server</name>
+	<name>Health Data Analytics Server</name>
 	<artifactId>server</artifactId>
 
 	<properties>
-		<packageName>${project.artifactId}</packageName>
+		<packageName>health-data-analytics-server</packageName>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -77,6 +77,9 @@
 	<profiles>
 		<profile>
 			<id>deb</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
 			<build>
 				<plugins>
 					<plugin>
@@ -100,7 +103,7 @@
 									<dataSet>
 										<data>
 											<src>${project.build.directory}/${project.build.finalName}.jar</src>
-											<dst>app.jar</dst>
+											<dst>server.jar</dst>
 											<type>file</type>
 											<mapper>
 												<type>perm</type>

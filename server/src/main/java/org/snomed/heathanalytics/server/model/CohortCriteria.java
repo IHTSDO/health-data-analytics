@@ -24,8 +24,9 @@ public class CohortCriteria {
 		addEncounterCriterion(encounterCriterion);
 	}
 
-	public void addEncounterCriterion(EncounterCriterion criterion) {
+	public CohortCriteria addEncounterCriterion(EncounterCriterion criterion) {
 		encounterCriteria.add(criterion);
+		return this;
 	}
 
 	/**
@@ -55,24 +56,27 @@ public class CohortCriteria {
 		return gender;
 	}
 
-	public void setGender(Gender gender) {
+	public CohortCriteria setGender(Gender gender) {
 		this.gender = gender;
+		return this;
 	}
 
 	public Integer getMinAgeNow() {
 		return minAgeNow;
 	}
 
-	public void setMinAgeNow(Integer minAgeNow) {
+	public CohortCriteria setMinAgeNow(Integer minAgeNow) {
 		this.minAgeNow = minAgeNow;
+		return this;
 	}
 
 	public Integer getMaxAgeNow() {
 		return maxAgeNow;
 	}
 
-	public void setMaxAgeNow(Integer maxAgeNow) {
+	public CohortCriteria setMaxAgeNow(Integer maxAgeNow) {
 		this.maxAgeNow = maxAgeNow;
+		return this;
 	}
 
 	public List<EncounterCriterion> getEncounterCriteria() {

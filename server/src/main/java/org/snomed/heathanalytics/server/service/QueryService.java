@@ -13,6 +13,7 @@ import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.model.pojo.TermHolder;
 import org.snomed.heathanalytics.server.model.CohortCriteria;
 import org.snomed.heathanalytics.server.model.EncounterCriterion;
+import org.snomed.heathanalytics.server.model.Frequency;
 import org.snomed.heathanalytics.server.model.Subset;
 import org.snomed.heathanalytics.server.pojo.Stats;
 import org.snomed.heathanalytics.server.store.SubsetRepository;
@@ -27,9 +28,11 @@ import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.data.util.CloseableIterator;
 import org.springframework.stereotype.Service;
 
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
@@ -69,10 +72,14 @@ public class QueryService {
 	}
 
 	private Page<Patient> doFetchCohort(CohortCriteria patientCriteria, int page, int size, GregorianCalendar now, Timer timer) throws ServiceException {
+
+		validateCriteria(patientCriteria);
+
 		BoolQueryBuilder patientQuery = getPatientClauses(patientCriteria.getGender(), patientCriteria.getMinAgeNow(), patientCriteria.getMaxAgeNow(), now);
 
 		Map<EncounterCriterion, List<Long>> criterionToConceptIdMap = new HashMap<>();
-		BoolQueryBuilder patientEncounterFilter = getPatientEncounterFilter(patientCriteria.getEncounterCriteria(), criterionToConceptIdMap, timer);
+		List<EncounterCriterion> encounterCriteria = patientCriteria.getEncounterCriteria();
+		BoolQueryBuilder patientEncounterFilter = getPatientEncounterFilter(encounterCriteria, criterionToConceptIdMap, timer);
 
 		Map<Long, TermHolder> conceptTerms = new Long2ObjectOpenHashMap<>();
 		NativeSearchQueryBuilder patientElasticQuery = new NativeSearchQueryBuilder()
@@ -81,8 +88,9 @@ public class QueryService {
 				.withPageable(LARGE_PAGE);
 
 		Page<Patient> finalPatientPage;
-		if (patientCriteria.getEncounterCriteria().size() > 1 && patientCriteria.getEncounterCriteria().stream().anyMatch(EncounterCriterion::hasTimeConstraint)) {
-			// Stream through relevant Patients to apply relative date match in code.
+		if ((encounterCriteria.size() > 1 && encounterCriteria.stream().anyMatch(EncounterCriterion::hasTimeConstraint))
+				|| encounterCriteria.stream().anyMatch(EncounterCriterion::hasFrequency)) {
+			// Stream through relevant Patients to apply relative date or frequency match in code.
 			// Also do manual pagination
 			List<Patient> patientList = new ArrayList<>();
 			AtomicInteger patientCount = new AtomicInteger();
@@ -90,7 +98,7 @@ public class QueryService {
 			int limit = offset + size;
 			try (CloseableIterator<Patient> patientStream = elasticsearchTemplate.stream(patientElasticQuery.build(), Patient.class)) {
 				patientStream.forEachRemaining(patient -> {
-					if (checkEncounterDatesAndExclusions(patient.getEncounters(), patientCriteria.getEncounterCriteria(), criterionToConceptIdMap)) {
+					if (checkEncounterDatesAndExclusions(patient.getEncounters(), encounterCriteria, criterionToConceptIdMap)) {
 						long number = patientCount.incrementAndGet();
 						if (number > offset && number <= limit) {
 							patientList.add(patient);
@@ -139,6 +147,35 @@ public class QueryService {
 		return finalPatientPage;
 	}
 
+	private void validateCriteria(CohortCriteria patientCriteria) {
+		List<EncounterCriterion> encounterCriteria = patientCriteria.getEncounterCriteria();
+		for (int i = 0; i < encounterCriteria.size(); i++) {
+			EncounterCriterion encounterCriterion = encounterCriteria.get(i);
+			if ((Strings.isNullOrEmpty(encounterCriterion.getConceptECL()) && Strings.isNullOrEmpty(encounterCriterion.getConceptSubsetId()))
+					|| (!Strings.isNullOrEmpty(encounterCriterion.getConceptECL()) && !Strings.isNullOrEmpty(encounterCriterion.getConceptSubsetId()))) {
+				throw new IllegalArgumentException(String.format("EncounterCriterion[%s] must have either conceptECL or conceptSubsetId.", i));
+			}
+			Frequency frequency = encounterCriterion.getFrequency();
+			if (frequency != null) {
+				if (!encounterCriterion.isHas()) {
+					throw new IllegalArgumentException(String.format("EncounterCriterion[%s].frequency can only be used when has=true.", i));
+				}
+				if (frequency.getMinRepetitions() == null || frequency.getMinRepetitions() < 1) {
+					throw new IllegalArgumentException(String.format("EncounterCriterion[%s].frequency.minRepetitions must be a positive integer greater than 1.", i));
+				}
+				if (frequency.getMinTimeBetween() != null && frequency.getMinTimeBetween() < 0) {
+					throw new IllegalArgumentException(String.format("EncounterCriterion[%s].frequency.minTimeBetween must be a positive integer.", i));
+				}
+				if (frequency.getMaxTimeBetween() != null && frequency.getMaxTimeBetween() < 0) {
+					throw new IllegalArgumentException(String.format("EncounterCriterion[%s].frequency.minTimeBetween must be a positive integer.", i));
+				}
+				if (frequency.getTimeUnit() == null) {
+					throw new IllegalArgumentException(String.format("EncounterCriterion[%s].frequency.timeUnit is required.", i));
+				}
+			}
+		}
+	}
+
 	private BoolQueryBuilder getPatientClauses(Gender gender, Integer minAgeNow, Integer maxAgeNow, GregorianCalendar now) {
 		BoolQueryBuilder patientQuery = boolQuery();
 		if (gender != null) {
@@ -179,24 +216,25 @@ public class QueryService {
 		return patientFilter;
 	}
 
-	// Given set of encounterCriteria
-	// Find encounters which match
-	// For each of these find encounters which match relative cri 1
-	// For each of these find encounters which match relative cri 2
-	// cont
-	// if any found return true, else false
-	private boolean checkEncounterDatesAndExclusions(Set<ClinicalEncounter> allPatientEncounters, List<EncounterCriterion> encounterCriteria, Map<EncounterCriterion, List<Long>> criterionToConceptIdMap) {
+	private boolean checkEncounterDatesAndExclusions(Set<ClinicalEncounter> allPatientEncounters, List<EncounterCriterion> encounterCriteria,
+			Map<EncounterCriterion, List<Long>> criterionToConceptIdMap) {
+
 		return recursiveEncounterMatch(null, allPatientEncounters, CollectionUtils.createStack(encounterCriteria), criterionToConceptIdMap);
 	}
 
-	// TODO: try converting this to an Elasticsearch 'painless' script which runs on the nodes of the cluster. https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-script-query.html
-	private boolean recursiveEncounterMatch(ClinicalEncounter baseEncounter, Set<ClinicalEncounter> allEncounters, Stack<EncounterCriterion> criterionStack, Map<EncounterCriterion, List<Long>> criterionToConceptIdMap) {
+	// TODO: try converting this to an Elasticsearch 'painless' script which runs on the nodes of the cluster.
+	// https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-script-query.html
+	private boolean recursiveEncounterMatch(ClinicalEncounter baseEncounter, Set<ClinicalEncounter> allEncounters, Stack<EncounterCriterion> criterionStack,
+			Map<EncounterCriterion, List<Long>> criterionToConceptIdMap) {
+
 		if (criterionStack.isEmpty()) {
 			return true;
 		}
 		EncounterCriterion criterion = criterionStack.pop();
 
 		List<Long> criterionConceptIds = criterionToConceptIdMap.get(criterion);
+
+		// If forward/back cut-off days set calculate relative dates
 		Date lookBackCutOffDate = null;
 		Date lookForwardCutOffDate = null;
 		if (baseEncounter != null) {
@@ -215,6 +253,12 @@ public class QueryService {
 						return false;
 					}
 					logger.debug("Encounter {} with date {} MATCH", encounter.getConceptId(), debugDateFormat.format(encounter.getDate()));
+
+					if (!frequencyMatch(allEncounters, criterion, criterionConceptIds)) {
+						logger.debug("Frequency match FAILED");
+						return false;
+					}
+
 					return recursiveEncounterMatch(encounter, allEncounters, criterionStack, criterionToConceptIdMap);
 				} else {
 					logger.debug("Encounter {} with date {} NO match", encounter.getConceptId(), debugDateFormat.format(encounter.getDate()));
@@ -223,7 +267,63 @@ public class QueryService {
 		}
 
 		if (!criterion.isHas()) {
+			// If we got to this point the criterion did not match. No match was the requirement so let's proceed.
 			return recursiveEncounterMatch(baseEncounter, allEncounters, criterionStack, criterionToConceptIdMap);
+		}
+
+		return false;
+	}
+
+	private boolean frequencyMatch(Set<ClinicalEncounter> allEncounters, EncounterCriterion criterion, List<Long> criterionConceptIds) {
+		Frequency frequency = criterion.getFrequency();
+		if (frequency == null) {
+			return true;
+		}
+
+		// Find other matching encounters sorted by date
+		List<ClinicalEncounter> allMatchingEncounters = allEncounters.stream()
+				.filter(encounter -> criterionConceptIds.contains(encounter.getConceptId()))
+				.sorted(Comparator.comparing(ClinicalEncounter::getDate))
+				.collect(Collectors.toList());
+		logger.debug("Frequency match, allMatchingEncounters {}", allMatchingEncounters.size());
+
+		if (frequency.getMinTimeBetween() == null && frequency.getMaxTimeBetween() == null) {
+			// No time constraints, just check repetition count
+			return allMatchingEncounters.size() >= frequency.getMinRepetitions();
+		}
+
+		// Apply frequency time constraints
+		ClinicalEncounter relativeEncounter = allMatchingEncounters.remove(0);
+		int repetitionsFound = 1;
+		for (ClinicalEncounter nextEncounter : allMatchingEncounters) {
+			// Validate time period between relativeEncounter and nextEncounter
+			long time = relativeEncounter.getDate().getTime();
+			long nextEncounterTime = nextEncounter.getDate().getTime();
+			logger.debug("relativeEncounter time {}, nextEncounterTime {}", new Date(time), new Date(nextEncounterTime));
+			if (frequency.getMinTimeBetween() != null) {
+				long minTime = time + (frequency.getMinTimeBetween() * frequency.getTimeUnit().getMilliseconds());
+				if (nextEncounterTime < minTime) {
+					logger.debug("nextEncounterTime {} less than minTime {}", new Date(nextEncounterTime), new Date(minTime));
+					return false;
+				}
+			}
+			if (frequency.getMaxTimeBetween() != null) {
+				long maxTime = time + (frequency.getMaxTimeBetween() * frequency.getTimeUnit().getMilliseconds());
+				if (nextEncounterTime > maxTime) {
+					logger.debug("nextEncounterTime {} greater than maxTime {}", new Date(nextEncounterTime), new Date(maxTime));
+					return false;
+				}
+			}
+
+			// The time between relativeEncounter and nextEncounter is valid
+			repetitionsFound++;
+			if (frequency.getMinRepetitions() != null && repetitionsFound == frequency.getMinRepetitions()) {
+				// Enough repetitions have been found, the frequency criterion of this encounter for this patient has been met
+				logger.debug("Enough repetitions found {}", repetitionsFound);
+				return true;
+			}
+			// Make nextEncounter the new relativeEncounter and go round again
+			relativeEncounter = nextEncounter;
 		}
 
 		return false;

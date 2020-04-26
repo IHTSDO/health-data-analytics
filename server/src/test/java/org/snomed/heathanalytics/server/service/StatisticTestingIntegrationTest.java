@@ -1,4 +1,4 @@
-package org.snomed.heathanalytics.server;
+package org.snomed.heathanalytics.server.service;
 
 import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ConceptImpl;
 import org.junit.After;
@@ -8,17 +8,16 @@ import org.junit.runner.RunWith;
 import org.snomed.heathanalytics.model.ClinicalEncounter;
 import org.snomed.heathanalytics.model.Gender;
 import org.snomed.heathanalytics.model.Patient;
+import org.snomed.heathanalytics.server.TestConfig;
+import org.snomed.heathanalytics.server.TestUtils;
 import org.snomed.heathanalytics.server.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.server.model.CohortCriteria;
 import org.snomed.heathanalytics.server.model.EncounterCriterion;
 import org.snomed.heathanalytics.server.model.StatisticalCorrelationReport;
 import org.snomed.heathanalytics.server.model.StatisticalCorrelationReportDefinition;
-import org.snomed.heathanalytics.server.service.ReportService;
-import org.snomed.heathanalytics.server.service.SnomedService;
+import org.snomed.heathanalytics.server.store.PatientRepository;
 import org.snomed.heathanalytics.server.testutil.TestSnomedQueryServiceBuilder;
-import org.snomed.heathanalytics.server.service.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -44,7 +43,7 @@ public class StatisticTestingIntegrationTest {
 	private ElasticOutputStream healthDataStream;
 
 	@Autowired
-	private ElasticsearchTemplate elasticsearchTemplate;
+	private PatientRepository patientRepository;
 
 	private ConceptImpl hypertension;
 	private ConceptImpl diabetes;
@@ -195,7 +194,7 @@ public class StatisticTestingIntegrationTest {
 
 	@After
 	public void clearIndexes() {
-		elasticsearchTemplate.deleteIndex(Patient.class);
+		patientRepository.deleteAll();
 	}
 
 }

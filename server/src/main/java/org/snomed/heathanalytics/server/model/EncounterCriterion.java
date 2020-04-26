@@ -4,13 +4,14 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import java.util.Objects;
 
-@JsonPropertyOrder({"has", "conceptECL", "conceptSubsetId",
+@JsonPropertyOrder({"has", "conceptECL", "conceptSubsetId", "frequency",
 		"withinDaysBeforePreviouslyMatchedEncounter", "withinDaysAfterPreviouslyMatchedEncounter"})
 public class EncounterCriterion {
 
 	private boolean has;
 	private String conceptECL;
 	private String conceptSubsetId;
+	private Frequency frequency;
 
 	// Value of -1 means apply constrain with unbounded value, otherwise use null.
 	private Integer withinDaysBeforePreviouslyMatchedEncounter;
@@ -36,6 +37,10 @@ public class EncounterCriterion {
 
 	public boolean hasTimeConstraint() {
 		return withinDaysAfterPreviouslyMatchedEncounter != null || withinDaysBeforePreviouslyMatchedEncounter != null;
+	}
+
+	public boolean hasFrequency() {
+		return frequency != null;
 	}
 
 	public boolean isHas() {
@@ -76,6 +81,15 @@ public class EncounterCriterion {
 
 	public void setWithinDaysAfterPreviouslyMatchedEncounter(Integer withinDaysAfterPreviouslyMatchedEncounter) {
 		this.withinDaysAfterPreviouslyMatchedEncounter = withinDaysAfterPreviouslyMatchedEncounter;
+	}
+
+	public Frequency getFrequency() {
+		return frequency;
+	}
+
+	public EncounterCriterion setFrequency(Frequency frequency) {
+		this.frequency = frequency;
+		return this;
 	}
 
 	@Override

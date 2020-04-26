@@ -1,4 +1,4 @@
-package org.snomed.heathanalytics.server;
+package org.snomed.heathanalytics.server.service;
 
 import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ConceptImpl;
 import org.junit.After;
@@ -8,22 +8,25 @@ import org.junit.runner.RunWith;
 import org.snomed.heathanalytics.model.ClinicalEncounter;
 import org.snomed.heathanalytics.model.Gender;
 import org.snomed.heathanalytics.model.Patient;
+import org.snomed.heathanalytics.server.TestConfig;
+import org.snomed.heathanalytics.server.TestUtils;
 import org.snomed.heathanalytics.server.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.server.model.CohortCriteria;
 import org.snomed.heathanalytics.server.model.EncounterCriterion;
-import org.snomed.heathanalytics.server.service.QueryService;
-import org.snomed.heathanalytics.server.service.ServiceException;
-import org.snomed.heathanalytics.server.service.SnomedService;
+import org.snomed.heathanalytics.server.model.Frequency;
+import org.snomed.heathanalytics.server.model.TimeUnit;
+import org.snomed.heathanalytics.server.store.PatientRepository;
 import org.snomed.heathanalytics.server.testutil.TestSnomedQueryServiceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -43,16 +46,16 @@ public class IntegrationTest {
 	private ElasticOutputStream healthDataStream;
 
 	@Autowired
-	private ElasticsearchTemplate elasticsearchTemplate;
+	private PatientRepository patientRepository;
 
 	private ConceptImpl hypertension;
 	private ConceptImpl myocardialInfarction;
 	private ConceptImpl acuteQWaveMyocardialInfarction;
+	private ConceptImpl breastCancerScreening;
+	private final String breastCancerScreeningId = "268547008";
 
 	@Before
 	public void setup() throws IOException, ParseException {
-		clearIndexes();
-
 		// Set up ECL query service test data
 		List<ConceptImpl> allConcepts = new ArrayList<>();
 
@@ -66,21 +69,65 @@ public class IntegrationTest {
 		acuteQWaveMyocardialInfarction = newConcept("304914007", allConcepts);
 		acuteQWaveMyocardialInfarction.addInferredParent(myocardialInfarction);
 
+		// Breast cancer screening -
+		// 268547008 | Screening for malignant neoplasm of breast (procedure) |
+		breastCancerScreening = newConcept(breastCancerScreeningId, allConcepts);
+
 		snomedService.setSnomedQueryService(TestSnomedQueryServiceBuilder.createWithConcepts(allConcepts.toArray(new ConceptImpl[]{})));
+
 
 		// Set up tiny set of integration test data.
 		// There is no attempt to make this realistic, we are just testing the logic.
-		// "Bob"
-		healthDataStream.createPatient(new Patient("1", TestUtils.getDob(35), Gender.MALE));
-		// Bob has hypertension.
-		healthDataStream.addClinicalEncounter("1", new ClinicalEncounter(TestUtils.date(2017, 0, 10), hypertension.getId()));
-		// Bob has a type of myocardial infarction 10 days after the hypertension was recorded.
-		healthDataStream.addClinicalEncounter("1", new ClinicalEncounter(TestUtils.date(2017, 0, 20), acuteQWaveMyocardialInfarction.getId()));
 
-		// "Dave"
-		healthDataStream.createPatient(new Patient("2", TestUtils.getDob(40), Gender.MALE));
-		// Dave has hypertension. No other recorded disorders.
-		healthDataStream.addClinicalEncounter("2", new ClinicalEncounter(TestUtils.date(2010, 5, 1), hypertension.getId()));
+		// Bob
+		// has hypertension.
+		// has a type of myocardial infarction 10 days after the hypertension was recorded.
+		healthDataStream.createPatient(
+				new Patient("1", TestUtils.getDob(35), Gender.MALE)
+						.addEncounter(new ClinicalEncounter(TestUtils.date(2017, 0, 10), hypertension.getId()))
+						.addEncounter(new ClinicalEncounter(TestUtils.date(2017, 0, 20), acuteQWaveMyocardialInfarction.getId()))
+		);
+
+		// Dave
+		// has hypertension. No other recorded disorders.
+		healthDataStream.createPatient(
+				new Patient("2", TestUtils.getDob(40), Gender.MALE)
+						.addEncounter(new ClinicalEncounter(TestUtils.date(2010, 5, 1), hypertension.getId()))
+		);
+
+
+		Long screeningId = breastCancerScreening.getId();
+		// Ann - screening once a year, regular as clockwork
+		healthDataStream.createPatient(
+				new Patient("100", TestUtils.getDob(50), Gender.FEMALE)
+						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2017, Calendar.JUNE, 1), screeningId))
+						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2018, Calendar.JUNE, 1), screeningId))
+						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2019, Calendar.JUNE, 1), screeningId))
+		);
+
+		// Bella - screening once a year, varies by a month or so.
+		healthDataStream.createPatient(
+				new Patient("101", TestUtils.getDob(52), Gender.FEMALE)
+						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2017, Calendar.MAY, 5), screeningId))
+						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2018, Calendar.APRIL, 10), screeningId))
+						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2019, Calendar.MAY, 20), screeningId))
+		);
+
+		// Claudia - screening once every two years, varies by a couple of weeks.
+		healthDataStream.createPatient(
+				new Patient("102", TestUtils.getDob(52), Gender.FEMALE)
+						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2015, Calendar.JANUARY, 10), screeningId))
+						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2017, Calendar.JANUARY, 5), screeningId))
+						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2019, Calendar.JANUARY, 20), screeningId))
+		);
+
+		// Diane - screens three years apart
+		healthDataStream.createPatient(
+				new Patient("103", TestUtils.getDob(52), Gender.FEMALE)
+						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2015, Calendar.JANUARY, 10), screeningId))
+						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2018, Calendar.JANUARY, 5), screeningId))
+		);
+
 	}
 
 	@Test
@@ -170,6 +217,25 @@ public class IntegrationTest {
 		assertEquals(1, queryService.fetchCohort(cohortCriteria).getTotalElements());
 	}
 
+	@Test
+	public void testTreatmentFrequencySelection() throws ServiceException {
+		assertEquals(6, queryService.fetchCohortCount(new CohortCriteria()));
+		assertEquals(4, queryService.fetchCohortCount(new CohortCriteria().setGender(Gender.FEMALE)));
+		assertEquals(4, queryService.fetchCohortCount(new CohortCriteria(new EncounterCriterion(breastCancerScreeningId))));
+
+		// At least 2 screens 10-14 months apart
+		assertEquals(2, queryService.fetchCohortCount(new CohortCriteria(new EncounterCriterion(breastCancerScreeningId)
+				.setFrequency(new Frequency(2, 10, 14, TimeUnit.MONTH)))));
+
+		// At least 3 screens 10-14 months apart
+		assertEquals(2, queryService.fetchCohortCount(new CohortCriteria(new EncounterCriterion(breastCancerScreeningId)
+				.setFrequency(new Frequency(3, 10, 14, TimeUnit.MONTH)))));
+
+		// At least 2 screens 22-26 months apart
+		assertEquals(1, queryService.fetchCohortCount(new CohortCriteria(new EncounterCriterion(breastCancerScreeningId)
+				.setFrequency(new Frequency(2, 22, 26, TimeUnit.MONTH)))));
+	}
+
 	private List<String> toSortedPatientIdList(Page<Patient> patients) {
 		return patients.getContent().stream().map(Patient::getRoleId).sorted().collect(Collectors.toList());
 	}
@@ -183,7 +249,7 @@ public class IntegrationTest {
 
 	@After
 	public void clearIndexes() {
-		elasticsearchTemplate.deleteIndex(Patient.class);
+		patientRepository.deleteAll();
 	}
 
 }

@@ -7,6 +7,7 @@ import org.springframework.data.annotation.Transient;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldIndex;
 
+import java.util.Calendar;
 import java.util.Date;
 
 public class ClinicalEncounter {
@@ -32,6 +33,10 @@ public class ClinicalEncounter {
 	public ClinicalEncounter(Date date, Long conceptId) {
 		this.date = date;
 		this.conceptId = conceptId;
+	}
+
+	public ClinicalEncounter(Calendar date, Long conceptId) {
+		this(date.getTime(), conceptId);
 	}
 
 	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")

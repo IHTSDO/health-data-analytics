@@ -14,7 +14,7 @@
 	<artifactId>server</artifactId>
 
 	<properties>
-		<packageName>health-data-analytics-server</packageName>
+		<packageName>health-data-analytics</packageName>
 	</properties>
 	<dependencies>
 		<dependency>

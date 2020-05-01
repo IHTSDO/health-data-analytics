@@ -92,7 +92,7 @@ Once the server is started the API and documentation will be available here: htt
 
 #### Data Stores
 The following data stores will be created when the server starts.
-- `index` directory contains a Lucene index of the SNOMED CT release to provide sematic information for the server.
+- `snomed-index` directory contains a Lucene index of the SNOMED CT release to provide semantic information for the server.
 - `data` directory contains an Elasticsearch index of the imported patient data.
 
 The server should be stopped before removing either of these data stores.

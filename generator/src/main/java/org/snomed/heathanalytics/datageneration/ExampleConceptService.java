@@ -1,11 +1,11 @@
 package org.snomed.heathanalytics.datageneration;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import org.ihtsdo.otf.snomedboot.ComponentStore;
 import org.ihtsdo.otf.snomedboot.ReleaseImportException;
 import org.ihtsdo.otf.snomedboot.ReleaseImporter;
 import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
 import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ComponentFactoryImpl;
+import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ComponentStore;
 import org.ihtsdo.otf.sqs.service.exception.ServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

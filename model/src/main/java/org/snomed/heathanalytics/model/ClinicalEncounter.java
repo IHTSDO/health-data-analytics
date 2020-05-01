@@ -5,17 +5,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.snomed.heathanalytics.model.pojo.TermHolder;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.elasticsearch.annotations.Field;
-import org.springframework.data.elasticsearch.annotations.FieldIndex;
+import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.util.Calendar;
 import java.util.Date;
 
 public class ClinicalEncounter {
 
-	@Field(index = FieldIndex.not_analyzed)
+	@Field
 	private Date date;
 
-	@Field(index = FieldIndex.not_analyzed)
+	@Field(type = FieldType.Keyword)
 	private Long conceptId;
 
 	@Transient

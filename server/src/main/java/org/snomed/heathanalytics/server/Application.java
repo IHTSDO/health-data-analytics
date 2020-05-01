@@ -13,18 +13,13 @@ import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.server.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.server.ingestion.localdisk.LocalFileNDJsonIngestionSource;
 import org.snomed.heathanalytics.server.ingestion.localdisk.LocalFileNDJsonIngestionSourceConfiguration;
-import org.snomed.heathanalytics.server.model.CohortCriteria;
-import org.snomed.heathanalytics.server.model.EncounterCriterion;
-import org.snomed.heathanalytics.server.service.QueryService;
-import org.snomed.heathanalytics.server.service.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.data.domain.Page;
-import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.query.DeleteQuery;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import springfox.documentation.builders.RequestHandlerSelectors;
@@ -43,13 +38,13 @@ public class Application implements ApplicationRunner {
 
 	public static final String IMPORT_POPULATION = "import-population";
 
-	private static final File INDEX_DIRECTORY = new File("index");
+	private static final File INDEX_DIRECTORY = new File("snomed-index");
 
 	@Autowired
 	private ElasticOutputStream elasticOutputStream;
 
 	@Autowired
-	private ElasticsearchTemplate elasticsearchTemplate;
+	private ElasticsearchOperations elasticsearchTemplate;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -79,7 +74,7 @@ public class Application implements ApplicationRunner {
 					LoadingProfile.light.withoutInactiveConcepts().withoutAnyRefsets(),
 					INDEX_DIRECTORY);
 		}
-		return new SnomedQueryService(importManager.openExistingReleaseStore());
+		return new SnomedQueryService(importManager.openExistingReleaseStore(INDEX_DIRECTORY));
 	}
 
 	@Bean

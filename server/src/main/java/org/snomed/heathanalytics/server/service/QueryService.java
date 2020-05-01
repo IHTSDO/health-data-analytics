@@ -21,14 +21,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
-import org.springframework.data.elasticsearch.core.aggregation.AggregatedPage;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.data.util.CloseableIterator;
 import org.springframework.stereotype.Service;
 
-import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,13 +37,13 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 @Service
 public class QueryService {
 
-	public static final PageRequest LARGE_PAGE = new PageRequest(0, 1000);
+	public static final PageRequest LARGE_PAGE = PageRequest.of(0, 1000);
 
 	@Autowired
 	private SnomedService snomedService;
 
 	@Autowired
-	private ElasticsearchTemplate elasticsearchTemplate;
+	private ElasticsearchOperations elasticsearchTemplate;
 
 	@Autowired
 	private SubsetRepository subsetRepository;
@@ -106,12 +104,12 @@ public class QueryService {
 					}
 				});
 			}
-			finalPatientPage = new PageImpl<>(patientList, new PageRequest(page, size > 0 ? size : 1), patientCount.get());
+			finalPatientPage = new PageImpl<>(patientList, PageRequest.of(page, size > 0 ? size : 1), patientCount.get());
 		} else {
 			// Grab page of Patients from Elasticsearch.
-			PageRequest pageRequest = new PageRequest(page, size);
+			PageRequest pageRequest = PageRequest.of(page, size);
 			patientElasticQuery.withPageable(pageRequest);
-			AggregatedPage<Patient> patients = elasticsearchTemplate.queryForPage(patientElasticQuery.build(), Patient.class);
+			Page<Patient> patients = elasticsearchTemplate.queryForPage(patientElasticQuery.build(), Patient.class);
 			finalPatientPage = new PageImpl<>(patients.getContent(), pageRequest, patients.getTotalElements());
 		}
 		timer.split("Fetching patients");
@@ -348,11 +346,11 @@ public class QueryService {
 		if (criterion != null) {
 			String subsetId = criterion.getConceptSubsetId();
 			if (!Strings.isNullOrEmpty(subsetId)) {
-				Subset subset = subsetRepository.findOne(subsetId);
-				if (subset == null) {
+				Optional<Subset> subsetOptional = subsetRepository.findById(subsetId);
+				if (!subsetOptional.isPresent()) {
 					throw new ServiceException("Referenced subset does not exist. ROLE_ID:" + subsetId);
 				}
-				return subset.getEcl();
+				return subsetOptional.get().getEcl();
 			}
 			return criterion.getConceptECL();
 		}

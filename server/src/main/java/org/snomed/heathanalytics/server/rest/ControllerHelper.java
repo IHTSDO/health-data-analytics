@@ -21,8 +21,8 @@ class ControllerHelper {
 
 	static <T> org.springframework.data.domain.Page<T> aggregatedPageWorkaround(org.springframework.data.domain.Page<T> page) {
 		if (page instanceof AggregatedPageImpl) {
-			AggregatedPageImpl aggPage = (AggregatedPageImpl) page;
-			return new PageImpl<>(page.getContent(), new PageRequest(aggPage.getNumber(), aggPage.getSize()), aggPage.getTotalElements());
+			AggregatedPageImpl<T> aggPage = (AggregatedPageImpl<T>) page;
+			return new PageImpl<>(page.getContent(), PageRequest.of(aggPage.getNumber(), aggPage.getSize()), aggPage.getTotalElements());
 		}
 		return page;
 	}

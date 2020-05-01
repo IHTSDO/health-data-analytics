@@ -26,13 +26,6 @@
 		<dependency>
 			<groupId>org.ihtsdo.otf</groupId>
 			<artifactId>snomed-query-service</artifactId>
-			<version>1.2.1</version>
-			<exclusions>
-				<exclusion>
-					<groupId>com.mangofactory</groupId>
-					<artifactId>swagger-springmvc</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.ihtsdo.otf</groupId>
@@ -44,11 +37,6 @@
 					<artifactId>google-collections</artifactId>
 				</exclusion>
 			</exclusions>
-		</dependency>
-		<!-- Spring Dependencies -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>net.java.dev.jna</groupId>
@@ -64,6 +52,13 @@
 			<groupId>io.springfox</groupId>
 			<artifactId>springfox-swagger-ui</artifactId>
 			<version>2.5.0</version>
+		</dependency>
+		<!-- Test Dependencies -->
+		<dependency>
+			<groupId>pl.allegro.tech</groupId>
+			<artifactId>embedded-elasticsearch</artifactId>
+			<version>2.10.0</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 	<build>

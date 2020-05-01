@@ -9,6 +9,7 @@ import org.snomed.heathanalytics.server.store.PatientRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
+import java.util.Optional;
 
 @Service
 public class ElasticOutputStream implements HealthDataOutputStream {
@@ -28,13 +29,14 @@ public class ElasticOutputStream implements HealthDataOutputStream {
 
 	@Override
 	public void createPatients(Collection<Patient> patients) {
-		patientRepository.save(patients);
+		patientRepository.saveAll(patients);
 	}
 
 	@Override
 	public void addClinicalEncounter(String roleId, ClinicalEncounter encounter) {
-		Patient patient = patientRepository.findOne(roleId);
-		if (patient != null) {
+		Optional<Patient> patientOptional = patientRepository.findById(roleId);
+		if (patientOptional.isPresent()) {
+			Patient patient = patientOptional.get();
 			patient.addEncounter(encounter);
 			patientRepository.save(patient);
 		} else {

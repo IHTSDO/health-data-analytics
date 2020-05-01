@@ -19,6 +19,10 @@
 			<artifactId>model</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.ihtsdo.otf</groupId>
+			<artifactId>snomed-query-service</artifactId>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>

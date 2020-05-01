@@ -23,7 +23,7 @@ public class Application implements ApplicationRunner {
 
 	public static final String POPULATION_SIZE = "population-size";
 	public static final String OUTPUT_DIR = "patient-data-for-import";
-	public static final int POPULATION_SIZE_DEFAULT = 1_000_000;
+	public static final int POPULATION_SIZE_DEFAULT = 1_248_322;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 

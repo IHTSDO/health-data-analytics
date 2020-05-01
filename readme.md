@@ -69,7 +69,7 @@ From the root of the project the following command will generate 1,000,000 patie
 java -Xms3g -jar generator/target/generator*.jar
 ``` 
 Command options:
-- `--population-size` Optional. Defaults to 1,000,000.
+- `--population-size` Optional. Defaults to 1,248,322.
 
 The generated population will be written in NDJSON format to a directory named `patient-data-for-import`.
 

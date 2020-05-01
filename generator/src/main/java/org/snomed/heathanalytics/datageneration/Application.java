@@ -34,9 +34,12 @@ public class Application implements ApplicationRunner {
 	@Override
 	public void run(ApplicationArguments applicationArguments) throws Exception {
 		int populationSize = POPULATION_SIZE_DEFAULT;
-		List<String> values = applicationArguments.getOptionValues(POPULATION_SIZE);
-		if (values != null && (values.size() != 1 || !values.get(0).matches("\\d*"))) {
-			throw new IllegalArgumentException("Option " + POPULATION_SIZE + " requires one numeric value after the equals character.");
+		if (applicationArguments.containsOption(POPULATION_SIZE)) {
+			List<String> values = applicationArguments.getOptionValues(POPULATION_SIZE);
+			if (values == null || values.size() != 1 || !values.get(0).matches("\\d*")) {
+				throw new IllegalArgumentException("Option " + POPULATION_SIZE + " requires one numeric value after the equals character.");
+			}
+			populationSize = Integer.parseInt(values.get(0));
 		}
 		generatePopulation(populationSize);
 		System.exit(0);

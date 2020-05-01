@@ -76,8 +76,13 @@ The generated population will be written in NDJSON format to a directory named `
 ### Server
 The server module provides the Data Analytics API. A Java application using Spring Boot with Swagger API documentation.
 
+#### Elasticsearch
+The server requires a standalone Elasticsearch deployment. Elasticsearch can be run locally. There are also hosted solutions available from AWS and Elastic.co.
+The Elasticsearch server _must_ be version 6.x, version 7.x will not work. We recommend the latest 6.8.x patch release.
+https://www.elastic.co/downloads/past-releases#elasticsearch
+
 #### Patient Data Import
-Patient data, in NDJSON format using the model above, can be imported into the server with this command: 
+Once Elasticsearch is running patient data, in NDJSON format using the model above, can be imported into the server with this command: 
 ```bash
 java -Xms3g -jar server/target/server*.jar --import-population='patient-data-for-import'
 ```
@@ -90,12 +95,11 @@ java -Xms3g -jar server/target/server*.jar
 ```
 Once the server is started the API and documentation will be available here: http://localhost:8080/health-analytics-api/
 
-#### Data Stores
+#### Data Store
 The following data stores will be created when the server starts.
 - `snomed-index` directory contains a Lucene index of the SNOMED CT release to provide semantic information for the server.
-- `data` directory contains an Elasticsearch index of the imported patient data.
 
-The server should be stopped before removing either of these data stores.
+The server should be stopped before removing this data store.
 
 #### Realtime Patient Data
 Patient data can be loaded in realtime by implementing HealthDataIngestionSource interface. For example a class could be added which receives 

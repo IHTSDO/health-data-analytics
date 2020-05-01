@@ -4,4 +4,5 @@ target
 data
 release
 index
+snomed-index
 patient-data-for-import

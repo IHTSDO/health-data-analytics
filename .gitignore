@@ -6,3 +6,5 @@ release
 index
 snomed-index
 patient-data-for-import
+*.zip
+*.sh

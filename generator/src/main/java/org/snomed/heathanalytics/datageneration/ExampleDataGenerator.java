@@ -87,25 +87,151 @@ public class ExampleDataGenerator {
 			patient.setGender(Gender.FEMALE);
 		}
 
-		// Start 2 years ago
-		GregorianCalendar date = new GregorianCalendar();
-		date.add(Calendar.YEAR, -2);
+		// Start 3 years ago
+		GregorianCalendar healthRecordDate = new GregorianCalendar();
+		healthRecordDate.add(Calendar.YEAR, -3);
 
-		// add 1 - 6 months
-		date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
+		// Add 1 - 6 months
+		healthRecordDate.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 6));
 
-		generateBackgroundData(patient, date);
+		// Can also move record date forward
+		generateBackgroundData(patient, healthRecordDate);
 
-		// After 1 - 3 months
-		date.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 3));
+		// Add 1 - 3 months
+		healthRecordDate.add(Calendar.DAY_OF_YEAR, ThreadLocalRandom.current().nextInt(30, 30 * 3));
 
 		// All patients enter each scenario. These have their own probability gates.
-		scenarioRaCOPD(patient, age, date);
-		scenarioPulmEmbGIBleed(patient, age, date);
-		scenarioBrcaTamoxifen(patient, age, date);
-		scenarioDiabSmokeFootAmp(patient, age, date);
-		scenarioLymphAnthCHF(patient, age, date);
+
+		// AMA scenario requires more than 2 years history and can bring record date up to now
+		scenarioAMA(patient, age, healthRecordDate);
+
+		GregorianCalendar today = new GregorianCalendar();
+		if (healthRecordDate.before(today)) {
+			scenarioRaCOPD(patient, age, healthRecordDate);
+			scenarioPulmEmbGIBleed(patient, age, healthRecordDate);
+			scenarioBrcaTamoxifen(patient, age, healthRecordDate);
+			scenarioDiabSmokeFootAmp(patient, age, healthRecordDate);
+			scenarioLymphAnthCHF(patient, age, healthRecordDate);
+		}
 		return patient;
+	}
+
+	private void scenarioAMA(Patient patient, int age, GregorianCalendar date) throws ServiceException {
+		if (patient.getGender() == Gender.FEMALE && age > 30) {
+			Calendar today = new GregorianCalendar();
+
+			// 53% of total are screened Annually
+			if (chancePercent(53f)) {
+
+				// Screening every 10-14 months until today
+				while (date.before(today)) {
+
+					// 384151000119104 | Screening mammography of bilateral breasts (procedure) |
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("384151000119104")));
+
+					if (chancePercent(6.5f)) {
+						// Abnormal screening:
+						// 171176006 | Breast neoplasm screening abnormal (finding) |
+						patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("171176006")));
+
+						// .. leads to diagnostic:
+						// 566571000119105 | Mammography of right breast (procedure) |
+						date.add(Calendar.DAY_OF_YEAR, 5);
+						patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("566571000119105")));
+
+						if (chancePercent(3.2f)) {
+							// Abnormal diagnostic:
+							// 274530001 | Abnormal findings on diagnostic imaging of breast (finding) |
+							patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("274530001")));
+
+							// .. leads to biopsy
+							// 122548005 | Biopsy of breast (procedure) |
+							patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("122548005")));
+
+							if (chancePercent(17)) {
+								// Positive biopsy
+								// 165325009 | Biopsy result abnormal (finding) |
+								patient.addEncounter(new ClinicalEncounter(date.getTime(), 165325009L));
+
+								if (chancePercent(42)) {
+									// Stage 1
+									// 422399001 | Infiltrating ductal carcinoma of breast, stage 1 (finding) |
+									patient.addEncounter(new ClinicalEncounter(date.getTime(), 422399001L));
+								} else if (chancePercentOfRemaining(36, 100 - 42)) {
+									// Stage 2
+									// 422479008 | Infiltrating ductal carcinoma of breast, stage 2 (finding) |
+									patient.addEncounter(new ClinicalEncounter(date.getTime(), 422479008L));
+								} else {
+									// TODO: Check the assumption that all the rest fall here for AMA
+									// DCIS
+									// 397201007 | Microcalcifications present in ductal carcinoma in situ (finding) |
+									patient.addEncounter(new ClinicalEncounter(date.getTime(), 397201007L));
+								}
+							}
+						}
+					}
+
+					// Move record date on by 335 - 395 days
+					date.add(Calendar.DAY_OF_YEAR, (int) Math.round(365 + ((Math.random() * 60) - 30)));
+				}
+			} else {
+				// 27% of remainder
+				if (chancePercentOfRemaining(27f, 100 - 53)) {
+
+					// Screening every 22-26 months until today
+					while (date.before(today)) {
+
+						// 384151000119104 | Screening mammography of bilateral breasts (procedure) |
+						patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("384151000119104")));
+
+						if (chancePercent(6.5f)) {
+							// Abnormal screening:
+							// 171176006 | Breast neoplasm screening abnormal (finding) |
+							patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("171176006")));
+
+							// .. leads to diagnostic:
+							// 566571000119105 | Mammography of right breast (procedure) |
+							date.add(Calendar.DAY_OF_YEAR, 5);
+							patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("566571000119105")));
+
+							if (chancePercent(2.4f)) {
+								// Abnormal diagnostic:
+								// 274530001 | Abnormal findings on diagnostic imaging of breast (finding) |
+								patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("274530001")));
+
+								// .. leads to biopsy
+								// 122548005 | Biopsy of breast (procedure) |
+								patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("122548005")));
+
+								if (chancePercent(22)) {
+									// Positive biopsy
+									// 165325009 | Biopsy result abnormal (finding) |
+									patient.addEncounter(new ClinicalEncounter(date.getTime(), 165325009L));
+
+									if (chancePercent(39)) {
+										// Stage 1
+										// 422399001 | Infiltrating ductal carcinoma of breast, stage 1 (finding) |
+										patient.addEncounter(new ClinicalEncounter(date.getTime(), 422399001L));
+									} else if (chancePercentOfRemaining(43, 100 - 39)) {
+										// Stage 2
+										// 422479008 | Infiltrating ductal carcinoma of breast, stage 2 (finding) |
+										patient.addEncounter(new ClinicalEncounter(date.getTime(), 422479008L));
+									} else {
+										// TODO: Check the assumption that all the rest fall here for AMA
+										// DCIS
+										// 397201007 | Microcalcifications present in ductal carcinoma in situ (finding) |
+										patient.addEncounter(new ClinicalEncounter(date.getTime(), 397201007L));
+									}
+								}
+							}
+						}
+
+						// Move record date on by 22 - 26 months or 700 - 760 days
+						date.add(Calendar.DAY_OF_YEAR, (int) Math.round((365 * 2) + ((Math.random() * 60) - 30)));
+					}
+				}
+			}
+		}
 	}
 
 	private void scenarioRaCOPD(Patient patient, int age, GregorianCalendar date) throws ServiceException {
@@ -521,12 +647,17 @@ public class ExampleDataGenerator {
 		}
 	}
 
-	private boolean chancePercent(float probability) {
-		return chance(probability / 100);
+	private boolean chancePercentOfRemaining(float probabilityPercent, float ofRemainingPercentage) {
+		// e.g. 25% chance if only 75% remaining = 33.3% chance
+		return chancePercent(probabilityPercent * (100f / ofRemainingPercentage));
 	}
 
-	private boolean chance(float probability) {
-		return probability >= Math.random();
+	private boolean chancePercent(float probabilityPercentage) {
+		return chance(probabilityPercentage / 100);
+	}
+
+	private boolean chance(float probabilityFraction) {
+		return probabilityFraction >= Math.random();
 	}
 
 }

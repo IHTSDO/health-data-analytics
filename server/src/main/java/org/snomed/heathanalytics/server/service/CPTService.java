@@ -8,9 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.*;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.regex.Pattern;
+import java.util.HashMap;
+import java.util.Map;
 
 import static java.lang.String.format;
 
@@ -18,10 +17,14 @@ import static java.lang.String.format;
 public class CPTService {
 
 	private static final String TAB = "\t";
-	private static final int COLUMN_COUNT = 18;
+	private static final String CPT_CODES_TXT = "cpt-codes.txt";
+	private static final int CPT_COLUMN_COUNT = 18;
+	private static final String SNOMED_CPT_MAP_TXT = "snomed-cpt-map.txt";
+	private static final int MAP_COLUMN_COUNT = 9;
 
 	private final String dataDirectory;
-	private Set<CPTCode> cptCodes;
+	private final Map<String, CPTCode> cptCodeMap = new HashMap<>();
+	private final Map<String, CPTCode> snomedToCptMap = new HashMap<>();
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public CPTService(@Value("${cpt.data.directory}") String dataDirectory) {
@@ -32,10 +35,21 @@ public class CPTService {
 		if (!StringUtils.isEmpty(dataDirectory)) {
 			File dataDirectoryFile = new File(dataDirectory);
 			if (dataDirectoryFile.isDirectory()) {
-				File cptCodesFile = new File(dataDirectoryFile, "cpt-codes.txt");
+				File cptCodesFile = new File(dataDirectoryFile, CPT_CODES_TXT);
 				if (cptCodesFile.isFile()) {
+					logger.info("Loading {}", cptCodesFile.getName());
 					loadCPTCodes(new FileInputStream(cptCodesFile));
-					return;
+
+					File snomedCptMapFile = new File(dataDirectoryFile, SNOMED_CPT_MAP_TXT);
+					if (snomedCptMapFile.isFile()) {
+						logger.info("Loading {}", snomedCptMapFile.getName());
+						loadSnomedCPTMap(new FileInputStream(snomedCptMapFile));
+						return;
+					} else {
+						logger.warn("{} file was found but {} was not. " +
+								"Health records with SNOMED CT codes will not be mapped to CPT.", CPT_CODES_TXT, SNOMED_CPT_MAP_TXT);
+						return;
+					}
 				}
 			} else {
 				logger.info("No directory at {}", dataDirectoryFile.getAbsolutePath());
@@ -51,8 +65,8 @@ public class CPTService {
 				throw new IllegalArgumentException("No rows found.");
 			}
 			String[] columns = header.split(TAB);
-			if (columns.length != COLUMN_COUNT) {
-				throw new IllegalArgumentException(format("Header row contains %s columns but expected %s.", columns.length, COLUMN_COUNT));
+			if (columns.length != CPT_COLUMN_COUNT) {
+				throw new IllegalArgumentException(format("Header row contains %s columns but expected %s.", columns.length, CPT_COLUMN_COUNT));
 			}
 			String headerFirstName = columns[0];
 			if (!StringUtils.isEmpty(headerFirstName) && headerFirstName.matches("[0-9]+")) {
@@ -83,11 +97,11 @@ public class CPTService {
 			// Read values
 			String row;
 			int line = 1;
-			Set<CPTCode> cptCodes = new HashSet<>();
+			cptCodeMap.clear();
 			while ((row = reader.readLine()) != null) {
 				line++;
 				String[] values = row.split(TAB);
-				if (values.length == 18) {
+				if (values.length == CPT_COLUMN_COUNT) {
 					String cptCode = values[0];
 					String workRVU = values[10];
 					String facilityPracticeExpenseRVU = values[11];
@@ -97,18 +111,75 @@ public class CPTService {
 					String totalMedicarePhysicianFeeScheduleFacilityPayment = values[15];
 					String totalNonfacilityRVU = values[16];
 					String totalMedicarePhysicianFeeScheduleNonFacilityPayment = values[17];
-					cptCodes.add(new CPTCode(cptCode, workRVU, facilityPracticeExpenseRVU, nonfacilityPracticeExpenseRVU, pliRVU,
+					cptCodeMap.put(cptCode, new CPTCode(cptCode, workRVU, facilityPracticeExpenseRVU, nonfacilityPracticeExpenseRVU, pliRVU,
 							totalFacilityRVU, totalMedicarePhysicianFeeScheduleFacilityPayment, totalNonfacilityRVU, totalMedicarePhysicianFeeScheduleNonFacilityPayment));
 				} else {
 					logger.info("Skipping line {}, because it does not contain enough values.", line);
 				}
 			}
-			logger.info("Loaded {} CTP codes.", cptCodes.size());
-			this.cptCodes = cptCodes;
+			logger.info("Loaded {} CTP codes.", cptCodeMap.size());
 		}
 	}
 
-	public Set<CPTCode> getCPTCodes() {
-		return cptCodes;
+	private void loadSnomedCPTMap(FileInputStream mapInputStream) throws IOException {
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(mapInputStream))) {
+			String header = reader.readLine();
+			if (header == null) {
+				throw new IllegalArgumentException("No rows found.");
+			}
+			String[] columns = header.split(TAB);
+			if (columns.length != MAP_COLUMN_COUNT) {
+				throw new IllegalArgumentException(format("Header row contains %s columns but expected %s.", columns.length, MAP_COLUMN_COUNT));
+			}
+			String headerFirstName = columns[0];
+			if (!StringUtils.isEmpty(headerFirstName) && headerFirstName.matches("[0-9]+")) {
+				throw new IllegalArgumentException("The first row of the file should be just column headers but numbers found.");
+			}
+
+			/*
+			Columns:
+			0 X
+			1 SNOMED CT Code
+			2 SNOMED FSN Term
+			3 X
+			4 X
+			5 X
+			6 X
+			7 CPT Code
+			8 CPT Term
+			 */
+			// Read values
+			String row;
+			int line = 1;
+			snomedToCptMap.clear();
+			while ((row = reader.readLine()) != null) {
+				line++;
+				String[] values = row.split(TAB);
+				if (values.length == MAP_COLUMN_COUNT) {
+					String snomedCode = values[1];
+					String cptCode = values[7];
+
+					CPTCode cptCodeObject = cptCodeMap.get(cptCode);
+					if (cptCodeObject != null) {
+						snomedToCptMap.put(snomedCode, cptCodeObject);
+					} else {
+						logger.warn("CTP code '{}' found in mapping file but the entry must be ignored because the code was not successfully loaded from the {} file.",
+								cptCode, CPT_CODES_TXT);
+					}
+				} else {
+					logger.info("Skipping line {}, because it does not contain enough values.", line);
+				}
+			}
+			logger.info("Loaded {} SNOMED CT to CTP map entries.", snomedToCptMap.size());
+		}
+
+	}
+
+	public Map<String, CPTCode> getCptCodeMap() {
+		return cptCodeMap;
+	}
+
+	public Map<String, CPTCode> getSnomedToCptMap() {
+		return snomedToCptMap;
 	}
 }

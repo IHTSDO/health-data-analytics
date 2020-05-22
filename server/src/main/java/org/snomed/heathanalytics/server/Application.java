@@ -13,6 +13,7 @@ import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.server.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.server.ingestion.localdisk.LocalFileNDJsonIngestionSource;
 import org.snomed.heathanalytics.server.ingestion.localdisk.LocalFileNDJsonIngestionSourceConfiguration;
+import org.snomed.heathanalytics.server.service.CPTService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -46,6 +47,9 @@ public class Application implements ApplicationRunner {
 	@Autowired
 	private ElasticsearchOperations elasticsearchTemplate;
 
+	@Autowired
+	private CPTService cptService;
+
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public static void main(String[] args) {
@@ -62,6 +66,8 @@ public class Application implements ApplicationRunner {
 			importPopulation(new File(values.get(0)));
 			System.exit(0);
 		}
+
+		cptService.attemptToLoadCPTDataFiles();
 	}
 
 	@Bean

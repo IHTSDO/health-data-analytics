@@ -88,6 +88,13 @@ java -Xms3g -jar server/target/server*.jar --import-population='patient-data-for
 ```
 The program will exit when all patient data has been consumed.
 
+#### CPT Codes
+If CPT codes are loaded cost information can be provided for the procedures within the records of a selected cohort of patients.
+Within the application directory create a directory named `cpt-codes` containing the files `cpt-codes.txt` and `snomed-cpt-map.txt`.
+These files will be loaded when the application starts.
+For examples of these files see [dummy-cpt-codes](server/src/test/resources/dummy-cpt-codes).
+Notice: No real CPT codes are included within this application. A few fictitious codes are used for unit testing purposes.
+
 #### Run the Server
 Once the patient data has been loaded run the server without the import argument:
 ```bash

@@ -8,3 +8,4 @@ snomed-index
 patient-data-for-import
 *.zip
 *.sh
+cpt-codes

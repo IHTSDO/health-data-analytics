@@ -1,0 +1,4 @@
+CPT Code	Short Descriptor	Medium Descriptor	Descriptor	H1 Descriptor	H2 Descriptor	H3 Descriptor	H4 Descriptor	H5 Descriptor	H6 Descriptor	Work RVU	Facility Practice Expense RVU	Nonfacility Practice Expense RVU	PLI RVU	Total Facility RVU	Total Medicare Physician Fee Schedule Facility Payment	Total Nonfacility RVU	Total Medicare Physician Fee Schedule Non-Facility Payment
+12345	DUMMY PROCEDURE A1	DUMMY MEDIUM DESCRIPTOR A1	Dummy procedure of dummy body part							3.15	1.25	12.64	0.31	5.22	$50.10 	15.31	$201.61 
+12346	DUMMY PROCEDURE A2	DUMMY MEDIUM DESCRIPTOR A2	Dummy procedure of dummy body part														
+20123	DUMMY PROCEDURE B1	DUMMY MEDIUM DESCRIPTOR B1	Dummy procedure of dummy body part							0.82	NA	3.90	0.06	NA	NA	3.58	$45.45 

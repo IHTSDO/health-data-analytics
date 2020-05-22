@@ -127,7 +127,7 @@ public class DemoPatientDataGenerator {
 				while (date.before(today)) {
 
 					// 384151000119104 | Screening mammography of bilateral breasts (procedure) |
-					patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("384151000119104")));
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), 384151000119104L));
 
 					if (chancePercent(6.5f)) {
 						// Abnormal screening:
@@ -137,7 +137,7 @@ public class DemoPatientDataGenerator {
 						// .. leads to diagnostic:
 						// 566571000119105 | Mammography of right breast (procedure) |
 						date.add(Calendar.DAY_OF_YEAR, 5);
-						patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("566571000119105")));
+						patient.addEncounter(new ClinicalEncounter(date.getTime(), 566571000119105L));
 
 						if (chancePercent(3.2f)) {
 							// Abnormal diagnostic:
@@ -146,7 +146,7 @@ public class DemoPatientDataGenerator {
 
 							// .. leads to biopsy
 							// 122548005 | Biopsy of breast (procedure) |
-							patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("122548005")));
+							patient.addEncounter(new ClinicalEncounter(date.getTime(), 122548005L));
 
 							if (chancePercent(17)) {
 								// Positive biopsy
@@ -182,7 +182,7 @@ public class DemoPatientDataGenerator {
 					while (date.before(today)) {
 
 						// 384151000119104 | Screening mammography of bilateral breasts (procedure) |
-						patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("384151000119104")));
+						patient.addEncounter(new ClinicalEncounter(date.getTime(), 384151000119104L));
 
 						if (chancePercent(6.5f)) {
 							// Abnormal screening:
@@ -192,7 +192,7 @@ public class DemoPatientDataGenerator {
 							// .. leads to diagnostic:
 							// 566571000119105 | Mammography of right breast (procedure) |
 							date.add(Calendar.DAY_OF_YEAR, 5);
-							patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("566571000119105")));
+							patient.addEncounter(new ClinicalEncounter(date.getTime(), 566571000119105L));
 
 							if (chancePercent(2.4f)) {
 								// Abnormal diagnostic:
@@ -201,7 +201,7 @@ public class DemoPatientDataGenerator {
 
 								// .. leads to biopsy
 								// 122548005 | Biopsy of breast (procedure) |
-								patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("122548005")));
+								patient.addEncounter(new ClinicalEncounter(date.getTime(), 122548005L));
 
 								if (chancePercent(22)) {
 									// Positive biopsy

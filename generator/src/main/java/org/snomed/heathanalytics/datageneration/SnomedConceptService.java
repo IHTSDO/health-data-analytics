@@ -16,13 +16,13 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static java.lang.Long.parseLong;
 
-public class ExampleConceptService {
+public class SnomedConceptService {
 
 	private final Map<Long, List<Long>> conceptDescendantMap;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	public ExampleConceptService(File releaseDirectory) {
+	public SnomedConceptService(File releaseDirectory) {
 		conceptDescendantMap = new Long2ObjectOpenHashMap<>();
 		final ComponentStore componentStore = new ComponentStore();
 		Map<Long, Node> nodeMap = new Long2ObjectOpenHashMap<>();

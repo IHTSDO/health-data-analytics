@@ -17,16 +17,16 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ExampleDataGenerator {
+public class DemoPatientDataGenerator {
 
-	private final ExampleConceptService concepts;
+	private final SnomedConceptService concepts;
 
 	@Autowired
 	private ObjectMapper objectMapper;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	public ExampleDataGenerator(ExampleConceptService exampleConceptService) {
+	public DemoPatientDataGenerator(SnomedConceptService exampleConceptService) {
 		this.concepts = exampleConceptService;
 	}
 

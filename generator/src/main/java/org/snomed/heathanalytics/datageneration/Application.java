@@ -46,9 +46,9 @@ public class Application implements ApplicationRunner {
 	}
 
 	@Bean
-	public ExampleDataGenerator exampleDataSource() {
+	public DemoPatientDataGenerator exampleDataSource() {
 		File releaseDirectory = new File("release");
-		return new ExampleDataGenerator(new ExampleConceptService(releaseDirectory));
+		return new DemoPatientDataGenerator(new SnomedConceptService(releaseDirectory));
 	}
 
 	@Bean

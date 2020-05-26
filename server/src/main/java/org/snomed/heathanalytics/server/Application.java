@@ -2,6 +2,9 @@ package org.snomed.heathanalytics.server;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.http.HttpHost;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.MatchAllQueryBuilder;
 import org.ihtsdo.otf.snomedboot.ReleaseImportException;
 import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
@@ -15,12 +18,13 @@ import org.snomed.heathanalytics.server.ingestion.localdisk.LocalFileNDJsonInges
 import org.snomed.heathanalytics.server.ingestion.localdisk.LocalFileNDJsonIngestionSourceConfiguration;
 import org.snomed.heathanalytics.server.service.CPTService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 import org.springframework.data.elasticsearch.core.query.DeleteQuery;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import springfox.documentation.builders.RequestHandlerSelectors;
@@ -29,6 +33,7 @@ import springfox.documentation.spring.web.plugins.Docket;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.google.common.base.Predicates.not;
@@ -45,7 +50,7 @@ public class Application implements ApplicationRunner {
 	private ElasticOutputStream elasticOutputStream;
 
 	@Autowired
-	private ElasticsearchOperations elasticsearchTemplate;
+	private ElasticsearchRestTemplate elasticsearchTemplate;
 
 	@Autowired
 	private CPTService cptService;
@@ -68,6 +73,25 @@ public class Application implements ApplicationRunner {
 		}
 
 		cptService.attemptToLoadCPTDataFiles();
+	}
+
+	@Bean
+	public ElasticsearchRestTemplate elasticsearchTemplate(@Value("${spring.data.elasticsearch.cluster-nodes}") String nodes) {
+		List<HttpHost> httpHosts = new ArrayList<>();
+		try {
+			String[] split = nodes.split(",");
+			for (String node : split) {
+				node = node.trim();
+				String[] split1 = node.split(":");
+				String hostname = split1[0];
+				int port = Integer.parseInt(split1[1]);
+				httpHosts.add(new HttpHost(hostname, port));
+			}
+		} catch (Exception e) {
+			logger.error("Failed to parse Elasticsearch cluster-nodes configuration value '{}'", nodes);
+			throw e;
+		}
+		return new ElasticsearchRestTemplate(new RestHighLevelClient(RestClient.builder(httpHosts.toArray(new HttpHost[]{}))));
 	}
 
 	@Bean

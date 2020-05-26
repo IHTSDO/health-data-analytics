@@ -1,4 +1,4 @@
 X	SNOMED CT Code	SNOMED FSN Term	X	X	X	X	CPT Code	CPT Term
-12340001	12345001	Dummy Procedure A (procedure)	1	1	1	A	12345	Something
+12340001	268547008	Dummy Procedure A (procedure)	1	1	1	A	12345	Something
 12340002	12346001	Dummy Procedure AZ (procedure)	1	1	1	A	12345	Something
 12340003	12347001	Dummy Procedure B (procedure)	1	1	1	A	20123	Something

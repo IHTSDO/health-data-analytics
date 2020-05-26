@@ -38,6 +38,10 @@ public class ReportController {
 					"A count of matching patients will be returned for the top level and each specified group.  \n" +
 					"The top level criteria will be included in each group automatically so there is no need to repeat the top level criteria.  \n" +
 					"\n" +
+					"For encounter criteria marked with includeCPTAnalysis=true a CPT report will be included in the response for that group.  \n" +
+					"The CPT report will list the matching CPT codes for encounters which could be mapped to CPT together with total counts and total RVUs.  \n" +
+					"This functionality requires CPT codes and SNOMED CT to CPT mapping to be loaded.  \n" +
+					"\n" +
 					"In the report request the groups section is a list of lists. If a second list of groups is given " +
 					"these will become subgroups within each of the first list of groups.  \n" +
 					"For example if the groups in the request are: `[Smoker, Non-Smoker], [Foot Amputation]`  \n" +

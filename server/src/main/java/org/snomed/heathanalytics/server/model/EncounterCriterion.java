@@ -19,6 +19,8 @@ public class EncounterCriterion {
 	// Value of -1 means apply constrain with unbounded value, otherwise use null
 	private Integer withinDaysAfterPreviouslyMatchedEncounter;
 
+	private boolean includeCPTAnalysis = false;
+
 	public EncounterCriterion() {
 		has = true;
 	}
@@ -89,6 +91,20 @@ public class EncounterCriterion {
 
 	public EncounterCriterion setFrequency(Frequency frequency) {
 		this.frequency = frequency;
+		return this;
+	}
+
+	public boolean isIncludeCPTAnalysis() {
+		return includeCPTAnalysis;
+	}
+
+	public EncounterCriterion setIncludeCPTAnalysis(boolean includeCPTAnalysis) {
+		this.includeCPTAnalysis = includeCPTAnalysis;
+		return this;
+	}
+
+	public EncounterCriterion includeCPTAnalysis() {
+		this.includeCPTAnalysis = true;
 		return this;
 	}
 

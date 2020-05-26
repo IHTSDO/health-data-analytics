@@ -3,21 +3,22 @@ package org.snomed.heathanalytics.server.model;
 public class CPTCode {
 
 	private String cptCode;
-	private String workRVU;
-	private String facilityPracticeExpenseRVU;
-	private String nonfacilityPracticeExpenseRVU;
-	private String pliRVU;
-	private String totalFacilityRVU;
-	private String totalMedicarePhysicianFeeScheduleFacilityPayment;
-	private String totalNonfacilityRVU;
-	private String totalMedicarePhysicianFeeScheduleNonFacilityPayment;
+	private Float workRVU;
+	private Float facilityPracticeExpenseRVU;
+	private Float nonfacilityPracticeExpenseRVU;
+	private Float pliRVU;
+	private Float totalFacilityRVU;
+	private Float totalMedicarePhysicianFeeScheduleFacilityPayment;
+	private Float totalNonfacilityRVU;
+	private Float totalMedicarePhysicianFeeScheduleNonFacilityPayment;
 
 	@SuppressWarnings("unused")// For Jackson
 	public CPTCode() {
 	}
 
-	public CPTCode(String cptCode, String workRVU, String facilityPracticeExpenseRVU, String nonfacilityPracticeExpenseRVU, String pliRVU,
-			String totalFacilityRVU, String totalMedicarePhysicianFeeScheduleFacilityPayment, String totalNonfacilityRVU, String totalMedicarePhysicianFeeScheduleNonFacilityPayment) {
+	public CPTCode(String cptCode, Float workRVU, Float facilityPracticeExpenseRVU, Float nonfacilityPracticeExpenseRVU, Float pliRVU, Float totalFacilityRVU,
+			Float totalMedicarePhysicianFeeScheduleFacilityPayment, Float totalNonfacilityRVU, Float totalMedicarePhysicianFeeScheduleNonFacilityPayment) {
+
 		this.cptCode = cptCode;
 		this.workRVU = workRVU;
 		this.facilityPracticeExpenseRVU = facilityPracticeExpenseRVU;
@@ -33,35 +34,43 @@ public class CPTCode {
 		return cptCode;
 	}
 
-	public String getWorkRVU() {
+	public Float getWorkRVU() {
 		return workRVU;
 	}
 
-	public String getFacilityPracticeExpenseRVU() {
+	public Float getFacilityPracticeExpenseRVU() {
 		return facilityPracticeExpenseRVU;
 	}
 
-	public String getNonfacilityPracticeExpenseRVU() {
+	public Float getNonfacilityPracticeExpenseRVU() {
 		return nonfacilityPracticeExpenseRVU;
 	}
 
-	public String getPliRVU() {
+	public Float getPliRVU() {
 		return pliRVU;
 	}
 
-	public String getTotalFacilityRVU() {
+	public Float getTotalFacilityRVU() {
 		return totalFacilityRVU;
 	}
 
-	public String getTotalMedicarePhysicianFeeScheduleFacilityPayment() {
+	public Float getTotalMedicarePhysicianFeeScheduleFacilityPayment() {
 		return totalMedicarePhysicianFeeScheduleFacilityPayment;
 	}
 
-	public String getTotalNonfacilityRVU() {
+	public Float getTotalNonfacilityRVU() {
 		return totalNonfacilityRVU;
 	}
 
-	public String getTotalMedicarePhysicianFeeScheduleNonFacilityPayment() {
+	public Float getTotalMedicarePhysicianFeeScheduleNonFacilityPayment() {
 		return totalMedicarePhysicianFeeScheduleNonFacilityPayment;
+	}
+
+	@Override
+	public String toString() {
+		return "CPTCode{" +
+				"cptCode='" + cptCode + '\'' +
+				", workRVU=" + workRVU +
+				'}';
 	}
 }

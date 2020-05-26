@@ -28,7 +28,7 @@ public class CPTServiceTest {
 			assertTrue(String.format("Code %s found in loaded map.", cptCode), snomedToCptMap.values().stream().anyMatch(code -> code.getCptCode().equals(cptCode)));
 		}
 
-		assertEquals("12345", snomedToCptMap.get("12345001").getCptCode());
+		assertEquals("12345", snomedToCptMap.get("268547008").getCptCode());
 		assertEquals("12345", snomedToCptMap.get("12346001").getCptCode());
 		assertEquals("20123", snomedToCptMap.get("12347001").getCptCode());
 	}

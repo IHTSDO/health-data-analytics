@@ -11,10 +11,7 @@ import org.snomed.heathanalytics.model.ClinicalEncounter;
 import org.snomed.heathanalytics.model.Gender;
 import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.model.pojo.TermHolder;
-import org.snomed.heathanalytics.server.model.CohortCriteria;
-import org.snomed.heathanalytics.server.model.EncounterCriterion;
-import org.snomed.heathanalytics.server.model.Frequency;
-import org.snomed.heathanalytics.server.model.Subset;
+import org.snomed.heathanalytics.server.model.*;
 import org.snomed.heathanalytics.server.pojo.Stats;
 import org.snomed.heathanalytics.server.store.SubsetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +27,7 @@ import org.springframework.stereotype.Service;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static org.elasticsearch.index.query.QueryBuilders.*;
@@ -47,6 +45,9 @@ public class QueryService {
 
 	@Autowired
 	private SubsetRepository subsetRepository;
+
+	@Autowired
+	private CPTService cptService;
 
 	private final SimpleDateFormat debugDateFormat = new SimpleDateFormat("yyyy/MM/dd");
 	private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -86,17 +87,19 @@ public class QueryService {
 				.withPageable(LARGE_PAGE);
 
 		Page<Patient> finalPatientPage;
-		if ((encounterCriteria.size() > 1 && encounterCriteria.stream().anyMatch(EncounterCriterion::hasTimeConstraint))
-				|| encounterCriteria.stream().anyMatch(EncounterCriterion::hasFrequency)) {
+		boolean includeCptAnalysis = encounterCriteria.stream().anyMatch(EncounterCriterion::isIncludeCPTAnalysis);
+		if (encounterCriteria.stream().anyMatch(EncounterCriterion::hasTimeConstraint)
+				|| encounterCriteria.stream().anyMatch(EncounterCriterion::hasFrequency) || includeCptAnalysis) {
 			// Stream through relevant Patients to apply relative date or frequency match in code.
 			// Also do manual pagination
 			List<Patient> patientList = new ArrayList<>();
 			AtomicInteger patientCount = new AtomicInteger();
 			int offset = page * size;
 			int limit = offset + size;
+			Map<Long, AtomicLong> encounterCountCollector = new HashMap<>();
 			try (CloseableIterator<Patient> patientStream = elasticsearchTemplate.stream(patientElasticQuery.build(), Patient.class)) {
 				patientStream.forEachRemaining(patient -> {
-					if (checkEncounterDatesAndExclusions(patient.getEncounters(), encounterCriteria, criterionToConceptIdMap)) {
+					if (checkEncounterDatesAndExclusions(patient.getEncounters(), encounterCriteria, criterionToConceptIdMap, encounterCountCollector)) {
 						long number = patientCount.incrementAndGet();
 						if (number > offset && number <= limit) {
 							patientList.add(patient);
@@ -104,7 +107,23 @@ public class QueryService {
 					}
 				});
 			}
-			finalPatientPage = new PageImpl<>(patientList, PageRequest.of(page, size > 0 ? size : 1), patientCount.get());
+
+			// Add CPT information
+			// Build map of CPT codes and counts where SNOMED CT encounters can be mapped to CPT
+			// Many SNOMED CT can map to a single CPT code or to none.
+			Map<String, CPTTotals> cptTotals = new HashMap<>();
+			if (includeCptAnalysis) {
+				Map<String, CPTCode> snomedToCptMap = cptService.getSnomedToCptMap();
+				for (Long encounterConceptId : encounterCountCollector.keySet()) {
+					CPTCode cptCode = snomedToCptMap.get(encounterConceptId.toString());
+					if (cptCode != null) {
+						cptTotals.computeIfAbsent(cptCode.getCptCode(), (i) -> new CPTTotals(cptCode)).addCount(encounterCountCollector.get(encounterConceptId).intValue());
+					}
+				}
+				finalPatientPage = new PatientPageWithCPTTotals(patientList, PageRequest.of(page, size > 0 ? size : 1), patientCount.get(), cptTotals);
+			} else {
+				finalPatientPage = new PageImpl<>(patientList, PageRequest.of(page, size > 0 ? size : 1), patientCount.get());
+			}
 		} else {
 			// Grab page of Patients from Elasticsearch.
 			PageRequest pageRequest = PageRequest.of(page, size);
@@ -215,15 +234,15 @@ public class QueryService {
 	}
 
 	private boolean checkEncounterDatesAndExclusions(Set<ClinicalEncounter> allPatientEncounters, List<EncounterCriterion> encounterCriteria,
-			Map<EncounterCriterion, List<Long>> criterionToConceptIdMap) {
+			Map<EncounterCriterion, List<Long>> criterionToConceptIdMap, Map<Long, AtomicLong> encounterCountCollector) {
 
-		return recursiveEncounterMatch(null, allPatientEncounters, CollectionUtils.createStack(encounterCriteria), criterionToConceptIdMap);
+		return recursiveEncounterMatch(null, allPatientEncounters, CollectionUtils.createStack(encounterCriteria), criterionToConceptIdMap, encounterCountCollector);
 	}
 
 	// TODO: try converting this to an Elasticsearch 'painless' script which runs on the nodes of the cluster.
 	// https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-script-query.html
 	private boolean recursiveEncounterMatch(ClinicalEncounter baseEncounter, Set<ClinicalEncounter> allEncounters, Stack<EncounterCriterion> criterionStack,
-			Map<EncounterCriterion, List<Long>> criterionToConceptIdMap) {
+			Map<EncounterCriterion, List<Long>> criterionToConceptIdMap, Map<Long, AtomicLong> encounterCountCollector) {
 
 		if (criterionStack.isEmpty()) {
 			return true;
@@ -247,26 +266,35 @@ public class QueryService {
 			if (criterionConceptIds.contains(encounter.getConceptId())) {
 				if ((lookBackCutOffDate == null || encounter.getDate().equals(lookBackCutOffDate) || encounter.getDate().after(lookBackCutOffDate)) &&
 						(lookForwardCutOffDate == null || encounter.getDate().equals(lookForwardCutOffDate) || encounter.getDate().before(lookForwardCutOffDate))) {
+
 					if (!criterion.isHas()) {
+						// Criterion clauses match but criterion is negated
 						return false;
 					}
-					logger.debug("Encounter {} with date {} MATCH", encounter.getConceptId(), debugDateFormat.format(encounter.getDate()));
+					logger.debug("Encounter {} with date {} MATCH (pending any frequency check)", encounter.getConceptId(), debugDateFormat.format(encounter.getDate()));
 
 					if (!frequencyMatch(allEncounters, criterion, criterionConceptIds)) {
 						logger.debug("Frequency match FAILED");
 						return false;
 					}
 
-					return recursiveEncounterMatch(encounter, allEncounters, criterionStack, criterionToConceptIdMap);
+					// This criterion positive match
+					// Increment encounter count
+					if (criterion.isIncludeCPTAnalysis()) {
+						encounterCountCollector.computeIfAbsent(encounter.getConceptId(), (s) -> new AtomicLong()).incrementAndGet();
+					}
+					// Continue recursion
+					return recursiveEncounterMatch(encounter, allEncounters, criterionStack, criterionToConceptIdMap, encounterCountCollector);
 				} else {
+					// Criterion does not match
 					logger.debug("Encounter {} with date {} NO match", encounter.getConceptId(), debugDateFormat.format(encounter.getDate()));
 				}
 			}
 		}
 
 		if (!criterion.isHas()) {
-			// If we got to this point the criterion did not match. No match was the requirement so let's proceed.
-			return recursiveEncounterMatch(baseEncounter, allEncounters, criterionStack, criterionToConceptIdMap);
+			// If we got to this point the criterion clauses did not match and because the criterion is negated this is considered as a match. Continue recursion.
+			return recursiveEncounterMatch(baseEncounter, allEncounters, criterionStack, criterionToConceptIdMap, encounterCountCollector);
 		}
 
 		return false;

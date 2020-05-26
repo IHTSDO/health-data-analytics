@@ -11,10 +11,7 @@ import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.server.TestConfig;
 import org.snomed.heathanalytics.server.TestUtils;
 import org.snomed.heathanalytics.server.ingestion.elasticsearch.ElasticOutputStream;
-import org.snomed.heathanalytics.server.model.CohortCriteria;
-import org.snomed.heathanalytics.server.model.EncounterCriterion;
-import org.snomed.heathanalytics.server.model.Frequency;
-import org.snomed.heathanalytics.server.model.TimeUnit;
+import org.snomed.heathanalytics.server.model.*;
 import org.snomed.heathanalytics.server.store.PatientRepository;
 import org.snomed.heathanalytics.server.testutil.TestSnomedQueryServiceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,13 +21,13 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import static java.lang.Long.parseLong;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = TestConfig.class)
@@ -40,6 +37,9 @@ public class IntegrationTest {
 	private QueryService queryService;
 
 	@Autowired
+	private ReportService reportService;
+
+	@Autowired
 	private SnomedService snomedService;
 
 	@Autowired
@@ -47,6 +47,9 @@ public class IntegrationTest {
 
 	@Autowired
 	private PatientRepository patientRepository;
+
+	@Autowired
+	private CPTService cptService;
 
 	private ConceptImpl hypertension;
 	private ConceptImpl myocardialInfarction;
@@ -234,6 +237,34 @@ public class IntegrationTest {
 		// At least 2 screens 22-26 months apart
 		assertEquals(1, queryService.fetchCohortCount(new CohortCriteria(new EncounterCriterion(breastCancerScreeningId)
 				.setFrequency(new Frequency(2, 22, 26, TimeUnit.MONTH)))));
+	}
+
+	@Test
+	public void testReportWithCPTAnalysis() throws ServiceException {
+		Map<String, CPTCode> snomedToCptMap = cptService.getSnomedToCptMap();
+		CPTCode dummyCpt = snomedToCptMap.get(breastCancerScreeningId);
+		assertNotNull(dummyCpt);
+		String screeningDummyCPT = "12345";
+		assertEquals(screeningDummyCPT, dummyCpt.getCptCode());
+
+		ReportDefinition reportDefinition = new ReportDefinition()
+				.addReportToFirstListOfGroups(new SubReportDefinition("Screens", new CohortCriteria(new EncounterCriterion(breastCancerScreeningId)
+						.includeCPTAnalysis())));
+
+		Report report = reportService.runReport(reportDefinition);
+		List<Report> groups = report.getGroups();
+		System.out.println(groups);
+		assertEquals(1, groups.size());
+		Report screensReport = groups.get(0);
+		assertEquals("Screens", screensReport.getName());
+		Map<String, CPTTotals> cptTotals = screensReport.getCptTotals();
+		System.out.println(cptTotals.size());
+		System.out.println(cptTotals);
+		assertEquals(1, cptTotals.size());
+		CPTTotals actual = cptTotals.get(screeningDummyCPT);
+		assertNotNull(actual);
+		assertEquals(4, actual.getCount());
+		assertEquals(new Float(12.6), actual.getWorkRVU());
 	}
 
 	private List<String> toSortedPatientIdList(Page<Patient> patients) {

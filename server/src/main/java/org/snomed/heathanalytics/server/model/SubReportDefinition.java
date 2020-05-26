@@ -10,20 +10,27 @@ public class SubReportDefinition {
 	public SubReportDefinition() {
 	}
 
+	public SubReportDefinition(String name, CohortCriteria criteria) {
+		this.name = name;
+		this.criteria = criteria;
+	}
+
 	public String getName() {
 		return name;
 	}
 
-	public void setName(String name) {
+	public SubReportDefinition setName(String name) {
 		this.name = name;
+		return this;
 	}
 
 	public CohortCriteria getCriteria() {
 		return criteria;
 	}
 
-	public void setCriteria(CohortCriteria criteria) {
+	public SubReportDefinition setCriteria(CohortCriteria criteria) {
 		this.criteria = criteria;
+		return this;
 	}
 
 	@Override

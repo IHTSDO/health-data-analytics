@@ -1,10 +1,14 @@
 package org.snomed.heathanalytics.server.service;
 
+import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.server.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class ReportService {
@@ -15,7 +19,12 @@ public class ReportService {
 	public Report runReport(ReportDefinition reportDefinition) throws ServiceException {
 		// Fetch page of patients matching top level criteria
 		CohortCriteria patientCriteria = reportDefinition.getCriteria();
-		int count = queryService.fetchCohortCount(patientCriteria);
+		int count;
+		if (patientCriteria != null) {
+			count = queryService.fetchCohortCount(patientCriteria);
+		} else {
+			count = (int) queryService.getStats().getPatientCount();
+		}
 		Report report = new Report(reportDefinition.getName(), count, patientCriteria);
 
 		List<List<SubReportDefinition>> subGroupLists = reportDefinition.getGroups();
@@ -72,8 +81,13 @@ public class ReportService {
 			List<SubReportDefinition> groupList = groupLists.get(listsIndex);
 			for (SubReportDefinition reportDefinition : groupList) {
 				CohortCriteria combinedCriteria = combineCriteria(patientCriteria, reportDefinition.getCriteria());
-				int hitCount = queryService.fetchCohortCount(combinedCriteria);
-				Report reportGroup = new Report(reportDefinition.getName(), hitCount, combinedCriteria);
+				Page<Patient> patientsPage = queryService.fetchCohort(combinedCriteria);
+				Map<String, CPTTotals> cptTotals = null;
+				if (patientsPage instanceof PatientPageWithCPTTotals) {
+					PatientPageWithCPTTotals pageWithEncounterCounts = (PatientPageWithCPTTotals) patientsPage;
+					cptTotals = pageWithEncounterCounts.getCptTotals();
+				}
+				Report reportGroup = new Report(reportDefinition.getName(), (int) patientsPage.getTotalElements(), combinedCriteria, cptTotals);
 				report.addGroup(reportGroup);
 				addReportGroups(reportGroup, groupLists, listsIndex + 1, combinedCriteria);
 			}

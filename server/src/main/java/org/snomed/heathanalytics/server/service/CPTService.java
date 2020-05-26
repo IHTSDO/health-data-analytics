@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import javax.annotation.PostConstruct;
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,6 +32,7 @@ public class CPTService {
 		this.dataDirectory = dataDirectory;
 	}
 
+	@PostConstruct
 	public void attemptToLoadCPTDataFiles() throws IOException {
 		if (!StringUtils.isEmpty(dataDirectory)) {
 			File dataDirectoryFile = new File(dataDirectory);
@@ -44,12 +46,11 @@ public class CPTService {
 					if (snomedCptMapFile.isFile()) {
 						logger.info("Loading {}", snomedCptMapFile.getName());
 						loadSnomedCPTMap(new FileInputStream(snomedCptMapFile));
-						return;
 					} else {
 						logger.warn("{} file was found but {} was not. " +
 								"Health records with SNOMED CT codes will not be mapped to CPT.", CPT_CODES_TXT, SNOMED_CPT_MAP_TXT);
-						return;
 					}
+					return;
 				}
 			} else {
 				logger.info("No directory at {}", dataDirectoryFile.getAbsolutePath());
@@ -103,14 +104,14 @@ public class CPTService {
 				String[] values = row.split(TAB);
 				if (values.length == CPT_COLUMN_COUNT) {
 					String cptCode = values[0];
-					String workRVU = values[10];
-					String facilityPracticeExpenseRVU = values[11];
-					String nonfacilityPracticeExpenseRVU = values[12];
-					String pliRVU = values[13];
-					String totalFacilityRVU = values[14];
-					String totalMedicarePhysicianFeeScheduleFacilityPayment = values[15];
-					String totalNonfacilityRVU = values[16];
-					String totalMedicarePhysicianFeeScheduleNonFacilityPayment = values[17];
+					Float workRVU = toFloat(values[10]);
+					Float facilityPracticeExpenseRVU = toFloat(values[11]);
+					Float nonfacilityPracticeExpenseRVU = toFloat(values[12]);
+					Float pliRVU = toFloat(values[13]);
+					Float totalFacilityRVU = toFloat(values[14]);
+					Float totalMedicarePhysicianFeeScheduleFacilityPayment = toFloat(values[15]);
+					Float totalNonfacilityRVU = toFloat(values[16]);
+					Float totalMedicarePhysicianFeeScheduleNonFacilityPayment = toFloat(values[17]);
 					cptCodeMap.put(cptCode, new CPTCode(cptCode, workRVU, facilityPracticeExpenseRVU, nonfacilityPracticeExpenseRVU, pliRVU,
 							totalFacilityRVU, totalMedicarePhysicianFeeScheduleFacilityPayment, totalNonfacilityRVU, totalMedicarePhysicianFeeScheduleNonFacilityPayment));
 				} else {
@@ -119,6 +120,19 @@ public class CPTService {
 			}
 			logger.info("Loaded {} CTP codes.", cptCodeMap.size());
 		}
+	}
+
+	private Float toFloat(String value) {
+		if (value != null && !value.isEmpty()) {
+			value = value.trim();
+			if (value.startsWith("$")) {
+				value = value.substring(1);
+			}
+			if (value.matches("^[0-9]+\\.[0-9]+")) {
+				return Float.parseFloat(value);
+			}
+		}
+		return null;
 	}
 
 	private void loadSnomedCPTMap(FileInputStream mapInputStream) throws IOException {

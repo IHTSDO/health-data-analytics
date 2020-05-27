@@ -22,6 +22,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 import org.springframework.data.elasticsearch.core.query.DeleteQuery;
@@ -38,7 +39,7 @@ import java.util.List;
 import static com.google.common.base.Predicates.not;
 import static springfox.documentation.builders.PathSelectors.regex;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = ElasticsearchAutoConfiguration.class)
 public class Application implements ApplicationRunner {
 
 	public static final String IMPORT_POPULATION = "import-population";

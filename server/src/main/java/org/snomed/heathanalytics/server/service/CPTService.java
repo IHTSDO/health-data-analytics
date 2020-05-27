@@ -104,6 +104,9 @@ public class CPTService {
 				String[] values = row.split(TAB);
 				if (values.length == CPT_COLUMN_COUNT) {
 					String cptCode = values[0];
+					String h1Descriptor = values[4];
+					String h2Descriptor = values[5];
+					String h3Descriptor = values[6];
 					Float workRVU = toFloat(values[10]);
 					Float facilityPracticeExpenseRVU = toFloat(values[11]);
 					Float nonfacilityPracticeExpenseRVU = toFloat(values[12]);
@@ -112,13 +115,13 @@ public class CPTService {
 					Float totalMedicarePhysicianFeeScheduleFacilityPayment = toFloat(values[15]);
 					Float totalNonfacilityRVU = toFloat(values[16]);
 					Float totalMedicarePhysicianFeeScheduleNonFacilityPayment = toFloat(values[17]);
-					cptCodeMap.put(cptCode, new CPTCode(cptCode, workRVU, facilityPracticeExpenseRVU, nonfacilityPracticeExpenseRVU, pliRVU,
+					cptCodeMap.put(cptCode, new CPTCode(cptCode, h1Descriptor, h2Descriptor, h3Descriptor, workRVU, facilityPracticeExpenseRVU, nonfacilityPracticeExpenseRVU, pliRVU,
 							totalFacilityRVU, totalMedicarePhysicianFeeScheduleFacilityPayment, totalNonfacilityRVU, totalMedicarePhysicianFeeScheduleNonFacilityPayment));
 				} else {
 					logger.info("Skipping line {}, because it does not contain enough values.", line);
 				}
 			}
-			logger.info("Loaded {} CTP codes.", cptCodeMap.size());
+			logger.info("Loaded {} CTP codes{}.", cptCodeMap.size(), cptCodeMap.isEmpty() ? "" : format(", e.g. %s", cptCodeMap.values().iterator().next()));
 		}
 	}
 

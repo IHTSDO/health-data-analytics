@@ -1,7 +1,7 @@
 package org.snomed.heathanalytics.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonView;
 import org.snomed.heathanalytics.model.pojo.TermHolder;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.elasticsearch.annotations.Field;
@@ -9,11 +9,12 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Objects;
 
 public class ClinicalEncounter {
 
-	@Field
-	private Date date;
+	@Field(type = FieldType.Long)
+	private long dateLong;
 
 	@Field(type = FieldType.Keyword)
 	private Long conceptId;
@@ -23,7 +24,7 @@ public class ClinicalEncounter {
 
 	public interface Fields {
 		String ROLE_ID = "roleId";
-		String DATE = "date";
+		String DATE_LONG = "dateLong";
 		String CONCEPT_ID = "conceptId";
 	}
 
@@ -31,7 +32,7 @@ public class ClinicalEncounter {
 	}
 
 	public ClinicalEncounter(Date date, Long conceptId) {
-		this.date = date;
+		dateLong = date.getTime();
 		this.conceptId = conceptId;
 	}
 
@@ -39,17 +40,26 @@ public class ClinicalEncounter {
 		this(date.getTime(), conceptId);
 	}
 
-	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
+	@JsonView(View.Elasticsearch.class)
+	public long getDateLong() {
+		return dateLong;
+	}
+
+	public void setDateLong(long dateLong) {
+		this.dateLong = dateLong;
+	}
+
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'hh:mm:ssz", timezone = "UTC")
+	@JsonView(View.API.class)
 	public Date getDate() {
-		return date;
+		return new Date(dateLong);
 	}
 
-	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyyMMddhhmmss")
-	@JsonProperty(defaultValue = "yyyyMMddhhmmss")
-	public Date getDateStamp() {
-		return date;
+	public void setDate(Date date) {
+		setDateLong(date.getTime());
 	}
 
+	@JsonView({View.API.class, View.Elasticsearch.class})
 	public Long getConceptId() {
 		return conceptId;
 	}
@@ -58,6 +68,7 @@ public class ClinicalEncounter {
 		this.conceptId = conceptId;
 	}
 
+	@JsonView(View.API.class)
 	public String getConceptTerm() {
 		if (conceptTerm == null) {
 			return null;
@@ -70,28 +81,24 @@ public class ClinicalEncounter {
 	}
 
 	@Override
+	public String toString() {
+		return "ClinicalEncounter{" +
+				", conceptId='" + conceptId + '\'' +
+				", dateLong=" + dateLong +
+				'}';
+	}
+
+	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
-
-		ClinicalEncounter that = (ClinicalEncounter) o;
-
-		if (!date.equals(that.date)) return false;
-		return conceptId.equals(that.conceptId);
+		ClinicalEncounter encounter = (ClinicalEncounter) o;
+		return dateLong == encounter.dateLong &&
+				Objects.equals(conceptId, encounter.conceptId);
 	}
 
 	@Override
 	public int hashCode() {
-		int result = date.hashCode();
-		result = 31 * result + conceptId.hashCode();
-		return result;
-	}
-
-	@Override
-	public String toString() {
-		return "ClinicalEncounter{" +
-				", conceptId='" + conceptId + '\'' +
-				", date=" + date +
-				'}';
+		return Objects.hash(dateLong, conceptId);
 	}
 }

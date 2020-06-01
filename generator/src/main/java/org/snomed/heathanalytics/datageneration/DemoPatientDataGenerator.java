@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.model.ClinicalEncounter;
 import org.snomed.heathanalytics.model.Gender;
 import org.snomed.heathanalytics.model.Patient;
+import org.snomed.heathanalytics.model.View;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.File;
@@ -34,7 +35,11 @@ public class DemoPatientDataGenerator {
 		long start = new Date().getTime();
 		List<Exception> exceptions = new ArrayList<>();
 
-		try (SequenceWriter patientWriter = objectMapper.writerFor(Patient.class).withRootValueSeparator("\n").writeValues(outputFile)) {
+		try (SequenceWriter patientWriter = objectMapper
+				.writerFor(Patient.class)
+				.withView(View.API.class)
+				.withRootValueSeparator("\n")
+				.writeValues(outputFile)) {
 
 			AtomicInteger progress = new AtomicInteger();
 			int progressChunk = 10_000;

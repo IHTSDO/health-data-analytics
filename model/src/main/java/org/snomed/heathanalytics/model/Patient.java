@@ -2,6 +2,7 @@ package org.snomed.heathanalytics.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonView;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
@@ -16,8 +17,8 @@ public class Patient {
 	@Id
 	private String roleId;
 
-	@Field(type = FieldType.Date)
-	private Date dob;
+	@Field(type = FieldType.Long)
+	private long dobLong;
 
 	@Field(type = FieldType.Integer)
 	private int dobYear;
@@ -29,7 +30,7 @@ public class Patient {
 
 	public interface Fields {
 		String ROLE_ID = "roleId";
-		String DOB = "dob";
+		String DOB_LONG = "dobLong";
 		String DOB_YEAR = "dobYear";
 		String GENDER = "gender";
 		String encounters = "encounters";
@@ -56,10 +57,12 @@ public class Patient {
 		return this;
 	}
 
+	@JsonView({View.API.class, View.Elasticsearch.class})
 	public Set<ClinicalEncounter> getEncounters() {
 		return encounters;
 	}
 
+	@JsonView({View.API.class, View.Elasticsearch.class})
 	public String getRoleId() {
 		return roleId;
 	}
@@ -68,22 +71,29 @@ public class Patient {
 		this.roleId = roleId;
 	}
 
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+	@JsonView(View.API.class)
 	public Date getDob() {
-		return dob;
+		return new Date(dobLong);
 	}
 
-	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
-	public Date getDobFormatted() {
-		return dob;
+	@JsonView(View.Elasticsearch.class)
+	public long getDobLong() {
+		return dobLong;
+	}
+
+	public void setDobLong(long dobLong) {
+		this.dobLong = dobLong;
 	}
 
 	public void setDob(Date dob) {
-		this.dob = dob;
+		this.dobLong = dob.getTime();
 		GregorianCalendar calendar = new GregorianCalendar();
 		calendar.setTime(dob);
 		this.dobYear = calendar.get(Calendar.YEAR);
 	}
 
+	@JsonView(View.Elasticsearch.class)
 	public int getDobYear() {
 		return dobYear;
 	}
@@ -92,6 +102,7 @@ public class Patient {
 		this.dobYear = dobYear;
 	}
 
+	@JsonView({View.API.class, View.Elasticsearch.class})
 	public Gender getGender() {
 		return gender;
 	}
@@ -109,7 +120,7 @@ public class Patient {
 		return "Patient{" +
 				"roleId='" + roleId + '\'' +
 				", gender=" + gender +
-				", dob=" + dob +
+				", dobLong=" + dobLong +
 				", encounters=" + encounters +
 				'}';
 	}

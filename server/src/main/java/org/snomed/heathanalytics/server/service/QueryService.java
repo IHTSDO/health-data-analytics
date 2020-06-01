@@ -6,6 +6,10 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.terms.IncludeExclude;
+import org.elasticsearch.search.aggregations.bucket.terms.ParsedLongTerms;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,16 +17,14 @@ import org.snomed.heathanalytics.model.ClinicalEncounter;
 import org.snomed.heathanalytics.model.Gender;
 import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.model.pojo.TermHolder;
-import org.snomed.heathanalytics.server.model.CohortCriteria;
-import org.snomed.heathanalytics.server.model.EncounterCriterion;
-import org.snomed.heathanalytics.server.model.Frequency;
-import org.snomed.heathanalytics.server.model.Subset;
+import org.snomed.heathanalytics.server.model.*;
 import org.snomed.heathanalytics.server.pojo.Stats;
 import org.snomed.heathanalytics.server.store.SubsetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.aggregation.AggregatedPage;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.stereotype.Service;
@@ -35,8 +37,6 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 
 @Service
 public class QueryService {
-
-	public static final PageRequest LARGE_PAGE = PageRequest.of(0, 1000);
 
 	@Autowired
 	private SnomedService snomedService;
@@ -77,19 +77,65 @@ public class QueryService {
 		BoolQueryBuilder patientQuery = getPatientClauses(patientCriteria.getGender(), patientCriteria.getMinAgeNow(), patientCriteria.getMaxAgeNow(), now);
 
 		List<EncounterCriterion> encounterCriteria = patientCriteria.getEncounterCriteria();
-		BoolQueryBuilder patientEncounterFilter = getPatientEncounterFilter(encounterCriteria, timer);
+
+		// Fetch conceptIds of each criterion
+		Map<String, List<Long>> eclToConceptsMap = new HashMap<>();
+		for (EncounterCriterion criterion : encounterCriteria) {
+			String criterionEcl = getGivenOrSubsetEcl(criterion);
+			if (criterionEcl != null) {
+				if (!eclToConceptsMap.containsKey(criterionEcl)) {
+					timer.split("Fetching concepts for ECL " + criterionEcl);
+					eclToConceptsMap.put(criterionEcl, snomedService.getConceptIds(criterionEcl));
+				}
+			}
+		}
+
+		BoolQueryBuilder patientEncounterFilter = getPatientEncounterFilter(encounterCriteria, eclToConceptsMap);
 
 		Map<Long, TermHolder> conceptTerms = new Long2ObjectOpenHashMap<>();
+		PageRequest pageable = PageRequest.of(page, size);
 		NativeSearchQueryBuilder patientElasticQuery = new NativeSearchQueryBuilder()
 				.withQuery(patientQuery)
 				.withFilter(patientEncounterFilter)
-				.withPageable(LARGE_PAGE);
+				.withPageable(pageable);
+
+		List<EncounterCriterion> encounterCriteriaWithCPTAnalysis = encounterCriteria.stream().filter(EncounterCriterion::isIncludeCPTAnalysis).collect(Collectors.toList());
+		if (!encounterCriteriaWithCPTAnalysis.isEmpty()) {
+			Set<Long> allConcepts = new HashSet<>();
+			for (EncounterCriterion criterion : encounterCriteriaWithCPTAnalysis) {
+				List<Long> concepts = eclToConceptsMap.get(criterion.getConceptECL());
+				allConcepts.addAll(concepts);
+			}
+			long[] conceptsToInclude = new long[allConcepts.size()];
+			int a = 0;
+			for (Long conceptId : allConcepts) {
+				conceptsToInclude[a] = conceptId;
+				a++;
+			}
+			patientElasticQuery.addAggregation(
+					AggregationBuilders.terms("encounterConceptCounts")
+							.field(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID)
+							.includeExclude(new IncludeExclude(conceptsToInclude, new long[] {})));
+		}
 
 		// Grab page of Patients from Elasticsearch.
-		PageRequest pageRequest = PageRequest.of(page, size);
-		patientElasticQuery.withPageable(pageRequest);
 		Page<Patient> patients = elasticsearchTemplate.queryForPage(patientElasticQuery.build(), Patient.class);
 		timer.split("Fetching patients");
+		if (!encounterCriteriaWithCPTAnalysis.isEmpty()) {
+			AggregatedPage<Patient> aggregatedPage = (AggregatedPage<Patient>) patients;
+			ParsedLongTerms encounterConceptCounts = (ParsedLongTerms) aggregatedPage.getAggregation("encounterConceptCounts");
+			List<? extends Terms.Bucket> buckets = encounterConceptCounts.getBuckets();
+			Map<String, CPTCode> snomedToCptMap = cptService.getSnomedToCptMap();
+			Map<String, CPTTotals> cptTotalsMap = new HashMap<>();
+			for (Terms.Bucket bucket : buckets) {
+				String conceptId = bucket.getKeyAsString();
+				CPTCode cptCode = snomedToCptMap.get(conceptId);
+				if (cptCode != null) {
+					cptTotalsMap.computeIfAbsent(cptCode.getCptCode(), (c) -> new CPTTotals(cptCode)).addCount(bucket.getDocCount());
+				}
+			}
+			patients = new PatientPageWithCPTTotals(patients.getContent(), pageable, patients.getTotalElements(), cptTotalsMap);
+		}
 
 		// Process matching patients for display
 		patients.getContent().forEach(patient -> {
@@ -170,19 +216,13 @@ public class QueryService {
 		return patientQuery;
 	}
 
-	private BoolQueryBuilder getPatientEncounterFilter(List<EncounterCriterion> encounterCriteria, Timer timer) throws ServiceException {
+	private BoolQueryBuilder getPatientEncounterFilter(List<EncounterCriterion> encounterCriteria, Map<String, List<Long>> eclToConceptsMap) throws ServiceException {
 		BoolQueryBuilder patientFilter = boolQuery();
 
 		// Fetch conceptIds of each criterion
-		Map<String, List<Long>> eclToConceptsMap = new HashMap<>();
 		for (EncounterCriterion criterion : encounterCriteria) {
-			String criterionEcl = getCriterionEcl(criterion);
+			String criterionEcl = getGivenOrSubsetEcl(criterion);
 			if (criterionEcl != null) {
-				if (!eclToConceptsMap.containsKey(criterionEcl)) {
-					timer.split("Fetching concepts for ECL " + criterionEcl);
-					eclToConceptsMap.put(criterionEcl, snomedService.getConceptIds(criterionEcl));
-				}
-
 				List<Long> conceptIds = eclToConceptsMap.get(criterionEcl);
 				if (criterion.isHas()) {
 					patientFilter.must(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
@@ -386,7 +426,7 @@ public class QueryService {
 		return patientFilter;
 	}
 
-	private String getCriterionEcl(EncounterCriterion criterion) throws ServiceException {
+	private String getGivenOrSubsetEcl(EncounterCriterion criterion) throws ServiceException {
 		if (criterion != null) {
 			String subsetId = criterion.getConceptSubsetId();
 			if (!Strings.isNullOrEmpty(subsetId)) {
@@ -396,7 +436,9 @@ public class QueryService {
 				}
 				return subsetOptional.get().getEcl();
 			}
-			return criterion.getConceptECL();
+			String conceptECL = criterion.getConceptECL();
+			criterion.setConceptECL(conceptECL);
+			return conceptECL;
 		}
 		return null;
 	}

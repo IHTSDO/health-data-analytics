@@ -249,7 +249,7 @@ public class IntegrationTest {
 				.setFrequency(new Frequency(2, 22, 26, TimeUnit.MONTH)))));
 	}
 
-	// @Test TODO: Implement CPT Analysis using an Aggregation
+	@Test
 	public void testReportWithCPTAnalysis() throws ServiceException {
 		Map<String, CPTCode> snomedToCptMap = cptService.getSnomedToCptMap();
 		CPTCode dummyCpt = snomedToCptMap.get(breastScreeningId);

@@ -2,8 +2,8 @@ package org.snomed.heathanalytics.server.model;
 
 public class CPTTotals {
 
-	private CPTCode cptCode;
-	private int count;
+	private final CPTCode cptCode;
+	private long count;
 	private Float workRVU;
 	private Float facilityPracticeExpenseRVU;
 	private Float nonfacilityPracticeExpenseRVU;
@@ -18,7 +18,7 @@ public class CPTTotals {
 		calculateTotals();
 	}
 
-	public void addCount(int count) {
+	public void addCount(long count) {
 		this.count += count;
 		calculateTotals();
 	}
@@ -34,7 +34,7 @@ public class CPTTotals {
 		totalMedicarePhysicianFeeScheduleNonFacilityPayment = getTotal(cptCode.getTotalMedicarePhysicianFeeScheduleNonFacilityPayment(), count);
 	}
 
-	private Float getTotal(Float value, int count) {
+	private Float getTotal(Float value, long count) {
 		return value != null ? value * count : null;
 	}
 
@@ -42,7 +42,7 @@ public class CPTTotals {
 		return cptCode;
 	}
 
-	public int getCount() {
+	public long getCount() {
 		return count;
 	}
 

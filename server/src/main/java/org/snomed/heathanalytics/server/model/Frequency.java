@@ -1,5 +1,8 @@
 package org.snomed.heathanalytics.server.model;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
+@JsonPropertyOrder({"minRepetitions", "minTimeBetween", "maxTimeBetween", "timeUnit"})
 public class Frequency {
 
 	private Integer minRepetitions;

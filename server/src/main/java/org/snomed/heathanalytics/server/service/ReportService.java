@@ -1,5 +1,6 @@
 package org.snomed.heathanalytics.server.service;
 
+import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.server.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,7 +9,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class ReportService {
@@ -17,6 +17,7 @@ public class ReportService {
 	private QueryService queryService;
 
 	public Report runReport(ReportDefinition reportDefinition) throws ServiceException {
+		Timer timer = new Timer();
 		// Fetch page of patients matching top level criteria
 		CohortCriteria patientCriteria = reportDefinition.getCriteria();
 		int count;
@@ -25,11 +26,13 @@ public class ReportService {
 		} else {
 			count = (int) queryService.getStats().getPatientCount();
 		}
+		timer.split("cohort count");
 		Report report = new Report(reportDefinition.getName(), count, patientCriteria);
 
 		List<List<SubReportDefinition>> subGroupLists = reportDefinition.getGroups();
-		addReportGroups(report, subGroupLists, 0, patientCriteria);
+		addReportGroups(report, subGroupLists, 0, patientCriteria, timer);
 
+		LoggerFactory.getLogger(getClass()).info("Times: {}", timer.getTimes());
 		return report;
 	}
 
@@ -76,12 +79,13 @@ public class ReportService {
 				withoutTreatmentWithNegativeOutcomeCount);
 	}
 
-	private void addReportGroups(Report report, List<List<SubReportDefinition>> groupLists, int listsIndex, CohortCriteria patientCriteria) throws ServiceException {
+	private void addReportGroups(Report report, List<List<SubReportDefinition>> groupLists, int listsIndex, CohortCriteria patientCriteria, Timer timer) throws ServiceException {
 		if (groupLists != null && groupLists.size() > listsIndex) {
 			List<SubReportDefinition> groupList = groupLists.get(listsIndex);
 			for (SubReportDefinition reportDefinition : groupList) {
 				CohortCriteria combinedCriteria = combineCriteria(patientCriteria, reportDefinition.getCriteria());
 				Page<Patient> patientsPage = queryService.fetchCohort(combinedCriteria);
+				timer.split("Fetch for " + reportDefinition.getName());
 				Map<String, CPTTotals> cptTotals = null;
 				if (patientsPage instanceof PatientPageWithCPTTotals) {
 					PatientPageWithCPTTotals pageWithEncounterCounts = (PatientPageWithCPTTotals) patientsPage;
@@ -89,7 +93,7 @@ public class ReportService {
 				}
 				Report reportGroup = new Report(reportDefinition.getName(), (int) patientsPage.getTotalElements(), combinedCriteria, cptTotals);
 				report.addGroup(reportGroup);
-				addReportGroups(reportGroup, groupLists, listsIndex + 1, combinedCriteria);
+				addReportGroups(reportGroup, groupLists, listsIndex + 1, combinedCriteria, timer);
 			}
 		}
 	}

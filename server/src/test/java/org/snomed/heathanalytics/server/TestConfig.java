@@ -35,14 +35,9 @@ public class TestConfig {
 	private static final String ELASTICSEARCH_TEST_SERVER_VERSION = "6.8.7";
 	private static final int PORT = 9932;
 
-	@Autowired
-	private PatientRepository patientRepository;
-
-	@Autowired
-	private SubsetRepository subsetRepository;
-
 	private EmbeddedElastic testElasticsearchSingleton;
 	private File installationDirectory;
+	private boolean useLocalES = false;
 
 	@Bean
 	public SnomedQueryService snomedQueryService() throws IOException, ParseException {
@@ -52,39 +47,45 @@ public class TestConfig {
 	@Bean
 	public ElasticsearchOperations elasticsearchTemplate(@Value("${test.elasticsearch.start-timeout-mins:2}") int unitTestElasticsearchStartTimeoutMins) {
 		// Share the Elasticsearch instance between test contexts
-		if (testElasticsearchSingleton == null) {
-			// Create and start a clean standalone Elasticsearch test instance
-			String clusterName = "snowstorm-integration-test-cluster";
+		int port = PORT;
 
-			try {
-				installationDirectory = new File(System.getProperty("java.io.tmpdir"), "embedded-elasticsearch-temp-dir");
-				File downloadDir = null;
-				if (System.getProperty("user.home") != null) {
-					downloadDir = new File(new File(System.getProperty("user.home"), "tmp"), "embedded-elasticsearch-download-cache");
-					downloadDir.mkdirs();
+		if (testElasticsearchSingleton == null) {
+			if (useLocalES) {
+				port = 9200;
+			} else {
+				// Create and start a clean standalone Elasticsearch test instance
+				String clusterName = "snowstorm-integration-test-cluster";
+
+				try {
+					installationDirectory = new File(System.getProperty("java.io.tmpdir"), "embedded-elasticsearch-temp-dir");
+					File downloadDir = null;
+					if (System.getProperty("user.home") != null) {
+						downloadDir = new File(new File(System.getProperty("user.home"), "tmp"), "embedded-elasticsearch-download-cache");
+						downloadDir.mkdirs();
+					}
+					LoggerFactory.getLogger(getClass()).info("Starting Elasticsearch node for unit tests. Timeout is {} minutes.", unitTestElasticsearchStartTimeoutMins);
+					testElasticsearchSingleton = EmbeddedElastic.builder()
+							.withElasticVersion(ELASTICSEARCH_TEST_SERVER_VERSION)
+							.withStartTimeout(unitTestElasticsearchStartTimeoutMins, TimeUnit.MINUTES)
+							.withSetting(PopularProperties.CLUSTER_NAME, clusterName)
+							.withSetting(PopularProperties.HTTP_PORT, PORT)
+							.withSetting("cluster.routing.allocation.disk.threshold_enabled", false)
+							// Manually delete installation directory to prevent verbose error logging
+							.withCleanInstallationDirectoryOnStop(false)
+							.withDownloadDirectory(downloadDir)
+							.withInstallationDirectory(installationDirectory)
+							.build();
+					testElasticsearchSingleton
+							.start()
+							.deleteIndices();
+				} catch (InterruptedException | IOException e) {
+					throw new RuntimeException("Failed to start standalone Elasticsearch instance.", e);
 				}
-				LoggerFactory.getLogger(getClass()).info("Starting Elasticsearch node for unit tests. Timeout is {} minutes.", unitTestElasticsearchStartTimeoutMins);
-				testElasticsearchSingleton = EmbeddedElastic.builder()
-						.withElasticVersion(ELASTICSEARCH_TEST_SERVER_VERSION)
-						.withStartTimeout(unitTestElasticsearchStartTimeoutMins, TimeUnit.MINUTES)
-						.withSetting(PopularProperties.CLUSTER_NAME, clusterName)
-						.withSetting(PopularProperties.HTTP_PORT, PORT)
-						.withSetting("cluster.routing.allocation.disk.threshold_enabled", false)
-						// Manually delete installation directory to prevent verbose error logging
-						.withCleanInstallationDirectoryOnStop(false)
-						.withDownloadDirectory(downloadDir)
-						.withInstallationDirectory(installationDirectory)
-						.build();
-				testElasticsearchSingleton
-						.start()
-						.deleteIndices();
-			} catch (InterruptedException | IOException e) {
-				throw new RuntimeException("Failed to start standalone Elasticsearch instance.", e);
 			}
 		}
 
 		// Create client to to standalone instance
-		return new ElasticsearchRestTemplate(new RestHighLevelClient(RestClient.builder(new HttpHost("localhost", PORT))));
+		return new ElasticsearchRestTemplate(new RestHighLevelClient(RestClient.builder(new HttpHost("localhost", port))));
 	}
 
 	@PreDestroy
@@ -92,17 +93,19 @@ public class TestConfig {
 		synchronized (TestConfig.class) {
 			Logger logger = LoggerFactory.getLogger(getClass());
 			if (testElasticsearchSingleton != null) {
-				try {
-					testElasticsearchSingleton.stop();
-				} catch (Exception e) {
-					logger.info("The test Elasticsearch instance threw an exception during shutdown, probably due to multiple test contexts. This can be ignored.");
-					logger.debug("The test Elasticsearch instance threw an exception during shutdown.", e);
-				}
-				if (installationDirectory != null && installationDirectory.exists()) {
+				if (!useLocalES) {
 					try {
-						FileUtils.forceDelete(installationDirectory);
-					} catch (IOException e) {
-						logger.info("Error deleting the test Elasticsearch installation directory from temp {}", installationDirectory.getAbsolutePath());
+						testElasticsearchSingleton.stop();
+					} catch (Exception e) {
+						logger.info("The test Elasticsearch instance threw an exception during shutdown, probably due to multiple test contexts. This can be ignored.");
+						logger.debug("The test Elasticsearch instance threw an exception during shutdown.", e);
+					}
+					if (installationDirectory != null && installationDirectory.exists()) {
+						try {
+							FileUtils.forceDelete(installationDirectory);
+						} catch (IOException e) {
+							logger.info("Error deleting the test Elasticsearch installation directory from temp {}", installationDirectory.getAbsolutePath());
+						}
 					}
 				}
 			}

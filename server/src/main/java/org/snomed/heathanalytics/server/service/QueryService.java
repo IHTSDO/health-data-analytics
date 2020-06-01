@@ -137,7 +137,11 @@ public class QueryService {
 					throw new IllegalArgumentException(format("EncounterCriterion[%s].frequency.minTimeBetween must be a positive integer.", i));
 				}
 				if (frequency.getMaxTimeBetween() != null && frequency.getMaxTimeBetween() < 0) {
-					throw new IllegalArgumentException(format("EncounterCriterion[%s].frequency.minTimeBetween must be a positive integer.", i));
+					throw new IllegalArgumentException(format("EncounterCriterion[%s].frequency.maxTimeBetween must be a positive integer.", i));
+				}
+				if (frequency.getMinTimeBetween() != null && frequency.getMaxTimeBetween() != null
+						&& frequency.getMinTimeBetween() > frequency.getMaxTimeBetween()) {
+					throw new IllegalArgumentException(format("EncounterCriterion[%s].frequency.minTimeBetween must be less than maxTimeBetween.", i));
 				}
 				if (frequency.getTimeUnit() == null) {
 					throw new IllegalArgumentException(format("EncounterCriterion[%s].frequency.timeUnit is required.", i));
@@ -191,12 +195,23 @@ public class QueryService {
 		if (encounterCriteria.stream().anyMatch(EncounterCriterion::hasTimeConstraint)
 				|| encounterCriteria.stream().anyMatch(EncounterCriterion::hasFrequency)) {// TODO: || includeCptAnalysis
 
+			// Convert parameter objects to simple types to be used in Elasticsearch Painless script which executes within a node.
 			List<Map<String, Object>> encounterCriteriaMaps = encounterCriteria.stream().map(criterion -> {
 				Map<String, Object> criterionMap = new HashMap<>();
 				criterionMap.put("has", criterion.isHas());
 				criterionMap.put("conceptECL", criterion.getConceptECL());
 				criterionMap.put("withinDaysAfterPreviouslyMatchedEncounter", criterion.getWithinDaysAfterPreviouslyMatchedEncounter());
 				criterionMap.put("withinDaysBeforePreviouslyMatchedEncounter", criterion.getWithinDaysBeforePreviouslyMatchedEncounter());
+				Frequency frequency = criterion.getFrequency();
+				if (frequency != null) {
+					Map<String, Object> frequencyMap = new HashMap<>();
+					frequencyMap.put("minRepetitions", frequency.getMinRepetitions());
+					frequencyMap.put("minTimeBetween", frequency.getMinTimeBetween());
+					frequencyMap.put("maxTimeBetween", frequency.getMaxTimeBetween());
+					frequencyMap.put("timeUnit", frequency.getTimeUnit());
+					frequencyMap.put("timeUnitMillis", frequency.getTimeUnit().getMilliseconds());
+					criterionMap.put("frequency", frequencyMap);
+				}
 				return criterionMap;
 			}).collect(Collectors.toList());
 
@@ -206,6 +221,11 @@ public class QueryService {
 			params.put("criterionMapsList", encounterCriteriaMaps);
 			params.put("eclToConceptsMap", eclToConceptsMap);
 
+			/*
+				The following script is written in the Elasticsearch Painless script which is a Java like language.
+				The script is purposefully basic using a minimum set of core Java classes.
+				The following Java features do not seem to work in the Painless language: type autoboxing, recursive methods, incrementing variables, calling a function and returning the value on one line.
+			 */
 			patientFilter.filter(scriptQuery(new Script(ScriptType.INLINE, "painless", "" +
 					// Util method
 					"long getRelativeDate(Long baseDate, Integer days, int multiplier, def params) {" +
@@ -219,7 +239,72 @@ public class QueryService {
 					"	}" +
 					"	return 0;" +
 					"}" +
+					// Util method
+					"boolean frequencyMatch(def doc, Map criterionMap, List criterionConceptIds) {" +
+					"	Map frequencyMap = criterionMap.get('frequency');" +
+					"	if (frequencyMap == null) {" +
+					"		return true;" +
+					"	}" +
+					"	Integer minRepetitions = frequencyMap.get('minRepetitions').intValue();" +
+					"	Integer minTimeBetween = frequencyMap.get('minTimeBetween');" +
+					"	Integer maxTimeBetween = frequencyMap.get('maxTimeBetween');" +
+					"	long timeUnitMillis = frequencyMap.get('timeUnitMillis');" +
 
+						// Find all encounters for this patient with a matching conceptId
+					"	List dates = new ArrayList();" +
+					"	for (int o = 0; o < doc['encounters.conceptId'].length; o++) {" +
+					"		Long otherEncounterConceptId = doc['encounters.conceptId'][o];" +
+					"		Long otherEncounterDate = doc['encounters.dateLong'][o];" +
+					"		if (criterionConceptIds.contains(otherEncounterConceptId)) {" +
+					"			dates.add(otherEncounterDate);" +
+					"		}" +
+					"	}" +
+					"" +
+					"	if (minTimeBetween == null && maxTimeBetween == null) {" +
+					"		if (minRepetitions != null) {" +
+								// No time constraints, just check repetition count
+//					"			Debug.explain('Size check only');" +
+					"			return dates.size().intValue() >= minRepetitions.intValue();" +
+					"		} else {" +
+					"			return true;" +
+					"		}" +
+					"	}" +
+					"	if (dates.size() <= 1) {" +
+					"		return false;" +
+					"	}" +
+					"" +
+						// Apply frequency time constraints
+					"	long relativeEncounterTime = dates.remove(0).longValue();" +
+					"	int repetitionsFound = 1;" +
+					"	for (int o = 0; 0 < dates.size(); o++) {" +
+					"		long nextEncounterTime = dates.get(o).longValue();" +
+					"		if (minTimeBetween != null) {" +
+					"			long minTime = relativeEncounterTime + (minTimeBetween.intValue() * timeUnitMillis);" +
+					"			if (nextEncounterTime < minTime) {" +
+//					"				Debug.explain('nextEncounterTime < minTime, nextEncounterTime:' + nextEncounterTime + ', minTime:' + minTime);" +
+					"				return false;" +
+					"			}" +
+					"		}" +
+					"		if (maxTimeBetween != null) {" +
+					"			long maxTime = relativeEncounterTime + (maxTimeBetween.intValue() * timeUnitMillis);" +
+					"			if (nextEncounterTime > maxTime) {" +
+//					"				Debug.explain('nextEncounterTime > maxTime, nextEncounterTime:' + nextEncounterTime + ', maxTime:' + maxTime);" +
+					"				return false;" +
+					"			}" +
+					"		}" +
+							// The time between relativeEncounterTime and nextEncounterTime is valid
+					"		repetitionsFound = repetitionsFound + 1;" +
+					"		if (minRepetitions != null && repetitionsFound == minRepetitions.intValue()) {" +
+					"			return true;" +
+					"		}" +
+							// Make nextEncounterTime the new relativeEncounterTime and go round again
+					"		relativeEncounterTime = nextEncounterTime;" +
+					"	}" +
+//					"	Debug.explain('No frequency match, dates:' + dates + ', criterionConceptIds:' + criterionConceptIds);" +
+					"	return false;" +
+					"}" +
+
+					// Start of main method
 					"List criterionMapsList = params.criterionMapsList;" +
 					"if (criterionMapsList.isEmpty()) {" +
 					"	return true;" +
@@ -270,12 +355,12 @@ public class QueryService {
 					"					return false;" +
 					"				}" +
 					"" +
-									// Encounter matches, pending frequency check
-					//"				if (!frequencyMatch(allEncounters, criterion, criterionConceptIds)) {" +
-					//"					logger.debug(\"Frequency match FAILED\");" +
-					//"					return false;" +
-					//"				}" +
-					"" +
+									// This encounter matches so far, frequency check next
+					"				boolean frequencyMatch = frequencyMatch(doc, criterionMap, criterionConceptIds);" +
+					"				if (frequencyMatch == false) {" +
+					"					return false;" +
+					"				}" +
+
 									// This criterion positive match
 
 									// Increment encounter count
@@ -299,61 +384,6 @@ public class QueryService {
 					params)));
 			}
 		return patientFilter;
-	}
-
-	private boolean frequencyMatch(Set<ClinicalEncounter> allEncounters, EncounterCriterion criterion, List<Long> criterionConceptIds) {
-		Frequency frequency = criterion.getFrequency();
-		if (frequency == null) {
-			return true;
-		}
-
-		// Find other matching encounters sorted by date
-		List<ClinicalEncounter> allMatchingEncounters = allEncounters.stream()
-				.filter(encounter -> criterionConceptIds.contains(encounter.getConceptId()))
-				.sorted(Comparator.comparing(ClinicalEncounter::getDate))
-				.collect(Collectors.toList());
-		logger.debug("Frequency match, allMatchingEncounters {}", allMatchingEncounters.size());
-
-		if (frequency.getMinTimeBetween() == null && frequency.getMaxTimeBetween() == null) {
-			// No time constraints, just check repetition count
-			return allMatchingEncounters.size() >= frequency.getMinRepetitions();
-		}
-
-		// Apply frequency time constraints
-		ClinicalEncounter relativeEncounter = allMatchingEncounters.remove(0);
-		int repetitionsFound = 1;
-		for (ClinicalEncounter nextEncounter : allMatchingEncounters) {
-			// Validate time period between relativeEncounter and nextEncounter
-			long time = relativeEncounter.getDate().getTime();
-			long nextEncounterTime = nextEncounter.getDate().getTime();
-			logger.debug("relativeEncounter time {}, nextEncounterTime {}", new Date(time), new Date(nextEncounterTime));
-			if (frequency.getMinTimeBetween() != null) {
-				long minTime = time + (frequency.getMinTimeBetween() * frequency.getTimeUnit().getMilliseconds());
-				if (nextEncounterTime < minTime) {
-					logger.debug("nextEncounterTime {} less than minTime {}", new Date(nextEncounterTime), new Date(minTime));
-					return false;
-				}
-			}
-			if (frequency.getMaxTimeBetween() != null) {
-				long maxTime = time + (frequency.getMaxTimeBetween() * frequency.getTimeUnit().getMilliseconds());
-				if (nextEncounterTime > maxTime) {
-					logger.debug("nextEncounterTime {} greater than maxTime {}", new Date(nextEncounterTime), new Date(maxTime));
-					return false;
-				}
-			}
-
-			// The time between relativeEncounter and nextEncounter is valid
-			repetitionsFound++;
-			if (frequency.getMinRepetitions() != null && repetitionsFound == frequency.getMinRepetitions()) {
-				// Enough repetitions have been found, the frequency criterion of this encounter for this patient has been met
-				logger.debug("Enough repetitions found {}", repetitionsFound);
-				return true;
-			}
-			// Make nextEncounter the new relativeEncounter and go round again
-			relativeEncounter = nextEncounter;
-		}
-
-		return false;
 	}
 
 	private String getCriterionEcl(EncounterCriterion criterion) throws ServiceException {

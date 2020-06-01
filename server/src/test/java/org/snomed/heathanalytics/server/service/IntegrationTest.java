@@ -52,8 +52,10 @@ public class IntegrationTest {
 	private ConceptImpl hypertension;
 	private ConceptImpl myocardialInfarction;
 	private ConceptImpl acuteQWaveMyocardialInfarction;
-	private ConceptImpl breastCancerScreening;
-	private final String breastCancerScreeningId = "268547008";
+	private ConceptImpl breastScreening;
+	private ConceptImpl breastMammography;
+	private final String breastScreeningId = "268547008";
+	private final String breastMammographyId = "566571000119105";
 
 	@Before
 	public void setup() throws IOException, ParseException {
@@ -72,7 +74,8 @@ public class IntegrationTest {
 
 		// Breast cancer screening -
 		// 268547008 | Screening for malignant neoplasm of breast (procedure) |
-		breastCancerScreening = newConcept(breastCancerScreeningId, allConcepts);
+		breastScreening = newConcept(breastScreeningId, allConcepts);
+		breastMammography = newConcept(breastMammographyId, allConcepts);
 
 		snomedService.setSnomedQueryService(TestSnomedQueryServiceBuilder.createWithConcepts(allConcepts.toArray(new ConceptImpl[]{})));
 
@@ -97,7 +100,8 @@ public class IntegrationTest {
 		);
 
 
-		Long screeningId = breastCancerScreening.getId();
+		Long screeningId = breastScreening.getId();
+		Long breastMammographyId = breastMammography.getId();
 		// Ann - screening once a year, regular as clockwork
 		healthDataStream.createPatient(
 				new Patient("100", TestUtils.getDob(50), Gender.FEMALE)
@@ -106,12 +110,13 @@ public class IntegrationTest {
 						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2019, Calendar.JUNE, 1), screeningId))
 		);
 
-		// Bella - screening once a year, varies by a month or so.
+		// Bella - screening once a year, varies by a month or so. Also one mammography.
 		healthDataStream.createPatient(
 				new Patient("101", TestUtils.getDob(52), Gender.FEMALE)
 						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2017, Calendar.MAY, 5), screeningId))
 						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2018, Calendar.APRIL, 10), screeningId))
 						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2019, Calendar.MAY, 20), screeningId))
+						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2019, Calendar.MAY, 20), breastMammographyId))
 		);
 
 		// Claudia - screening once every two years, varies by a couple of weeks.
@@ -218,35 +223,42 @@ public class IntegrationTest {
 		assertEquals(1, queryService.fetchCohort(cohortCriteria).getTotalElements());
 	}
 
-	// @Test TODO: Implement Frequency selection in Painless
+	@Test
 	public void testTreatmentFrequencySelection() throws ServiceException {
 		assertEquals(6, queryService.fetchCohortCount(new CohortCriteria()));
 		assertEquals(4, queryService.fetchCohortCount(new CohortCriteria().setGender(Gender.FEMALE)));
-		assertEquals(4, queryService.fetchCohortCount(new CohortCriteria(new EncounterCriterion(breastCancerScreeningId))));
+		assertEquals(4, queryService.fetchCohortCount(new CohortCriteria(new EncounterCriterion(breastScreeningId))));
 
 		// At least 2 screens 10-14 months apart
-		assertEquals(2, queryService.fetchCohortCount(new CohortCriteria(new EncounterCriterion(breastCancerScreeningId)
-				.setFrequency(new Frequency(2, 10, 14, TimeUnit.MONTH)))));
+		assertEquals(2, queryService.fetchCohortCount(new CohortCriteria()
+				.addEncounterCriterion(new EncounterCriterion(breastScreeningId).setFrequency(new Frequency(2, 10, 14, TimeUnit.MONTH)))
+		));
+
+		// 2 screens and at least one mammography
+		assertEquals(1, queryService.fetchCohortCount(new CohortCriteria()
+				.addEncounterCriterion(new EncounterCriterion(breastScreeningId).setFrequency(new Frequency(2, 10, 14, TimeUnit.MONTH)))
+				.addEncounterCriterion(new EncounterCriterion(breastMammographyId))
+		));
 
 		// At least 3 screens 10-14 months apart
-		assertEquals(2, queryService.fetchCohortCount(new CohortCriteria(new EncounterCriterion(breastCancerScreeningId)
+		assertEquals(2, queryService.fetchCohortCount(new CohortCriteria(new EncounterCriterion(breastScreeningId)
 				.setFrequency(new Frequency(3, 10, 14, TimeUnit.MONTH)))));
 
 		// At least 2 screens 22-26 months apart
-		assertEquals(1, queryService.fetchCohortCount(new CohortCriteria(new EncounterCriterion(breastCancerScreeningId)
+		assertEquals(1, queryService.fetchCohortCount(new CohortCriteria(new EncounterCriterion(breastScreeningId)
 				.setFrequency(new Frequency(2, 22, 26, TimeUnit.MONTH)))));
 	}
 
 	// @Test TODO: Implement CPT Analysis using an Aggregation
 	public void testReportWithCPTAnalysis() throws ServiceException {
 		Map<String, CPTCode> snomedToCptMap = cptService.getSnomedToCptMap();
-		CPTCode dummyCpt = snomedToCptMap.get(breastCancerScreeningId);
+		CPTCode dummyCpt = snomedToCptMap.get(breastScreeningId);
 		assertNotNull(dummyCpt);
 		String screeningDummyCPT = "12345";
 		assertEquals(screeningDummyCPT, dummyCpt.getCptCode());
 
 		ReportDefinition reportDefinition = new ReportDefinition()
-				.addReportToFirstListOfGroups(new SubReportDefinition("Screens", new CohortCriteria(new EncounterCriterion(breastCancerScreeningId)
+				.addReportToFirstListOfGroups(new SubReportDefinition("Screens", new CohortCriteria(new EncounterCriterion(breastScreeningId)
 						.includeCPTAnalysis())));
 
 		Report report = reportService.runReport(reportDefinition);

@@ -233,7 +233,7 @@ public class QueryService {
 		}
 
 		if (encounterCriteria.stream().anyMatch(EncounterCriterion::hasTimeConstraint)
-				|| encounterCriteria.stream().anyMatch(EncounterCriterion::hasFrequency)) {// TODO: || includeCptAnalysis
+				|| encounterCriteria.stream().anyMatch(EncounterCriterion::hasFrequency)) {
 
 			// Convert parameter objects to simple types to be used in Elasticsearch Painless script which executes within a node.
 			List<Map<String, Object>> encounterCriteriaMaps = encounterCriteria.stream().map(criterion -> {
@@ -402,13 +402,6 @@ public class QueryService {
 					"				}" +
 
 									// This criterion positive match
-
-									// Increment encounter count
-									// TODO: implement using aggregation?
-					//				if (criterion.isIncludeCPTAnalysis()) {" +
-					//					encounterCountCollector.computeIfAbsent(encounter.getConceptId(), (s) -> new AtomicLong()).incrementAndGet();" +
-					//				}" +
-
 					"				baseEncounterDate = encounterDate;" +
 					"				encounterMatchFound = true;" +
 					"			}" +

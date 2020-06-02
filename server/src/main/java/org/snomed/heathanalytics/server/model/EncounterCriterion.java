@@ -37,6 +37,15 @@ public class EncounterCriterion {
 		this.withinDaysBeforePreviouslyMatchedEncounter = withinDaysBeforePreviouslyMatchedEncounter;
 	}
 
+	public EncounterCriterion clone() {
+		EncounterCriterion encounterCriterion = new EncounterCriterion();
+		encounterCriterion.has = has;
+		encounterCriterion.conceptECL = conceptECL;
+		encounterCriterion.conceptSubsetId = conceptSubsetId;
+		encounterCriterion.frequency = frequency;
+		return encounterCriterion;
+	}
+
 	public boolean hasTimeConstraint() {
 		return withinDaysAfterPreviouslyMatchedEncounter != null || withinDaysBeforePreviouslyMatchedEncounter != null;
 	}

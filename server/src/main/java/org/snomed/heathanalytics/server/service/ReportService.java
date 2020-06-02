@@ -82,6 +82,13 @@ public class ReportService {
 	private void addReportGroups(Report report, List<List<SubReportDefinition>> groupLists, int listsIndex, CohortCriteria patientCriteria, Timer timer) throws ServiceException {
 		if (groupLists != null && groupLists.size() > listsIndex) {
 			List<SubReportDefinition> groupList = groupLists.get(listsIndex);
+
+			// Clear CPT Analysis flag of inherited criterion to allow a report focused on the most specific criteria
+			if (patientCriteria != null) {
+				patientCriteria = patientCriteria.clone();
+				patientCriteria.getEncounterCriteria().forEach(encounterCriterion -> encounterCriterion.setIncludeCPTAnalysis(false));
+			}
+
 			for (SubReportDefinition reportDefinition : groupList) {
 				CohortCriteria combinedCriteria = combineCriteria(patientCriteria, reportDefinition.getCriteria());
 				Page<Patient> patientsPage = queryService.fetchCohort(combinedCriteria);

@@ -29,6 +29,17 @@ public class CohortCriteria {
 		return this;
 	}
 
+	public CohortCriteria clone() {
+		CohortCriteria cohortCriteria = new CohortCriteria();
+		cohortCriteria.gender = gender;
+		cohortCriteria.minAgeNow = minAgeNow;
+		cohortCriteria.maxAgeNow = maxAgeNow;
+		for (EncounterCriterion encounterCriterion : encounterCriteria) {
+			cohortCriteria.addEncounterCriterion(encounterCriterion.clone());
+		}
+		return cohortCriteria;
+	}
+
 	/**
 	 * Conditionally copies criterion from the supplied PatientCriteria to this one
 	 * if the supplied values are more specific.

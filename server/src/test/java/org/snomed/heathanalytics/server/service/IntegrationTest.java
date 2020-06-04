@@ -1,5 +1,12 @@
 package org.snomed.heathanalytics.server.service;
 
+import org.apache.http.HttpHost;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.metrics.scripted.ParsedScriptedMetric;
 import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ConceptImpl;
 import org.junit.After;
 import org.junit.Before;
@@ -16,6 +23,9 @@ import org.snomed.heathanalytics.server.store.PatientRepository;
 import org.snomed.heathanalytics.server.testutil.TestSnomedQueryServiceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
+import org.springframework.data.elasticsearch.core.aggregation.AggregatedPage;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -24,6 +34,7 @@ import java.text.ParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -263,19 +274,36 @@ public class IntegrationTest {
 
 		Report report = reportService.runReport(reportDefinition);
 		List<Report> groups = report.getGroups();
-		System.out.println(groups);
 		assertEquals(1, groups.size());
 		Report screensReport = groups.get(0);
 		assertEquals("Screens", screensReport.getName());
+		assertEquals(4, screensReport.getPatientCount());
 		Map<String, CPTTotals> cptTotals = screensReport.getCptTotals();
 		assertNotNull(cptTotals);
-		System.out.println(cptTotals.size());
-		System.out.println(cptTotals);
 		assertEquals(1, cptTotals.size());
 		CPTTotals actual = cptTotals.get(screeningDummyCPT);
 		assertNotNull(actual);
-		assertEquals(4, actual.getCount());
-		assertEquals(new Float(12.6), actual.getWorkRVU());
+		assertEquals(11, actual.getCount());
+		assertEquals(new Float(34.65), actual.getWorkRVU());
+
+		// Frequency filter must reduce CPT aggregation counts
+		reportDefinition = new ReportDefinition()
+				.addReportToFirstListOfGroups(new SubReportDefinition("Screens", new CohortCriteria(new EncounterCriterion(breastScreeningId)
+						.setFrequency(new Frequency(2, 10, 14, TimeUnit.MONTH))
+						.includeCPTAnalysis())));
+		report = reportService.runReport(reportDefinition);
+		groups = report.getGroups();
+		assertEquals(1, groups.size());
+		screensReport = groups.get(0);
+		assertEquals("Screens", screensReport.getName());
+		cptTotals = screensReport.getCptTotals();
+		assertNotNull(cptTotals);
+		assertEquals(1, cptTotals.size());
+		actual = cptTotals.get(screeningDummyCPT);
+		assertNotNull(actual);
+		assertEquals(6, actual.getCount());
+		// TODO: fix rounding
+		assertEquals(new Float(18.900002), actual.getWorkRVU());
 	}
 
 	private List<String> toSortedPatientIdList(Page<Patient> patients) {
@@ -292,6 +320,55 @@ public class IntegrationTest {
 	@After
 	public void clearIndexes() {
 		patientRepository.deleteAll();
+	}
+
+	// Method for manual hacking/testing against a local instance
+	public static void main(String[] args) {
+		ElasticsearchRestTemplate restTemplate = new ElasticsearchRestTemplate(new RestHighLevelClient(RestClient.builder(new HttpHost("localhost", 9200))));
+		Set<Long> includeConcepts = new HashSet<>();
+		includeConcepts.add(384151000119104L);
+		Map<String, Object> params = new HashMap<>();
+		params.put("includeConcepts", includeConcepts);
+		NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder()
+				.withQuery(termQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, "384151000119104"))
+				.addAggregation(
+					AggregationBuilders.scriptedMetric("encounterConceptCounts")
+							.initScript(new Script("state.concepts = new HashMap()"))
+							.mapScript(new Script(ScriptType.INLINE, "painless",
+									"for (int i = 0; i < doc['encounters.conceptId'].length; i++) {" +
+									"	Map concepts = state.concepts;" +
+									"	Long conceptIdLong = doc['encounters.conceptId'][i];" +
+									"	if (params.includeConcepts.contains(conceptIdLong)) {" +
+									"		String conceptId = conceptIdLong.toString();" +
+									"		if (concepts.containsKey(conceptId)) {" +
+									"			long count = concepts.get(conceptId).longValue() + 1L;" +
+									"			concepts.put(conceptId, count);" +
+									"		} else {" +
+									"			concepts.put(conceptId, 1L);" +
+									"		}" +
+									"	}" +
+									"}", params))
+							.combineScript(new Script("return state;"))
+							.reduceScript(new Script("Map allConcepts = new HashMap();" +
+									"for (state in states) {" +
+									"	if (state.concepts != null) {" +
+									"		for (conceptId in state.concepts.keySet()) {" +
+									"			if (allConcepts.containsKey(conceptId)) {" +
+									"				long count = allConcepts.get(conceptId) + state.concepts.get(conceptId);" +
+									"				allConcepts.put(conceptId, count);" +
+									"			} else {" +
+									"				allConcepts.put(conceptId, state.concepts.get(conceptId));" +
+									"			}" +
+									"		}" +
+									"	}" +
+									"}" +
+									"return allConcepts;")));
+		AggregatedPage<Patient> patients = restTemplate.queryForPage(nativeSearchQueryBuilder.build(), Patient.class);
+		AggregatedPage<Patient> aggregatedPage = (AggregatedPage<Patient>) patients;
+		ParsedScriptedMetric encounterConceptCounts = (ParsedScriptedMetric) aggregatedPage.getAggregation("encounterConceptCounts");
+		@SuppressWarnings("unchecked")
+		Map<String, Long> conceptCounts = (Map<String, Long>) encounterConceptCounts.aggregation();
+		System.out.println(conceptCounts);
 	}
 
 }

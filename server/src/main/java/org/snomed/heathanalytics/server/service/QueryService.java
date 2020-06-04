@@ -7,9 +7,7 @@ import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.bucket.terms.IncludeExclude;
-import org.elasticsearch.search.aggregations.bucket.terms.ParsedLongTerms;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.metrics.scripted.ParsedScriptedMetric;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,47 +89,81 @@ public class QueryService {
 		}
 
 		BoolQueryBuilder patientEncounterFilter = getPatientEncounterFilter(encounterCriteria, eclToConceptsMap);
+		patientQuery.filter(patientEncounterFilter);
 
 		Map<Long, TermHolder> conceptTerms = new Long2ObjectOpenHashMap<>();
 		PageRequest pageable = PageRequest.of(page, size);
 		NativeSearchQueryBuilder patientElasticQuery = new NativeSearchQueryBuilder()
 				.withQuery(patientQuery)
-				.withFilter(patientEncounterFilter)
 				.withPageable(pageable);
 
 		List<EncounterCriterion> encounterCriteriaWithCPTAnalysis = encounterCriteria.stream().filter(EncounterCriterion::isIncludeCPTAnalysis).collect(Collectors.toList());
 		if (!encounterCriteriaWithCPTAnalysis.isEmpty()) {
-			Set<Long> allConcepts = new HashSet<>();
+			Set<Long> includeConcepts = new HashSet<>();
 			for (EncounterCriterion criterion : encounterCriteriaWithCPTAnalysis) {
 				List<Long> concepts = eclToConceptsMap.get(criterion.getConceptECL());
-				allConcepts.addAll(concepts);
+				includeConcepts.addAll(concepts);
 			}
-			long[] conceptsToInclude = new long[allConcepts.size()];
-			int a = 0;
-			for (Long conceptId : allConcepts) {
-				conceptsToInclude[a] = conceptId;
-				a++;
-			}
+			Map<String, Object> params = new HashMap<>();
+			params.put("includeConcepts", includeConcepts);
 			patientElasticQuery.addAggregation(
-					AggregationBuilders.terms("encounterConceptCounts")
-							.field(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID)
-							.includeExclude(new IncludeExclude(conceptsToInclude, new long[] {})));
+					AggregationBuilders.scriptedMetric("encounterConceptCounts")
+							.initScript(new Script(ScriptType.INLINE, "painless",
+									"state.concepts = new HashMap();" +
+									// Force elements of includeConcepts set to be of type Long.
+									// Elasticsearch converts number params to the smallest number type which we don't want.
+									"Set forceLongSet = new HashSet();" +
+									"for (int l = 0; l < params.includeConcepts.size(); l++) {" +
+									"	forceLongSet.add((Long) params.includeConcepts.get(l));" +
+									"}" +
+									"state.includeConcepts = forceLongSet;", params))
+							.mapScript(new Script(
+									"Map concepts = state.concepts;" +
+									"for (int i = 0; i < doc['encounters.conceptId'].length; i++) {" +
+									"	Long conceptIdLong = doc['encounters.conceptId'][i];" +
+									"	if (state.includeConcepts.contains(conceptIdLong)) {" +
+									"		String conceptId = conceptIdLong.toString();" +
+									"		if (concepts.containsKey(conceptId)) {" +
+									"			long count = concepts.get(conceptId).longValue() + 1L;" +
+									"			concepts.put(conceptId, count);" +
+									"		} else {" +
+									"			concepts.put(conceptId, 1L);" +
+									"		}" +
+									"	}" +
+									"}"))
+							.combineScript(new Script("return state;"))
+							.reduceScript(new Script(
+									"Map allConcepts = new HashMap();" +
+									"for (state in states) {" +
+									"	if (state != null && state.concepts != null) {" +
+									"		for (conceptId in state.concepts.keySet()) {" +
+									"			if (allConcepts.containsKey(conceptId)) {" +
+									"				long count = allConcepts.get(conceptId) + state.concepts.get(conceptId);" +
+									"				allConcepts.put(conceptId, count);" +
+									"			} else {" +
+									"				allConcepts.put(conceptId, state.concepts.get(conceptId));" +
+									"			}" +
+									"		}" +
+									"	}" +
+									"}" +
+									"return allConcepts;")));
 		}
 
 		// Grab page of Patients from Elasticsearch.
 		Page<Patient> patients = elasticsearchTemplate.queryForPage(patientElasticQuery.build(), Patient.class);
 		timer.split("Fetching patients");
 		if (!encounterCriteriaWithCPTAnalysis.isEmpty()) {
+
 			AggregatedPage<Patient> aggregatedPage = (AggregatedPage<Patient>) patients;
-			ParsedLongTerms encounterConceptCounts = (ParsedLongTerms) aggregatedPage.getAggregation("encounterConceptCounts");
-			List<? extends Terms.Bucket> buckets = encounterConceptCounts.getBuckets();
+			ParsedScriptedMetric encounterConceptCounts = (ParsedScriptedMetric) aggregatedPage.getAggregation("encounterConceptCounts");
+			@SuppressWarnings("unchecked")
+			Map<String, Integer> conceptCounts = (Map<String, Integer>) encounterConceptCounts.aggregation();
 			Map<String, CPTCode> snomedToCptMap = cptService.getSnomedToCptMap();
 			Map<String, CPTTotals> cptTotalsMap = new HashMap<>();
-			for (Terms.Bucket bucket : buckets) {
-				String conceptId = bucket.getKeyAsString();
+			for (String conceptId : conceptCounts.keySet()) {
 				CPTCode cptCode = snomedToCptMap.get(conceptId);
 				if (cptCode != null) {
-					cptTotalsMap.computeIfAbsent(cptCode.getCptCode(), (c) -> new CPTTotals(cptCode)).addCount(bucket.getDocCount());
+					cptTotalsMap.computeIfAbsent(cptCode.getCptCode(), (c) -> new CPTTotals(cptCode)).addCount(conceptCounts.get(conceptId));
 				}
 			}
 			patients = new PatientPageWithCPTTotals(patients.getContent(), pageable, patients.getTotalElements(), cptTotalsMap);

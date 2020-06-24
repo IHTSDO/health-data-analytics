@@ -117,6 +117,7 @@ public class DemoPatientDataGenerator {
 			scenarioBrcaTamoxifen(patient, age, healthRecordDate);
 			scenarioDiabSmokeFootAmp(patient, age, healthRecordDate);
 			scenarioLymphAnthCHF(patient, age, healthRecordDate);
+			scenarioCOVID19(patient, age, healthRecordDate);
 		}
 		return patient;
 	}
@@ -321,6 +322,7 @@ public class DemoPatientDataGenerator {
 	}
 
 	// This scenario is not used at the moment.
+
 	@SuppressWarnings("unused")
 	private void scenarioAfibPepticUcler(Patient patient, int age, GregorianCalendar date) throws ServiceException {
 		//
@@ -412,7 +414,6 @@ public class DemoPatientDataGenerator {
 			}
 		}
 	}
-
 	private void scenarioPulmEmbGIBleed(Patient patient, int age, GregorianCalendar date) throws ServiceException {
 		//
 		// Begin section Pulm Embolus and GI Ulcer ------------------------
@@ -648,6 +649,152 @@ public class DemoPatientDataGenerator {
 			// 1% of the non-diabetic patients have Peripheral Neuropathy.
 			if (chancePercent(1)) {
 				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("302226006")));// Peripheral Neuropathy
+			}
+		}
+	}
+
+	private void scenarioCOVID19(Patient patient, int age, GregorianCalendar date) throws ServiceException {
+		// Exclusively assign patient to one of 8 sub scenarios
+		int group = new Random().nextInt(10);
+
+		// 40% of all patients get into scenario
+		if(age > 15 && chancePercent(40.0f)) {
+
+			if (group == 0) {
+				// covid detected, nothing happens
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("1240581000000104")));// covid detected
+			}
+
+			if (group == 1) {
+				// covid detected, get disease
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("1240581000000104")));// covid detected
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("840539006")));// covid disease
+
+				if (chancePercent(2.0f)) {
+					// covid pneumonia
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("882784691000119100")));// COVID-19 pneumonia
+					if (chancePercent(10.0f)) {
+						// dead
+						patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("419099009")));// 419099009 | Dead (finding) |
+					}
+				}
+			}
+
+			if (group == 2){
+				// covid detected, get disease and obesity
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("1240581000000104")));// covid detected
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("840539006")));// covid disease
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("414916001")));// 414916001 | Obesity (disorder) |
+
+				if (chancePercent(20.0f)) {
+					// covid pneumonia
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("882784691000119100")));// COVID-19 pneumonia
+					if(chancePercent(20.0f)) {
+						// dead
+						patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("419099009")));// 419099009 | Dead (finding) |
+					}
+				}
+			}
+
+			if (group == 3) {
+				// covid detected, get disease and Diabetes
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("1240581000000104")));// covid detected
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("840539006")));// covid disease
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("73211009")));// 73211009 | Diabetes mellitus (disorder) |
+
+				if(chancePercent(25.0f)) {
+					// covid pneumonia
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("882784691000119100")));// COVID-19 pneumonia
+					if(chancePercent(25.0f)) {
+						// dead
+						patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("419099009")));// 419099009 | Dead (finding) |
+					}
+				}
+			}
+
+			if (group == 4) {
+				// covid detected, get disease and Hypertension
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("1240581000000104")));// covid detected
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("840539006")));// covid disease
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("38341003")));// 38341003 | Hypertensive disorder, systemic arterial (disorder) |
+			}
+
+			if (group == 5) {
+				// covid pneumonia
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("882784691000119100")));// COVID-19 pneumonia
+				if (chancePercent(18.0f)) {
+					// dead
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("419099009")));// 419099009 | Dead (finding) |
+				}
+			}
+
+			if (group == 6){
+				// covid detected, get disease and obesity and Diabetes
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("1240581000000104")));// covid detected
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("840539006")));// covid disease
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("414916001")));// 414916001 | Obesity (disorder) |
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("73211009")));// 73211009 | Diabetes mellitus (disorder) |
+
+				if (chancePercent(32.0f)) {
+					// covid pneumonia
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("882784691000119100")));// COVID-19 pneumonia
+					if (chancePercent(32.0f)) {
+						// dead
+						patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("419099009")));// 419099009 | Dead (finding) |
+					}
+				}
+			}
+
+			if (group == 7) {
+				// covid detected, get disease and obesity and Hypertension
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("1240581000000104")));// covid detected
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("840539006")));// covid disease
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("414916001")));// 414916001 | Obesity (disorder) |
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("38341003")));// 38341003 | Hypertensive disorder, systemic arterial (disorder) |
+
+				if (chancePercent(28.0f)) {
+					// covid pneumonia
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("882784691000119100")));// COVID-19 pneumonia
+					if (chancePercent(28.0f)) {
+						// dead
+						patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("419099009")));// 419099009 | Dead (finding) |
+					}
+				}
+			}
+
+			if (group == 8) {
+				// covid detected, get disease and Diabetes and Hypertension
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("1240581000000104")));// covid detected
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("840539006")));// covid disease
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("73211009")));// 73211009 | Diabetes mellitus (disorder) |
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("38341003")));// 38341003 | Hypertensive disorder, systemic arterial (disorder) |
+
+				if (chancePercent(25.0f)) {
+					// covid pneumonia
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("882784691000119100")));// COVID-19 pneumonia
+					if (chancePercent(25.0f)) {
+						// dead
+						patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("419099009")));// 419099009 | Dead (finding) |
+					}
+				}
+			}
+
+			if (group == 9) {
+				// covid detected, get disease and obesity and Diabetes and Hypertension
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("1240581000000104")));// covid detected
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("840539006")));// covid disease
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("414916001")));// 414916001 | Obesity (disorder) |
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("73211009")));// 73211009 | Diabetes mellitus (disorder) |
+				patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("38341003")));// 38341003 | Hypertensive disorder, systemic arterial (disorder) |
+
+				if (chancePercent(48.0f)) {
+					// covid pneumonia
+					patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("882784691000119100")));// COVID-19 pneumonia
+					if (chancePercent(48.0f)) {
+						// dead
+						patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("419099009")));// 419099009 | Dead (finding) |
+					}
+				}
 			}
 		}
 	}

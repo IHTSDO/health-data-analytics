@@ -221,8 +221,8 @@ public class QueryService {
 						&& frequency.getMinTimeBetween() > frequency.getMaxTimeBetween()) {
 					throw new IllegalArgumentException(format("EncounterCriterion[%s].frequency.minTimeBetween must be less than maxTimeBetween.", i));
 				}
-				if (frequency.getTimeUnit() == null) {
-					throw new IllegalArgumentException(format("EncounterCriterion[%s].frequency.timeUnit is required.", i));
+				if (frequency.getTimeUnit() == null && (frequency.getMinTimeBetween() != null || frequency.getMaxTimeBetween() != null)) {
+					throw new IllegalArgumentException(format("EncounterCriterion[%s].frequency.timeUnit is required when minTimeBetween or maxTimeBetween is set.", i));
 				}
 			}
 		}
@@ -281,7 +281,7 @@ public class QueryService {
 					frequencyMap.put("minTimeBetween", frequency.getMinTimeBetween());
 					frequencyMap.put("maxTimeBetween", frequency.getMaxTimeBetween());
 					frequencyMap.put("timeUnit", frequency.getTimeUnit());
-					frequencyMap.put("timeUnitMillis", frequency.getTimeUnit().getMilliseconds());
+					frequencyMap.put("timeUnitMillis", frequency.getTimeUnit() != null ? frequency.getTimeUnit().getMilliseconds() : 0);
 					criterionMap.put("frequency", frequencyMap);
 				}
 				return criterionMap;

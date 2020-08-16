@@ -300,14 +300,14 @@ public class QueryService {
 			 */
 			patientFilter.filter(scriptQuery(new Script(ScriptType.INLINE, "painless", "" +
 					// Util method
-					"long getRelativeDate(Long baseDate, Integer days, int multiplier, def params) {" +
+					"long getRelativeDate(long baseDate, Integer days, int multiplier, def params) {" +
 					"	if (days != null) {" +
 					"		def daysInt = days.intValue();" +
 					"		if (daysInt == -1) {" + // -1 days means unlimited time
 					"			daysInt = 365 * 200;" + // 200 years seems enough
 					"		}" +
 					"		long plusTime = ((long)daysInt * multiplier) * ((long)params.dayInMillis);" +
-					"		return (long) baseDate.longValue() + plusTime;" +
+					"		return (long) baseDate + plusTime;" +
 					"	}" +
 					"	return 0;" +
 					"}" +
@@ -325,37 +325,37 @@ public class QueryService {
 						// Find all encounters for this patient with a matching conceptId
 					"	List dates = new ArrayList();" +
 					"	for (int o = 0; o < doc['encounters.conceptId'].length; o++) {" +
-					"		Long otherEncounterConceptId = doc['encounters.conceptId'][o];" +
-					"		Long otherEncounterDate = doc['encounters.dateLong'][o];" +
+					"		String conceptDateString = doc['encounters.conceptDate.keyword'][o];" +
+					"		int commaIndex = conceptDateString.indexOf(',');" +
+					"		long otherEncounterConceptId = Long.parseLong(conceptDateString.substring(0, commaIndex));" +
+					"		long otherEncounterDate = Long.parseLong(conceptDateString.substring(commaIndex + 1));" +
 					"		if (criterionConceptIds.contains(otherEncounterConceptId)) {" +
 					"			dates.add(otherEncounterDate);" +
 					"		}" +
 					"	}" +
 					"" +
-					"	if (minTimeBetween == null && maxTimeBetween == null) {" +
-					"		if (minRepetitions != null) {" +
-								// No time constraints, just check repetition count
-//					"			Debug.explain('Size check only');" +
-					"			return dates.size().intValue() >= minRepetitions.intValue();" +
-					"		} else {" +
-					"			return true;" +
-					"		}" +
-					"	}" +
-					"	if (dates.size() <= 1) {" +
+					"	if (dates.size().intValue() < minRepetitions.intValue()) {" +
+							// Not enough matching encounters
 					"		return false;" +
+					"	}" +
+					"	if (minTimeBetween == null && maxTimeBetween == null) {" +
+							// Enough matching encounters and no time constraints
+					"		return true;" +
 					"	}" +
 					"" +
 						// Apply frequency time constraints
-					"	long relativeEncounterTime = dates.remove(0).longValue();" +
+					"	dates.sort(null);" +
+					"	long relativeEncounterTime = dates.remove(0);" +
 					"	int repetitionsFound = 1;" +
 					"	for (int o = 0; 0 < dates.size(); o++) {" +
-					"		long nextEncounterTime = dates.get(o).longValue();" +
+					"		long nextEncounterTime = dates.get(o);" +
 					"		if (minTimeBetween != null) {" +
 					"			long minTime = relativeEncounterTime + (minTimeBetween.intValue() * timeUnitMillis);" +
 					"			if (nextEncounterTime < minTime) {" +
 //					"				Debug.explain('nextEncounterTime < minTime, nextEncounterTime:' + nextEncounterTime + ', minTime:' + minTime);" +
 					"				return false;" +
 					"			}" +
+//					"			Debug.explain('nextEncounterTime >= minTime, relativeEncounterTime:' + relativeEncounterTime + ', nextEncounterTime:' + nextEncounterTime + ', minTime:' + minTime);" +
 					"		}" +
 					"		if (maxTimeBetween != null) {" +
 					"			long maxTime = relativeEncounterTime + (maxTimeBetween.intValue() * timeUnitMillis);" +
@@ -383,17 +383,17 @@ public class QueryService {
 					"}\n" +
 
 					"boolean match = false;" +
-					"Long baseEncounterDate = null;" +
+					"long baseEncounterDate = 0;" +
 					// Iterate each criterion to validate the encounters for this patient document
 					"for (int e = 0; e < criterionMapsList.length; e++) {" +
 
 					"	def criterionMap = criterionMapsList.get(e);" +
-//					"	Debug.explain('Here ' + e + ', criterionMap:' + criterionMap);" +
+//					"	Debug.explain('criterionMapsList:' + criterionMapsList);" +
 					"	List criterionConceptIds = params.eclToConceptsMap.get(criterionMap.get('conceptECL'));" +
-						// Force elements of criterionConceptIds to be Long. Elasticsearch converts number params to the smallest number type which we don't want.
+						// Force elements of criterionConceptIds to be long. Elasticsearch converts number params to the smallest number type which we don't want.
 					"	List forceLongList = new ArrayList();" +
 					"	for (int l = 0; l < criterionConceptIds.size(); l++) {" +
-					"		forceLongList.add((Long) criterionConceptIds.get(l));" +
+					"		forceLongList.add(((Long) criterionConceptIds.get(l)).longValue());" +
 					"	}" +
 					"	criterionConceptIds = forceLongList;" +
 					"" +
@@ -402,8 +402,9 @@ public class QueryService {
 					"	long maxEncounterDate = 0;" +
 					"	Integer daysBeforePrevious = criterionMap.get('withinDaysBeforePreviouslyMatchedEncounter');" +
 					"	Integer daysAfterPrevious = criterionMap.get('withinDaysAfterPreviouslyMatchedEncounter');" +
+//					"	Debug.explain('daysBeforePrevious:' + daysBeforePrevious + ', daysAfterPrevious:' + daysAfterPrevious);" +
 
-					"	if (baseEncounterDate != null && (daysBeforePrevious != null || daysAfterPrevious != null)) {" +
+					"	if (baseEncounterDate != 0 && (daysBeforePrevious != null || daysAfterPrevious != null)) {" +
 					"		minEncounterDate = getRelativeDate(baseEncounterDate, daysBeforePrevious, -1, params);" +
 					"		maxEncounterDate = getRelativeDate(baseEncounterDate, daysAfterPrevious, 1, params);" +
 //					"		Debug.explain('baseEncounterDate:' + baseEncounterDate + ', daysBeforePrevious:' + daysBeforePrevious + ', minEncounterDate:' + minEncounterDate + " +
@@ -414,22 +415,24 @@ public class QueryService {
 						// Iterate patient's encounters
 					"	boolean encounterMatchFound = false;" +
 					"	for (int i = 0; encounterMatchFound == false && i < doc['encounters.conceptId'].length; i++) {" +
-					"		Long encounterConceptId = doc['encounters.conceptId'][i];" +
-					"		Long encounterDate = doc['encounters.dateLong'][i];" +
+					"		String conceptDateString = doc['encounters.conceptDate.keyword'][i];" +
+					"		int commaIndex = conceptDateString.indexOf(',');" +
+					"		long encounterConceptId = Long.parseLong(conceptDateString.substring(0, commaIndex));" +
+					"		long encounterDate = Long.parseLong(conceptDateString.substring(commaIndex + 1));" +
 					"		if (criterionConceptIds.contains(encounterConceptId)) {" +
-
-					"			if ((minEncounterDate == 0 || encounterDate.longValue() >= minEncounterDate)" +
-					"					&& (maxEncounterDate == 0 || encounterDate.longValue() <= maxEncounterDate)) {" +
+					"			if ((minEncounterDate == 0 || encounterDate >= minEncounterDate)" +
+					"					&& (maxEncounterDate == 0 || encounterDate <= maxEncounterDate)) {" +
 
 					"				if (!criterionMap.get('has')) {" +
 										// Criterion clauses match but criterion is negated
-					"					Debug.explain('Criterion clauses match but criterion is negated e:' + e + ', baseEncounterDate:' + baseEncounterDate);" +
+//					"					Debug.explain('Criterion clauses match but criterion is negated e:' + e + ', baseEncounterDate:' + baseEncounterDate);" +// TODO remove
 					"					return false;" +
 					"				}" +
 					"" +
 									// This encounter matches so far, frequency check next
 					"				boolean frequencyMatch = frequencyMatch(doc, criterionMap, criterionConceptIds);" +
 					"				if (frequencyMatch == false) {" +
+//					"					Debug.explain('frequencyMatch: false');"
 					"					return false;" +
 					"				}" +
 
@@ -442,6 +445,7 @@ public class QueryService {
 					"" +
 					"	if (encounterMatchFound == false && criterionMap.get('has')) {" +
 							// If we got to this point none of the encounters matched the current criterion clauses.
+//					"		Debug.explain('encounterMatchFound: false');"
 					"		return false;" +
 					"	}" +
 					"}" +

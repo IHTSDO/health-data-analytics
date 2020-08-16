@@ -19,6 +19,9 @@ public class ClinicalEncounter {
 	@Field(type = FieldType.Keyword)
 	private Long conceptId;
 
+	@Field(type = FieldType.Keyword)
+	private String conceptDate;
+
 	@Transient
 	private TermHolder conceptTerm;
 
@@ -66,6 +69,11 @@ public class ClinicalEncounter {
 
 	public void setConceptId(Long conceptId) {
 		this.conceptId = conceptId;
+	}
+
+	@JsonView({View.API.class, View.Elasticsearch.class})
+	public String getConceptDate() {
+		return conceptId + "," + dateLong;
 	}
 
 	@JsonView(View.API.class)

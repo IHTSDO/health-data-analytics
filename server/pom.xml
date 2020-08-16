@@ -28,9 +28,9 @@
 			<artifactId>snomed-query-service</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.ihtsdo.otf</groupId>
+			<groupId>org.snomed.otf</groupId>
 			<artifactId>snomed-boot</artifactId>
-			<version>1.1.0</version>
+			<version>2.2.0</version>
 			<exclusions>
 				<exclusion>
 					<groupId>com.google.collections</groupId>

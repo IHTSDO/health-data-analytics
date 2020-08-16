@@ -5,14 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.MatchAllQueryBuilder;
 import org.ihtsdo.otf.snomedboot.ReleaseImportException;
 import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
 import org.ihtsdo.otf.sqs.service.ReleaseImportManager;
 import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.server.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.server.ingestion.localdisk.LocalFileNDJsonIngestionSource;
 import org.snomed.heathanalytics.server.ingestion.localdisk.LocalFileNDJsonIngestionSourceConfiguration;
@@ -25,7 +23,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
-import org.springframework.data.elasticsearch.core.query.DeleteQuery;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.spi.DocumentationType;
@@ -111,15 +108,8 @@ public class Application implements ApplicationRunner {
 	}
 
 	private void importPopulation(File populationNDJSONDirectory) throws IOException {
-		deleteExistingPatientData();
 		logger.info("******** Importing patent data from {} ...", populationNDJSONDirectory.getPath());
 		new LocalFileNDJsonIngestionSource(objectMapper()).stream(new LocalFileNDJsonIngestionSourceConfiguration(populationNDJSONDirectory), elasticOutputStream);
-	}
-
-	private void deleteExistingPatientData() {
-		DeleteQuery deleteQuery = new DeleteQuery();
-		deleteQuery.setQuery(new MatchAllQueryBuilder());
-		elasticsearchTemplate.delete(deleteQuery, Patient.class);
 	}
 
 	@Bean

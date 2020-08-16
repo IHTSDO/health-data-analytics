@@ -88,6 +88,12 @@ java -Xms3g -jar server/target/server*.jar --import-population='patient-data-for
 ```
 The program will exit when all patient data has been consumed.
 
+Running the import again will add to the existing data. 
+To delete existing patient data make an HTTP delete request to the Elasticsearch patient index before starting the import:
+```
+curl -XDELETE localhost:9200/patient
+```
+
 #### CPT Codes
 If CPT codes are loaded cost information can be provided for the procedures within the records of a selected cohort of patients.
 Within the application directory create a directory named `cpt-codes` containing the files `cpt-codes.txt` and `snomed-cpt-map.txt`.

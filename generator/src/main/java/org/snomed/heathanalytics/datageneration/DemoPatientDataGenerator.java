@@ -10,6 +10,7 @@ import org.snomed.heathanalytics.model.Gender;
 import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.model.View;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.util.Pair;
 
 import java.io.File;
 import java.io.IOException;
@@ -130,17 +131,18 @@ public class DemoPatientDataGenerator {
 		// Scenario for 5 years of history
 		GregorianCalendar date = new GregorianCalendar();
 		date.add(Calendar.YEAR, -5);
+		date.add(Calendar.MONTH, 3);
 
 		if (patient.getGender() == Gender.FEMALE && age > 30) {
 			Calendar today = new GregorianCalendar();
 
-			float screens, chanceOfAbnormalScreening, chanceOfAbnormalDiagnostic, chanceOfPositiveBiopsy, chanceOfStage1, chanceOfStage2, baseScreeningGap;
+			float totalScreens, chanceOfAbnormalScreening, chanceOfAbnormalDiagnostic, chanceOfPositiveBiopsy, chanceOfStage1, chanceOfStage2, baseScreeningGap;
 			String route;
 
 			// 53% of total are screened Annually
 			if (chancePercent(53f)) {
 				route = "ama.annual";
-				screens = 5;// once a year for 5 years
+				totalScreens = 5;// once a year for 5 years
 				chanceOfAbnormalScreening = 6.5f;
 				chanceOfAbnormalDiagnostic = 3.2f;
 				chanceOfPositiveBiopsy = 17;
@@ -149,7 +151,7 @@ public class DemoPatientDataGenerator {
 				baseScreeningGap = 365;
 			} else if (chancePercentOfRemaining(27f, 100 - 53)) {
 				route = "ama.biennial";
-				screens = 3;// 3 fit in 5 years
+				totalScreens = 3;// 3 fit in 5 years
 				chanceOfAbnormalScreening = 6.5f;
 				chanceOfAbnormalDiagnostic = 2.4f;
 				chanceOfPositiveBiopsy = 22;
@@ -163,14 +165,13 @@ public class DemoPatientDataGenerator {
 			counters.inc(route);
 
 			// Repeat screening until today
-			boolean firstScreenRound = true;
-			while (date.before(today)) {
-
+			int screensComplete = 0;
+			while (screensComplete < totalScreens && date.before(today)) {
 				// 384151000119104 | Screening mammography of bilateral breasts (procedure) |
 				patient.addEncounter(new ClinicalEncounter(date.getTime(), 384151000119104L));
 
 				// Selection requires at least two screens so don't allow abnormal screening on first round.
-				if (!firstScreenRound && chancePercent(chanceOfAbnormalScreening / (screens - 1))) {
+				if (screensComplete > 0 && chancePercent(chanceOfAbnormalScreening / (totalScreens - 1), route + ".abnormalScreen")) {
 					// Abnormal screening:
 					// 171176006 | Breast neoplasm screening abnormal (finding) |
 					patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("171176006")));
@@ -180,7 +181,7 @@ public class DemoPatientDataGenerator {
 					date.add(Calendar.DAY_OF_YEAR, 5);
 					patient.addEncounter(new ClinicalEncounter(date.getTime(), 566571000119105L));
 
-					if (chancePercent(chanceOfAbnormalDiagnostic)) {
+					if (chancePercent(chanceOfAbnormalDiagnostic, route + ".abnormalDiagnostic")) {
 						// Abnormal diagnostic:
 						// 274530001 | Abnormal findings on diagnostic imaging of breast (finding) |
 						patient.addEncounter(new ClinicalEncounter(date.getTime(), concepts.selectRandomChildOf("274530001")));
@@ -189,18 +190,18 @@ public class DemoPatientDataGenerator {
 						// 122548005 | Biopsy of breast (procedure) |
 						patient.addEncounter(new ClinicalEncounter(date.getTime(), 122548005L));
 
-						if (chancePercent(chanceOfPositiveBiopsy)) {
+						if (chancePercent(chanceOfPositiveBiopsy, route + ".positiveBiopsy")) {
 							// Positive biopsy
 							// 165325009 | Biopsy result abnormal (finding) |
 							patient.addEncounter(new ClinicalEncounter(date.getTime(), 165325009L));
 
-							if (chancePercent(chanceOfStage1)) {
+							if (chancePercent(chanceOfStage1, route + ".stage1")) {
 								// Stage 1
 								// 422399001 | Infiltrating ductal carcinoma of breast, stage 1 (finding) |
 								patient.addEncounter(new ClinicalEncounter(date.getTime(), 422399001L));
 								counters.inc(route + ".stage1");
 							} else {
-								if (chancePercentOfRemaining(chanceOfStage2, 100 - chanceOfStage1)) {
+								if (chancePercentOfRemaining(chanceOfStage2, 100 - chanceOfStage1, route + ".stage2")) {
 									// Stage 2
 									// 422479008 | Infiltrating ductal carcinoma of breast, stage 2 (finding) |
 									patient.addEncounter(new ClinicalEncounter(date.getTime(), 422479008L));
@@ -219,7 +220,7 @@ public class DemoPatientDataGenerator {
 
 				// Move record date on by screening gap +/- 0-30 days.
 				date.add(Calendar.DAY_OF_YEAR, (int) Math.round(baseScreeningGap + ((Math.random() * 60) - 30)));
-				firstScreenRound = false;
+				screensComplete++;
 			}
 		}
 	}
@@ -784,16 +785,73 @@ public class DemoPatientDataGenerator {
 	}
 
 	private boolean chancePercentOfRemaining(float probabilityPercent, float ofRemainingPercentage) {
+		return chancePercentOfRemaining(probabilityPercent, ofRemainingPercentage, null);
+	}
+
+	private boolean chancePercentOfRemaining(float probabilityPercent, float ofRemainingPercentage, String gateId) {
 		// e.g. 25% chance if only 75% remaining = 33.3% chance
-		return chancePercent(probabilityPercent * (100f / ofRemainingPercentage));
+		return chancePercent(probabilityPercent * (100f / ofRemainingPercentage), gateId);
 	}
 
 	private boolean chancePercent(float probabilityPercentage) {
-		return chance(probabilityPercentage / 100);
+		return chance(probabilityPercentage / 100, null);
 	}
 
-	private boolean chance(float probabilityFraction) {
-		return probabilityFraction >= Math.random();
+	private boolean chancePercent(float probabilityPercentage, String gateId) {
+		return chance(probabilityPercentage / 100, gateId);
+	}
+
+	private final Map<String, Pair<AtomicInteger, AtomicInteger>> chanceResultsSoFar = new HashMap<>();
+
+	private boolean chance(float probabilityFraction, String gateId) {
+		AtomicInteger hits = null;
+		if (gateId != null) {
+			Pair<AtomicInteger, AtomicInteger> totalAndHitPair = chanceResultsSoFar.computeIfAbsent(gateId, (id) -> Pair.of(new AtomicInteger(), new AtomicInteger()));
+			AtomicInteger total = totalAndHitPair.getFirst();
+			hits = totalAndHitPair.getSecond();
+			if (total.get() > 5) {
+				int desiredResult = Math.round(total.get() * probabilityFraction);
+				float diffAllowance = 0.05f;
+				if (hits.get() > desiredResult) {
+					probabilityFraction = probabilityFraction * 0.1f;
+					if (hits.get() >= desiredResult * (1 + diffAllowance)) {
+						probabilityFraction = 0f;
+						if (gateId.contains("stage")) {
+							System.out.println(String.format("%s -  expected:%s, hits:%s", gateId, desiredResult, hits.get()));
+						}
+					} else {
+						if (gateId.contains("stage")) {
+							System.out.println(String.format("%s -- expected:%s, hits:%s", gateId, desiredResult, hits.get()));
+						}
+					}
+				} else if (hits.get() < desiredResult) {
+					probabilityFraction = probabilityFraction * 10f;
+					if (hits.get() < desiredResult * (1 - diffAllowance)) {
+						probabilityFraction = 1f;
+						if (gateId.contains("stage")) {
+							System.out.println(String.format("%s ++ expected:%s, hits:%s", gateId, desiredResult, hits.get()));
+						}
+					} else {
+						if (gateId.contains("stage")) {
+							System.out.println(String.format("%s +  expected:%s, hits:%s", gateId, desiredResult, hits.get()));
+						}
+					}
+				}
+//				if (gateId.contains("annual") && (gateId.contains("stage") || gateId.contains("positiveBiopsy"))) {
+//				if (gateId.contains("annual")) {
+//					System.out.println(String.format("%s total:%s, expected:%s, hits:%s, prob:%s", gateId, total, desiredResult, hits.get(), probabilityFraction));
+//				}
+			}
+			total.incrementAndGet();
+		}
+		if (probabilityFraction >= Math.random()) {
+			if (hits != null) {
+				hits.incrementAndGet();
+			}
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 }

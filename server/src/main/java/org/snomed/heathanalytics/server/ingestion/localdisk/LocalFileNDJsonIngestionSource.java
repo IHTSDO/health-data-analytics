@@ -19,8 +19,6 @@ import java.util.*;
 
 public class LocalFileNDJsonIngestionSource implements HealthDataIngestionSource {
 
-	private static final int ES_WRITE_BATCH_SIZE = 1_000;
-
 	private final ObjectMapper objectMapper;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());

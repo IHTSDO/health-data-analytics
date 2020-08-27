@@ -8,6 +8,7 @@ import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Document(indexName = "patient")
@@ -120,7 +121,7 @@ public class Patient {
 		return "Patient{" +
 				"roleId='" + roleId + '\'' +
 				", gender=" + gender +
-				", dobLong=" + dobLong +
+				", dob=" + new SimpleDateFormat("yyyy-MM-dd").format(new Date(dobLong)) +
 				", encounters=" + encounters +
 				'}';
 	}

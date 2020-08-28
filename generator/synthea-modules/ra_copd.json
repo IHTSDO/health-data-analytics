@@ -1,0 +1,276 @@
+{
+  "name": "RA_COPD",
+  "remarks": [
+    "A blank module"
+  ],
+  "states": {
+    "Initial": {
+      "type": "Initial",
+      "distributed_transition": [
+        {
+          "transition": "RA_Onset",
+          "distribution": 0.3
+        },
+        {
+          "transition": "COPD_Onset",
+          "distribution": 0.3
+        },
+        {
+          "transition": "RA_both_ons",
+          "distribution": 0.4
+        }
+      ]
+    },
+    "Terminal": {
+      "type": "Terminal"
+    },
+    "RA_Onset": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 69896004,
+          "display": "Rheumatoid Arthritis",
+          "value_set": "http://snomed.info/sct?fhir_vs=ecl/<< 69896004"
+        }
+      ],
+      "direct_transition": "RA_Enc"
+    },
+    "COPD_Onset": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 13645005,
+          "display": "COPD",
+          "value_set": "http://snomed.info/sct?fhir_vs=ecl/<< 13645005"
+        }
+      ],
+      "direct_transition": "COPD_Enc"
+    },
+    "Bact_Pnm_Onset": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "text",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 53084003,
+          "display": "Bacterial Pneumonia",
+          "value_set": "http://snomed.info/sct?fhir_vs=ecl/<< 53084003"
+        }
+      ],
+      "direct_transition": "Bact_Pnm_Enc"
+    },
+    "RA_Enc": {
+      "type": "Encounter",
+      "encounter_class": "ambulatory",
+      "reason": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 69896004,
+          "display": "Rheumatoid Arthritis",
+          "value_set": "http://snomed.info/sct?fhir_vs=ecl/<< 69896004"
+        }
+      ],
+      "distributed_transition": [
+        {
+          "transition": "Bact_Pnm_Onset",
+          "distribution": 0.02
+        },
+        {
+          "transition": "Terminal",
+          "distribution": 0.48
+        },
+        {
+          "transition": "TNF_RA_Only_Strt",
+          "distribution": 0.5
+        }
+      ]
+    },
+    "COPD_Enc": {
+      "type": "Encounter",
+      "encounter_class": "ambulatory",
+      "reason": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 13645005,
+          "display": "COPD",
+          "value_set": "http://snomed.info/sct?fhir_vs=ecl/<< 13645005"
+        }
+      ],
+      "distributed_transition": [
+        {
+          "transition": "Bact_Pnm_Onset",
+          "distribution": 0.04
+        },
+        {
+          "transition": "Terminal",
+          "distribution": 0.96
+        }
+      ]
+    },
+    "Bact_Pnm_Enc": {
+      "type": "Encounter",
+      "encounter_class": "ambulatory",
+      "reason": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 53084003,
+          "display": "Bacterial Pneumonia",
+          "value_set": "http://snomed.info/sct?fhir_vs=ecl/<< 53084003"
+        }
+      ],
+      "direct_transition": "Terminal"
+    },
+    "TNF_RA_Only_Strt": {
+      "type": "MedicationOrder",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 416897008,
+          "display": "TNF inh Product"
+        }
+      ],
+      "direct_transition": "TNF_RA_Only_Enc"
+    },
+    "TNF_RA_Only_Enc": {
+      "type": "Encounter",
+      "encounter_class": "ambulatory",
+      "reason": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 416897008,
+          "display": "TNF inh Product"
+        }
+      ],
+      "distributed_transition": [
+        {
+          "transition": "Terminal",
+          "distribution": 0.96
+        },
+        {
+          "transition": "Bact_Pnm_Onset",
+          "distribution": 0.04
+        }
+      ]
+    },
+    "TNF_Both_Onset": {
+      "type": "MedicationOrder",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 416897008,
+          "display": "TNF inh Product"
+        }
+      ],
+      "direct_transition": "TNF_Both_Enc"
+    },
+    "TNF_Both_Enc": {
+      "type": "Encounter",
+      "encounter_class": "ambulatory",
+      "reason": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 416897008,
+          "display": "TNF inh Product"
+        }
+      ],
+      "distributed_transition": [
+        {
+          "transition": "Bact_Pnm_Onset",
+          "distribution": {
+            "attribute": "attribute",
+            "default": 0.18
+          }
+        },
+        {
+          "transition": "Terminal",
+          "distribution": 0.82
+        }
+      ]
+    },
+    "RA_both_ons": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 69896004,
+          "display": "Rheumatoid Arthritis",
+          "value_set": "http://snomed.info/sct?fhir_vs=ecl/<< 69896004"
+        }
+      ],
+      "direct_transition": "RA_both_Enc"
+    },
+    "RA_both_Enc": {
+      "type": "Encounter",
+      "encounter_class": "ambulatory",
+      "reason": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 69896004,
+          "display": "Rheumatoid Arthritis",
+          "value_set": "http://snomed.info/sct?fhir_vs=ecl/<< 69896004"
+        }
+      ],
+      "direct_transition": "COPD_both_ons"
+    },
+    "COPD_both_ons": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 13645005,
+          "display": "COPD",
+          "value_set": "http://snomed.info/sct?fhir_vs=ecl/<< 13645005"
+        }
+      ],
+      "direct_transition": "COPD_both_enc"
+    },
+    "COPD_both_enc": {
+      "type": "Encounter",
+      "encounter_class": "ambulatory",
+      "reason": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 13645005,
+          "display": "COPD",
+          "value_set": "http://snomed.info/sct?fhir_vs=ecl/<< 13645005"
+        }
+      ],
+      "distributed_transition": [
+        {
+          "transition": "Terminal",
+          "distribution": 0.51
+        },
+        {
+          "transition": "TNF_Both_Onset",
+          "distribution": 0.4
+        },
+        {
+          "transition": "Bact_Pnm_Onset",
+          "distribution": 0.09
+        }
+      ]
+    }
+  }
+}

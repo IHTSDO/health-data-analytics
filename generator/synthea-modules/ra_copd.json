@@ -32,7 +32,7 @@
         {
           "system": "SNOMED-CT",
           "code": 69896004,
-          "display": "Rheumatoid Arthritis",
+          "display": "Rheumatoid arthritis",
           "value_set": "http://snomed.info/sct?fhir_vs=ecl/<< 69896004"
         }
       ],
@@ -46,7 +46,7 @@
         {
           "system": "SNOMED-CT",
           "code": 13645005,
-          "display": "COPD",
+          "display": "Chronic obstructive lung disease",
           "value_set": "http://snomed.info/sct?fhir_vs=ecl/<< 13645005"
         }
       ],
@@ -60,7 +60,7 @@
         {
           "system": "SNOMED-CT",
           "code": 53084003,
-          "display": "Bacterial Pneumonia",
+          "display": "Bacterial pneumonia",
           "value_set": "http://snomed.info/sct?fhir_vs=ecl/<< 53084003"
         }
       ],
@@ -74,7 +74,7 @@
         {
           "system": "SNOMED-CT",
           "code": 69896004,
-          "display": "Rheumatoid Arthritis",
+          "display": "Rheumatoid arthritis",
           "value_set": "http://snomed.info/sct?fhir_vs=ecl/<< 69896004"
         }
       ],
@@ -101,7 +101,7 @@
         {
           "system": "SNOMED-CT",
           "code": 13645005,
-          "display": "COPD",
+          "display": "Chronic obstructive lung disease",
           "value_set": "http://snomed.info/sct?fhir_vs=ecl/<< 13645005"
         }
       ],
@@ -124,7 +124,7 @@
         {
           "system": "SNOMED-CT",
           "code": 53084003,
-          "display": "Bacterial Pneumonia",
+          "display": "Bacterial pneumonia",
           "value_set": "http://snomed.info/sct?fhir_vs=ecl/<< 53084003"
         }
       ],
@@ -138,7 +138,7 @@
         {
           "system": "SNOMED-CT",
           "code": 416897008,
-          "display": "TNF inh Product"
+          "display": "Tumor necrosis factor alpha inhibitor-containing product"
         }
       ],
       "direct_transition": "TNF_RA_Only_Enc"
@@ -151,7 +151,7 @@
         {
           "system": "SNOMED-CT",
           "code": 416897008,
-          "display": "TNF inh Product"
+          "display": "Tumor necrosis factor alpha inhibitor-containing product"
         }
       ],
       "distributed_transition": [
@@ -173,7 +173,7 @@
         {
           "system": "SNOMED-CT",
           "code": 416897008,
-          "display": "TNF inh Product"
+          "display": "Tumor necrosis factor alpha inhibitor-containing product"
         }
       ],
       "direct_transition": "TNF_Both_Enc"
@@ -186,7 +186,7 @@
         {
           "system": "SNOMED-CT",
           "code": 416897008,
-          "display": "TNF inh Product"
+          "display": "Tumor necrosis factor alpha inhibitor-containing product"
         }
       ],
       "distributed_transition": [
@@ -211,7 +211,7 @@
         {
           "system": "SNOMED-CT",
           "code": 69896004,
-          "display": "Rheumatoid Arthritis",
+          "display": "Rheumatoid arthritis",
           "value_set": "http://snomed.info/sct?fhir_vs=ecl/<< 69896004"
         }
       ],
@@ -225,7 +225,7 @@
         {
           "system": "SNOMED-CT",
           "code": 69896004,
-          "display": "Rheumatoid Arthritis",
+          "display": "Rheumatoid arthritis",
           "value_set": "http://snomed.info/sct?fhir_vs=ecl/<< 69896004"
         }
       ],
@@ -239,7 +239,7 @@
         {
           "system": "SNOMED-CT",
           "code": 13645005,
-          "display": "COPD",
+          "display": "Chronic obstructive lung disease",
           "value_set": "http://snomed.info/sct?fhir_vs=ecl/<< 13645005"
         }
       ],
@@ -253,7 +253,7 @@
         {
           "system": "SNOMED-CT",
           "code": 13645005,
-          "display": "COPD",
+          "display": "Chronic obstructive lung disease",
           "value_set": "http://snomed.info/sct?fhir_vs=ecl/<< 13645005"
         }
       ],

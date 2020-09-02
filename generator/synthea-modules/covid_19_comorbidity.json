@@ -1,0 +1,826 @@
+{
+  "name": "COVID-19 Comorbidity",
+  "remarks": [
+    "A blank module"
+  ],
+  "states": {
+    "Initial": {
+      "type": "Initial",
+      "distributed_transition": [
+        {
+          "transition": "Track Selection",
+          "distribution": 0.4
+        },
+        {
+          "transition": "Terminal",
+          "distribution": 0.6
+        }
+      ]
+    },
+    "Terminal": {
+      "type": "Terminal"
+    },
+    "Track Selection": {
+      "type": "Simple",
+      "distributed_transition": [
+        {
+          "transition": "Track A",
+          "distribution": 0.1
+        },
+        {
+          "transition": "Track B",
+          "distribution": 0.1
+        },
+        {
+          "transition": "Track C",
+          "distribution": 0.1
+        },
+        {
+          "transition": "Track D",
+          "distribution": 0.1
+        },
+        {
+          "transition": "Track E",
+          "distribution": 0.1
+        },
+        {
+          "transition": "Track F",
+          "distribution": 0.1
+        },
+        {
+          "transition": "Track G",
+          "distribution": 0.1
+        },
+        {
+          "transition": "Track H",
+          "distribution": 0.1
+        },
+        {
+          "transition": "Track I",
+          "distribution": 0.1
+        },
+        {
+          "transition": "Track J",
+          "distribution": 0.1
+        }
+      ]
+    },
+    "Track A": {
+      "type": "Simple",
+      "direct_transition": "COVID-19 detected A"
+    },
+    "Track B": {
+      "type": "Simple",
+      "direct_transition": "COVID_19_detected_B"
+    },
+    "Track C": {
+      "type": "Simple",
+      "direct_transition": "Obesity"
+    },
+    "COVID-19 detected A": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 1240581000000104,
+          "display": "COVID-19 detected"
+        }
+      ],
+      "direct_transition": "Terminal"
+    },
+    "COVID_19_detected_B": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 1240581000000104,
+          "display": "COVID-19 detected"
+        }
+      ],
+      "direct_transition": "COVID_19_disease_B"
+    },
+    "COVID_19_disease_B": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 840539006,
+          "display": "COVID-19"
+        }
+      ],
+      "distributed_transition": [
+        {
+          "transition": "COVID-19 pneumonia_B",
+          "distribution": 0.02
+        },
+        {
+          "transition": "Terminal",
+          "distribution": 0.98
+        }
+      ]
+    },
+    "COVID-19 pneumonia_B": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 882784691000119000,
+          "display": "COVID-19 pneumonia"
+        }
+      ],
+      "distributed_transition": [
+        {
+          "transition": "Patient Dies_B",
+          "distribution": 0.1
+        },
+        {
+          "transition": "Terminal",
+          "distribution": 0.9
+        }
+      ]
+    },
+    "Patient Dies_B": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 419099009,
+          "display": "Dead"
+        }
+      ],
+      "direct_transition": "Terminal"
+    },
+    "COVID_19_detected_C": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 1240581000000104,
+          "display": "COVID-19 detected"
+        }
+      ],
+      "direct_transition": "COVID_19_disease_C"
+    },
+    "COVID_19_disease_C": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 840539006,
+          "display": "COVID-19"
+        }
+      ],
+      "distributed_transition": [
+        {
+          "transition": "COVID_19_pneumonia_C",
+          "distribution": 0.2
+        },
+        {
+          "transition": "Terminal",
+          "distribution": 0.8
+        }
+      ]
+    },
+    "COVID_19_pneumonia_C": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 882784691000119000,
+          "display": "COVID-19 pneumonia"
+        }
+      ],
+      "distributed_transition": [
+        {
+          "transition": "Patient Dies C",
+          "distribution": 0.2
+        },
+        {
+          "transition": "Terminal",
+          "distribution": 0.8
+        }
+      ]
+    },
+    "Patient Dies C": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 419099009,
+          "display": "Dead"
+        }
+      ],
+      "direct_transition": "Terminal"
+    },
+    "Track D": {
+      "type": "Simple",
+      "direct_transition": "Diabetes mellitus"
+    },
+    "Diabetes mellitus": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 73211009,
+          "display": "Diabetes mellitus"
+        }
+      ],
+      "direct_transition": "COVID_19_detected_D"
+    },
+    "COVID_19_detected_D": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 1240581000000104,
+          "display": "COVID-19 detected"
+        }
+      ],
+      "direct_transition": "COVID_19_disease_D"
+    },
+    "COVID_19_disease_D": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 840539006,
+          "display": "COVID-19"
+        }
+      ],
+      "distributed_transition": [
+        {
+          "transition": "COVID_19_pneumonia_D",
+          "distribution": 0.25
+        },
+        {
+          "transition": "Terminal",
+          "distribution": 0.75
+        }
+      ]
+    },
+    "COVID_19_pneumonia_D": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 882784691000119000,
+          "display": "COVID-19 pneumonia"
+        }
+      ],
+      "distributed_transition": [
+        {
+          "transition": "Patient_Dies_D",
+          "distribution": 0.25
+        },
+        {
+          "transition": "Terminal",
+          "distribution": 0.75
+        }
+      ]
+    },
+    "Patient_Dies_D": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 419099009,
+          "display": "Dead"
+        }
+      ],
+      "direct_transition": "Terminal"
+    },
+    "Track E": {
+      "type": "Simple",
+      "direct_transition": "Hypertensive disorder"
+    },
+    "Hypertensive disorder": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 38341003,
+          "display": "Hypertensive disorder"
+        }
+      ],
+      "direct_transition": "COVID_19_detected_E"
+    },
+    "COVID_19_detected_E": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 1240581000000104,
+          "display": "COVID-19 detected"
+        }
+      ],
+      "direct_transition": "COVID_19_disease_E"
+    },
+    "COVID_19_disease_E": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 840539006,
+          "display": "COVID-19"
+        }
+      ],
+      "direct_transition": "Terminal"
+    },
+    "Track F": {
+      "type": "Simple",
+      "direct_transition": "COVID_19_pneumonia_F"
+    },
+    "COVID_19_pneumonia_F": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 882784691000119000,
+          "display": "COVID-19 pneumonia"
+        }
+      ],
+      "distributed_transition": [
+        {
+          "transition": "Patient_Dies_F",
+          "distribution": 0.18
+        },
+        {
+          "transition": "Terminal",
+          "distribution": 0.82
+        }
+      ]
+    },
+    "Obesity": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 414916001,
+          "display": "Obesity"
+        }
+      ],
+      "direct_transition": "COVID_19_detected_C"
+    },
+    "Patient_Dies_F": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 419099009,
+          "display": "Dead"
+        }
+      ],
+      "direct_transition": "Terminal"
+    },
+    "Track G": {
+      "type": "Simple",
+      "direct_transition": "Obesity_G"
+    },
+    "Obesity_G": {
+      "type": "ConditionOnset",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 414916001,
+          "display": "Obesity"
+        }
+      ],
+      "direct_transition": "Diabetes_mellitus_G"
+    },
+    "Diabetes_mellitus_G": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 73211009,
+          "display": "Diabetes mellitus"
+        }
+      ],
+      "direct_transition": "COVID_19_detected_G"
+    },
+    "COVID_19_detected_G": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 1240581000000104,
+          "display": "COVID-19 detected"
+        }
+      ],
+      "direct_transition": "COVID_19_disease_G"
+    },
+    "COVID_19_disease_G": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 840539006,
+          "display": "COVID-19"
+        }
+      ],
+      "distributed_transition": [
+        {
+          "transition": "COVID_19_pneumonia_G",
+          "distribution": 0.32
+        },
+        {
+          "transition": "Terminal",
+          "distribution": 0.68
+        }
+      ]
+    },
+    "COVID_19_pneumonia_G": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 882784691000119000,
+          "display": "COVID-19 pneumonia"
+        }
+      ],
+      "distributed_transition": [
+        {
+          "transition": "Patient_Dies_G",
+          "distribution": 0.32
+        },
+        {
+          "transition": "Terminal",
+          "distribution": 0.68
+        }
+      ]
+    },
+    "Patient_Dies_G": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 419099009,
+          "display": "Dead"
+        }
+      ],
+      "direct_transition": "Terminal"
+    },
+    "Track H": {
+      "type": "Simple",
+      "direct_transition": "Obesity_H"
+    },
+    "Obesity_H": {
+      "type": "ConditionOnset",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 414916001,
+          "display": "Obesity"
+        }
+      ],
+      "direct_transition": "Hypertensive_disorder H"
+    },
+    "Hypertensive_disorder H": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 38341003,
+          "display": "Hypertensive disorder"
+        }
+      ],
+      "direct_transition": "COVID_19_detected_H"
+    },
+    "COVID_19_detected_H": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 1240581000000104,
+          "display": "COVID-19 detected"
+        }
+      ],
+      "direct_transition": "COVID_19_disease_H"
+    },
+    "COVID_19_disease_H": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 840539006,
+          "display": "COVID-19"
+        }
+      ],
+      "distributed_transition": [
+        {
+          "transition": "COVID_19_pneumonia_H",
+          "distribution": 0.28
+        },
+        {
+          "transition": "Terminal",
+          "distribution": 0.72
+        }
+      ]
+    },
+    "COVID_19_pneumonia_H": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 882784691000119000,
+          "display": "COVID-19 pneumonia"
+        }
+      ],
+      "distributed_transition": [
+        {
+          "transition": "Patient_Dies_H",
+          "distribution": 0.28
+        },
+        {
+          "transition": "Terminal",
+          "distribution": 0.72
+        }
+      ]
+    },
+    "Patient_Dies_H": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 419099009,
+          "display": "Dead"
+        }
+      ],
+      "direct_transition": "Terminal"
+    },
+    "Track I": {
+      "type": "Simple",
+      "direct_transition": "Diabetes_mellitus_I"
+    },
+    "Diabetes_mellitus_I": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 73211009,
+          "display": "Diabetes mellitus"
+        }
+      ],
+      "direct_transition": "Hypertensive_disorder_I"
+    },
+    "Hypertensive_disorder_I": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 38341003,
+          "display": "Hypertensive disorder"
+        }
+      ],
+      "direct_transition": "COVID_19_detected_I"
+    },
+    "COVID_19_detected_I": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 1240581000000104,
+          "display": "COVID-19 detected"
+        }
+      ],
+      "direct_transition": "COVID_19_disease_I"
+    },
+    "COVID_19_disease_I": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 840539006,
+          "display": "COVID-19"
+        }
+      ],
+      "distributed_transition": [
+        {
+          "transition": "COVID_19_pneumonia_I",
+          "distribution": 0.25
+        },
+        {
+          "transition": "Terminal",
+          "distribution": 0.75
+        }
+      ]
+    },
+    "COVID_19_pneumonia_I": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 882784691000119000,
+          "display": "COVID-19 pneumonia"
+        }
+      ],
+      "distributed_transition": [
+        {
+          "transition": "Patient_Dies_I",
+          "distribution": 0.25
+        },
+        {
+          "transition": "Terminal",
+          "distribution": 0.75
+        }
+      ]
+    },
+    "Patient_Dies_I": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 419099009,
+          "display": "Dead"
+        }
+      ],
+      "direct_transition": "Terminal"
+    },
+    "Track J": {
+      "type": "Simple",
+      "direct_transition": "Obesity_J"
+    },
+    "Diabetes_mellitus_J": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 73211009,
+          "display": "Diabetes mellitus"
+        }
+      ],
+      "direct_transition": "Hypertensive_disorder_J"
+    },
+    "Hypertensive_disorder_J": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 38341003,
+          "display": "Hypertensive disorder"
+        }
+      ],
+      "direct_transition": "COVID_19_detected_J"
+    },
+    "COVID_19_detected_J": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 1240581000000104,
+          "display": "COVID-19 detected"
+        }
+      ],
+      "direct_transition": "COVID_19_disease_J"
+    },
+    "COVID_19_disease_J": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 840539006,
+          "display": "COVID-19"
+        }
+      ],
+      "distributed_transition": [
+        {
+          "transition": "COVID_19_pneumonia_J",
+          "distribution": 0.48
+        },
+        {
+          "transition": "Terminal",
+          "distribution": 0.52
+        }
+      ]
+    },
+    "Obesity_J": {
+      "type": "ConditionOnset",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 414916001,
+          "display": "Obesity"
+        }
+      ],
+      "direct_transition": "Diabetes_mellitus_J"
+    },
+    "COVID_19_pneumonia_J": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 882784691000119000,
+          "display": "COVID-19 pneumonia"
+        }
+      ],
+      "distributed_transition": [
+        {
+          "transition": "Patient_Dies_J",
+          "distribution": 0.48
+        },
+        {
+          "transition": "Terminal",
+          "distribution": 0.52
+        }
+      ]
+    },
+    "Patient_Dies_J": {
+      "type": "ConditionOnset",
+      "assign_to_attribute": "",
+      "target_encounter": "",
+      "codes": [
+        {
+          "system": "SNOMED-CT",
+          "code": 419099009,
+          "display": "Dead"
+        }
+      ],
+      "direct_transition": "Terminal"
+    }
+  }
+}

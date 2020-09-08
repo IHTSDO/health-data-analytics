@@ -91,7 +91,7 @@ public class ClinicalEncounter {
 	@Override
 	public String toString() {
 		return "ClinicalEncounter{" +
-				", conceptId='" + conceptId + '\'' +
+				"conceptId='" + conceptId + '\'' +
 				", dateLong=" + dateLong +
 				'}';
 	}

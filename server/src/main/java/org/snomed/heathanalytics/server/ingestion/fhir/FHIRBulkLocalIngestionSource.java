@@ -40,6 +40,7 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 		FHIRBulkLocalIngestionSourceConfiguration fhirConfiguration = (FHIRBulkLocalIngestionSourceConfiguration) configuration;
 		ingestPatients(healthDataOutputStream, fhirConfiguration.getPatientFile());
 		ingestConditions(healthDataOutputStream, fhirConfiguration.getConditionFile());
+		ingestProcedures(healthDataOutputStream, fhirConfiguration.getProcedureFile());
 	}
 
 	private void ingestPatients(HealthDataOutputStream healthDataOutputStream, File patientFile) {
@@ -80,25 +81,13 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 				FHIRCondition fhirCondition = conditionIterator.next();
 				String subjectId = fhirCondition.getSubjectId();
 				if (fhirCondition.isConfirmedActive() && subjectId != null) {
-					FHIRCodeableConcept codeableConcept = fhirCondition.getCode();
-					if (codeableConcept != null) {
-						List<FHIRCoding> coding = codeableConcept.getCoding();
-						if (!coding.isEmpty()) {
-							FHIRCoding fhirCoding = coding.get(0);
-							String system = fhirCoding.getSystem();
-							if (system != null && system.startsWith("http://snomed.info/sct")) {
-								String code = fhirCoding.getCode();
-								if (!Strings.isNullOrEmpty(code) && SnomedIdentifierUtils.isValidConceptIdFormat(code)) {
-									if (fhirCondition.getOnsetDateTime() != null) {
-										ClinicalEncounter encounter = new ClinicalEncounter(fhirCondition.getOnsetDateTime(), parseLong(code));
-										healthDataOutputStream.addClinicalEncounter(subjectId, encounter);
-										active++;
-										if (active % 10_000 == 0) {
-											logger.info("Consumed {} Conditions into store.", NumberFormat.getNumberInstance().format(active));
-										}
-									}
-								}
-							}
+					String conceptId = getSnomedCode(fhirCondition.getCode());
+					if (conceptId != null && fhirCondition.getOnsetDateTime() != null) {
+						ClinicalEncounter encounter = new ClinicalEncounter(fhirCondition.getOnsetDateTime(), parseLong(conceptId));
+						healthDataOutputStream.addClinicalEncounter(subjectId, encounter);
+						active++;
+						if (active % 10_000 == 0) {
+							logger.info("Consumed {} Conditions into store.", NumberFormat.getNumberInstance().format(active));
 						}
 					}
 				}
@@ -110,6 +99,55 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 		} catch (IOException e) {
 			logger.error("Failed to read values from {}.", conditionFile.getAbsolutePath(), e);
 		}
+	}
+
+	private void ingestProcedures(HealthDataOutputStream healthDataOutputStream, File procedureFile) {
+		logger.info("Reading Procedures from {}.", procedureFile.getPath());
+		ObjectReader objectReader = objectMapper.readerFor(FHIRProcedure.class);
+		Date start = new Date();
+		try {
+			long active = 0;
+			long all = 0;
+			MappingIterator<FHIRProcedure> procedureIterator = objectReader.readValues(procedureFile);
+			while (procedureIterator.hasNext()) {
+				FHIRProcedure fhirProcedure = procedureIterator.next();
+				String subjectId = fhirProcedure.getSubjectId();
+				if (fhirProcedure.isComplete() && subjectId != null) {
+					String conceptId = getSnomedCode(fhirProcedure.getCode());
+					if (conceptId != null && fhirProcedure.getStartDate() != null) {
+						ClinicalEncounter encounter = new ClinicalEncounter(fhirProcedure.getStartDate(), parseLong(conceptId));
+						healthDataOutputStream.addClinicalEncounter(subjectId, encounter);
+						active++;
+						if (active % 10_000 == 0) {
+							logger.info("Consumed {} Procedures into store.", NumberFormat.getNumberInstance().format(active));
+						}
+					}
+				}
+				all++;
+			}
+
+			logger.info("Consumed {} Procedures from {} in {} seconds. {} were inactive, not confirmed or not SNOMED CT codes so were discarded.",
+					NumberFormat.getNumberInstance().format(active), procedureFile.getPath(), (new Date().getTime() - start.getTime()) / 1_000, all - active);
+		} catch (IOException e) {
+			logger.error("Failed to read values from {}.", procedureFile.getAbsolutePath(), e);
+		}
+	}
+
+	private String getSnomedCode(FHIRCodeableConcept codeableConcept) {
+		if (codeableConcept != null) {
+			List<FHIRCoding> coding = codeableConcept.getCoding();
+			if (!coding.isEmpty()) {
+				FHIRCoding fhirCoding = coding.get(0);
+				String system = fhirCoding.getSystem();
+				if (system != null && system.startsWith("http://snomed.info/sct")) {
+					String code = fhirCoding.getCode();
+					if (!Strings.isNullOrEmpty(code) && SnomedIdentifierUtils.isValidConceptIdFormat(code)) {
+						return code;
+					}
+				}
+			}
+		}
+		return null;
 	}
 
 }

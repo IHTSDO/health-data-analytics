@@ -1,0 +1,31 @@
+{
+	"resourceType": "Procedure",
+	"id": "a2c4a03e-9c3b-17b5-13b1-ea0e4d54dcfd",
+	"status": "completed",
+	"code": {
+		"coding": [
+			{
+				"system": "http://snomed.info/sct",
+				"code": "117015009",
+				"display": "Throat culture (procedure)"
+			}
+		],
+		"text": "Throat culture (procedure)"
+	},
+	"subject": {
+		"reference": "Patient/83ae838f-9ab6-ca5c-778c-5b4054d79c57"
+	},
+	"encounter": {
+		"reference": "Encounter/f691888b-7575-92e6-ac37-2dd9ecbc3cb5"
+	},
+	"performedPeriod": {
+		"start": "2016-09-23T10:38:35+01:00",
+		"end": "2016-09-23T10:53:35+01:00"
+	},
+	"reasonReference": [
+		{
+			"reference": "Condition/fd2858d8-1051-6b93-dd02-25d2e864b6e0",
+			"display": "Acute viral pharyngitis (disorder)"
+		}
+	]
+}

@@ -1,6 +1,7 @@
 package org.snomed.heathanalytics.server.ingestion.localdisk;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.After;
 import org.junit.Test;
 import java.io.File;
 import java.util.*;
@@ -50,6 +51,11 @@ public class LocalFileNDJsonIngestionIntegrationTest {
 		ClinicalEncounter encounter = patient.getEncounters().iterator().next();
 		assertEquals(new Long(195957006), encounter.getConceptId());
 		assertEquals(getUTCTime(2017, Calendar.SEPTEMBER, 10, 11, 0, 11), encounter.getDate());
+	}
+
+	@After
+	public void tearDown() {
+		patientRepository.deleteAll();
 	}
 
 	private Date getUTCTime(int year, int month, int dayOfMonth, int hour, int minute, int second) {

@@ -5,7 +5,7 @@
 
 	<artifactId>health-data-analytics-parent</artifactId>
 	<groupId>org.snomed.analytics</groupId>
-	<version>2.3.0-SNAPSHOT</version>
+	<version>3.0.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<modules>

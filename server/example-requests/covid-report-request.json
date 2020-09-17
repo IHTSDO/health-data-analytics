@@ -1,0 +1,86 @@
+{
+    "name": "COVID-19 Comorbidity affects",
+    "criteria": {
+        "encounterCriteria": [
+            {
+                "conceptECL": "<<840539006|COVID-19|",
+                "has": true
+            }
+        ]
+    },
+    "groups": [
+        [
+            {
+                "name": "Obesity",
+                "criteria": {
+                    "encounterCriteria": [
+                        {
+                            "conceptECL": "<<414916001|Obesity|"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Diabetes",
+                "criteria": {
+                    "encounterCriteria": [
+						{
+							"conceptECL": "<<73211009|Diabetes|"
+						}
+                    ]
+                }
+            },
+            {
+                "name": "Hypertensive disorder",
+                "criteria": {
+                    "encounterCriteria": [
+                        {
+                            "conceptECL": "<<38341003|Hypertensive disorder|"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Control Group",
+                "criteria": {
+                    "encounterCriteria": [
+                        {
+                            "has": false,
+                            "conceptECL": "<<414916001|Obesity|"
+                        },
+                        {
+                            "has": false,
+                            "conceptECL": "<<73211009|Diabetes|"
+                        },
+                        {
+                            "has": false,
+                            "conceptECL": "<<38341003|Hypertensive disorder|"
+                        }
+                    ]
+                }
+            }
+        ],
+        [
+            {
+                "name": "COVID-19 pneumonia",
+                "criteria": {
+                    "encounterCriteria": [
+                        {
+                            "conceptECL": "<<882784691000119100|COVID-19 pneumonia|"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Died",
+                "criteria": {
+                    "encounterCriteria": [
+                        {
+                            "conceptECL": "<<419099009|Died|"
+                        }
+                    ]
+                }
+            }
+        ]
+    ]
+}

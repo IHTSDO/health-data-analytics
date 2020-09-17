@@ -28,28 +28,30 @@ public class LocalFileNDJsonIngestionSource implements HealthDataIngestionSource
 	}
 
 	public void stream(HealthDataIngestionSourceConfiguration configuration, HealthDataOutputStream healthDataOutputStream) {
-		LocalFileNDJsonIngestionSourceConfiguration config = (LocalFileNDJsonIngestionSourceConfiguration) configuration;
-		File ndJsonDirectory = config.getFileDirectory();
-		File[] files = ndJsonDirectory.listFiles((dir, name) -> name.endsWith(".ndjson"));
-		if (files != null) {
-			ObjectReader patientReader = objectMapper.readerFor(Patient.class);
-			for (File ndJsonFile : files) {
-				Date start = new Date();
-				logger.info("Reading Patients from {}.", ndJsonFile.getPath());
-				try {
-					long read = 0;
-					MappingIterator<Patient> patientIterator = patientReader.readValues(ndJsonFile);
-					for (UnmodifiableIterator<List<Patient>> it = Iterators.partition(patientIterator, ES_WRITE_BATCH_SIZE); it.hasNext(); ) {
-						List<Patient> patients = it.next();
-						healthDataOutputStream.createPatients(patients);
-						read += patients.size();
-						if (read % 10_000 == 0) {
-							logger.info("Consumed {} patients into store.", NumberFormat.getNumberInstance().format(read));
+		try (HealthDataOutputStream stream = healthDataOutputStream) {
+			LocalFileNDJsonIngestionSourceConfiguration config = (LocalFileNDJsonIngestionSourceConfiguration) configuration;
+			File ndJsonDirectory = config.getFileDirectory();
+			File[] files = ndJsonDirectory.listFiles((dir, name) -> name.endsWith(".ndjson"));
+			if (files != null) {
+				ObjectReader patientReader = objectMapper.readerFor(Patient.class);
+				for (File ndJsonFile : files) {
+					Date start = new Date();
+					logger.info("Reading Patients from {}.", ndJsonFile.getPath());
+					try {
+						long read = 0;
+						MappingIterator<Patient> patientIterator = patientReader.readValues(ndJsonFile);
+						for (UnmodifiableIterator<List<Patient>> it = Iterators.partition(patientIterator, ES_WRITE_BATCH_SIZE); it.hasNext(); ) {
+							List<Patient> patients = it.next();
+							stream.createPatients(patients);
+							read += patients.size();
+							if (read % 10_000 == 0) {
+								logger.info("Consumed {} patients into store.", NumberFormat.getNumberInstance().format(read));
+							}
 						}
+						logger.info("Read {} Patients from {} in {} seconds.", NumberFormat.getNumberInstance().format(read), ndJsonFile.getPath(), (new Date().getTime() - start.getTime()) / 1_000);
+					} catch (IOException e) {
+						logger.error("Failed to read values from {}.", ndJsonFile.getAbsolutePath(), e);
 					}
-					logger.info("Read {} Patients from {} in {} seconds.", NumberFormat.getNumberInstance().format(read), ndJsonFile.getPath(), (new Date().getTime() - start.getTime()) / 1_000);
-				} catch (IOException e) {
-					logger.error("Failed to read values from {}.", ndJsonFile.getAbsolutePath(), e);
 				}
 			}
 		}

@@ -9,14 +9,18 @@ import org.snomed.heathanalytics.server.store.PatientRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
 public class ElasticOutputStream implements HealthDataOutputStream {
 
-	private PatientRepository patientRepository;
+	private final PatientRepository patientRepository;
 
-	private Logger logger = LoggerFactory.getLogger(getClass());
+	private final Logger logger = LoggerFactory.getLogger(getClass());
+
+	private final Map<String, Patient> patientBuffer = new HashMap<>();
 
 	public ElasticOutputStream(PatientRepository patientRepository) {
 		this.patientRepository = patientRepository;
@@ -34,14 +38,33 @@ public class ElasticOutputStream implements HealthDataOutputStream {
 
 	@Override
 	public void addClinicalEncounter(String roleId, ClinicalEncounter encounter) {
-		Optional<Patient> patientOptional = patientRepository.findById(roleId);
-		if (patientOptional.isPresent()) {
-			Patient patient = patientOptional.get();
+		Patient patient = patientBuffer.get(roleId);
+		if (patient == null) {
+			Optional<Patient> patientOptional = patientRepository.findById(roleId);
+			if (patientOptional.isPresent()) {
+				patient = patientOptional.get();
+				patientBuffer.put(roleId, patient);
+			}
+		}
+		if (patient != null) {
 			patient.addEncounter(encounter);
-			patientRepository.save(patient);
+			if (patientBuffer.size() == 10_000) {
+				flush();
+			}
 		} else {
 			logger.error("Failed to add clinical encounter {}/{} - patient not found with id {}", encounter.getDate(), encounter.getConceptId(), roleId);
 		}
 	}
 
+	@Override
+	public void close() {
+		flush();
+	}
+
+	public void flush() {
+		if (!patientBuffer.isEmpty()) {
+			patientRepository.saveAll(patientBuffer.values());
+			patientBuffer.clear();
+		}
+	}
 }

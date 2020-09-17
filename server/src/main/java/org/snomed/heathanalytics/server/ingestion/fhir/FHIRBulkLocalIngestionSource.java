@@ -37,11 +37,13 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 
 	@Override
 	public void stream(HealthDataIngestionSourceConfiguration configuration, HealthDataOutputStream healthDataOutputStream) {
-		FHIRBulkLocalIngestionSourceConfiguration fhirConfiguration = (FHIRBulkLocalIngestionSourceConfiguration) configuration;
-		ingestPatients(healthDataOutputStream, fhirConfiguration.getPatientFile());
-		ingestConditions(healthDataOutputStream, fhirConfiguration.getConditionFile());
-		ingestProcedures(healthDataOutputStream, fhirConfiguration.getProcedureFile());
+		try (HealthDataOutputStream stream = healthDataOutputStream) {
+			FHIRBulkLocalIngestionSourceConfiguration fhirConfiguration = (FHIRBulkLocalIngestionSourceConfiguration) configuration;
+			ingestPatients(stream, fhirConfiguration.getPatientFile());
+			ingestConditions(stream, fhirConfiguration.getConditionFile());
+			ingestProcedures(stream, fhirConfiguration.getProcedureFile());
 			ingestMedicationRequests(stream, fhirConfiguration.getMedicationRequestFile());
+		}
 	}
 
 	private void ingestPatients(HealthDataOutputStream healthDataOutputStream, File patientFile) {

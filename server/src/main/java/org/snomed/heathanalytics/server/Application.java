@@ -12,6 +12,8 @@ import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.server.ingestion.elasticsearch.ElasticOutputStream;
+import org.snomed.heathanalytics.server.ingestion.fhir.FHIRBulkLocalIngestionSource;
+import org.snomed.heathanalytics.server.ingestion.fhir.FHIRBulkLocalIngestionSourceConfiguration;
 import org.snomed.heathanalytics.server.ingestion.localdisk.LocalFileNDJsonIngestionSource;
 import org.snomed.heathanalytics.server.ingestion.localdisk.LocalFileNDJsonIngestionSourceConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,15 +41,13 @@ import static springfox.documentation.builders.PathSelectors.regex;
 @SpringBootApplication(exclude = ElasticsearchAutoConfiguration.class)
 public class Application implements ApplicationRunner {
 
-	public static final String IMPORT_POPULATION = "import-population";
+	public static final String IMPORT_POPULATION_NATIVE = "import-population";
+	public static final String IMPORT_POPULATION_FHIR = "import-population-fhir";
 
 	private static final File INDEX_DIRECTORY = new File("snomed-index");
 
 	@Autowired
 	private ElasticOutputStream elasticOutputStream;
-
-	@Autowired
-	private ElasticsearchRestTemplate elasticsearchTemplate;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -57,12 +57,20 @@ public class Application implements ApplicationRunner {
 
 	@Override
 	public void run(ApplicationArguments applicationArguments) throws Exception {
-		if (applicationArguments.containsOption(IMPORT_POPULATION)) {
-			List<String> values = applicationArguments.getOptionValues(IMPORT_POPULATION);
+		if (applicationArguments.containsOption(IMPORT_POPULATION_NATIVE)) {
+			List<String> values = applicationArguments.getOptionValues(IMPORT_POPULATION_NATIVE);
 			if (values.size() != 1) {
-				throw new IllegalArgumentException("Option " + IMPORT_POPULATION + " requires one directory name after the equals character.");
+				throw new IllegalArgumentException("Option " + IMPORT_POPULATION_NATIVE + " requires one directory name after the equals character.");
 			}
-			importPopulation(new File(values.get(0)));
+			importPopulationNativeFormat(new File(values.get(0)));
+			System.exit(0);
+		}
+		if (applicationArguments.containsOption(IMPORT_POPULATION_FHIR)) {
+			List<String> values = applicationArguments.getOptionValues(IMPORT_POPULATION_FHIR);
+			if (values.size() != 1) {
+				throw new IllegalArgumentException("Option " + IMPORT_POPULATION_FHIR + " requires one directory name after the equals character.");
+			}
+			importPopulationFHIRFormat(new File(values.get(0)));
 			System.exit(0);
 		}
 	}
@@ -107,9 +115,41 @@ public class Application implements ApplicationRunner {
 				.build();
 	}
 
-	private void importPopulation(File populationNDJSONDirectory) throws IOException {
-		logger.info("******** Importing patent data from {} ...", populationNDJSONDirectory.getPath());
+	private void importPopulationNativeFormat(File populationNDJSONDirectory) {
+		logger.info("******** Importing patent data in native format from {} ...", populationNDJSONDirectory.getPath());
 		new LocalFileNDJsonIngestionSource(objectMapper()).stream(new LocalFileNDJsonIngestionSourceConfiguration(populationNDJSONDirectory), elasticOutputStream);
+	}
+
+	private void importPopulationFHIRFormat(File populationNDJSONDirectory) {
+		logger.info("******** Importing patent data in FHIR format from {} ...", populationNDJSONDirectory.getPath());
+		if (!populationNDJSONDirectory.isDirectory()) {
+			throw new IllegalArgumentException(String.format("The path '%s' is not a directory.", populationNDJSONDirectory.getAbsolutePath()));
+		}
+
+		File[] files = populationNDJSONDirectory.listFiles((dir, name) -> name.endsWith(".ndjson"));
+		if (files == null || files.length == 0) {
+			throw new IllegalArgumentException(String.format("No files with '.ndjson' extension found in directory '%s'.", populationNDJSONDirectory.getAbsolutePath()));
+		}
+
+		File patientFile = null;
+		File conditionFile = null;
+		File procedureFile = null;
+		File medicationRequestFile = null;
+		for (File file : files) {
+			if (file.getName().startsWith("Patient")) {
+				patientFile = file;
+			} else if (file.getName().startsWith("Condition")) {
+				conditionFile = file;
+			} else if (file.getName().startsWith("Procedure")) {
+				procedureFile = file;
+			} else if (file.getName().startsWith("MedicationRequest")) {
+				medicationRequestFile = file;
+			}
+		}
+
+		new FHIRBulkLocalIngestionSource(objectMapper()).stream(
+				new FHIRBulkLocalIngestionSourceConfiguration(patientFile, conditionFile, procedureFile, medicationRequestFile),
+				elasticOutputStream);
 	}
 
 	@Bean

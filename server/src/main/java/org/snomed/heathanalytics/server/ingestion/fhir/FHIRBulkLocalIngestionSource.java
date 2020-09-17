@@ -41,9 +41,14 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 		ingestPatients(healthDataOutputStream, fhirConfiguration.getPatientFile());
 		ingestConditions(healthDataOutputStream, fhirConfiguration.getConditionFile());
 		ingestProcedures(healthDataOutputStream, fhirConfiguration.getProcedureFile());
+			ingestMedicationRequests(stream, fhirConfiguration.getMedicationRequestFile());
 	}
 
 	private void ingestPatients(HealthDataOutputStream healthDataOutputStream, File patientFile) {
+		if (patientFile == null) {
+			logger.info("No Patients file supplied.");
+			return;
+		}
 		logger.info("Reading Patients from {}.", patientFile.getPath());
 		ObjectReader objectReader = objectMapper.readerFor(FHIRPatient.class);
 		Date start = new Date();
@@ -70,6 +75,10 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 	}
 
 	private void ingestConditions(HealthDataOutputStream healthDataOutputStream, File conditionFile) {
+		if (conditionFile == null) {
+			logger.info("No Conditions file supplied.");
+			return;
+		}
 		logger.info("Reading Conditions from {}.", conditionFile.getPath());
 		ObjectReader objectReader = objectMapper.readerFor(FHIRCondition.class);
 		Date start = new Date();
@@ -79,14 +88,14 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 			MappingIterator<FHIRCondition> conditionIterator = objectReader.readValues(conditionFile);
 			while (conditionIterator.hasNext()) {
 				FHIRCondition fhirCondition = conditionIterator.next();
-				String subjectId = fhirCondition.getSubjectId();
+				String subjectId = FHIRHelper.getSubjectId(fhirCondition.getSubject());
 				if (fhirCondition.isConfirmedActive() && subjectId != null) {
 					String conceptId = getSnomedCode(fhirCondition.getCode());
 					if (conceptId != null && fhirCondition.getOnsetDateTime() != null) {
 						ClinicalEncounter encounter = new ClinicalEncounter(fhirCondition.getOnsetDateTime(), parseLong(conceptId));
 						healthDataOutputStream.addClinicalEncounter(subjectId, encounter);
 						active++;
-						if (active % 10_000 == 0) {
+						if (active % 1_000 == 0) {
 							logger.info("Consumed {} Conditions into store.", NumberFormat.getNumberInstance().format(active));
 						}
 					}
@@ -102,6 +111,10 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 	}
 
 	private void ingestProcedures(HealthDataOutputStream healthDataOutputStream, File procedureFile) {
+		if (procedureFile == null) {
+			logger.info("No Procedures file supplied.");
+			return;
+		}
 		logger.info("Reading Procedures from {}.", procedureFile.getPath());
 		ObjectReader objectReader = objectMapper.readerFor(FHIRProcedure.class);
 		Date start = new Date();
@@ -111,14 +124,14 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 			MappingIterator<FHIRProcedure> procedureIterator = objectReader.readValues(procedureFile);
 			while (procedureIterator.hasNext()) {
 				FHIRProcedure fhirProcedure = procedureIterator.next();
-				String subjectId = fhirProcedure.getSubjectId();
+				String subjectId = FHIRHelper.getSubjectId(fhirProcedure.getSubject());
 				if (fhirProcedure.isComplete() && subjectId != null) {
 					String conceptId = getSnomedCode(fhirProcedure.getCode());
 					if (conceptId != null && fhirProcedure.getStartDate() != null) {
 						ClinicalEncounter encounter = new ClinicalEncounter(fhirProcedure.getStartDate(), parseLong(conceptId));
 						healthDataOutputStream.addClinicalEncounter(subjectId, encounter);
 						active++;
-						if (active % 10_000 == 0) {
+						if (active % 1_000 == 0) {
 							logger.info("Consumed {} Procedures into store.", NumberFormat.getNumberInstance().format(active));
 						}
 					}
@@ -130,6 +143,42 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 					NumberFormat.getNumberInstance().format(active), procedureFile.getPath(), (new Date().getTime() - start.getTime()) / 1_000, all - active);
 		} catch (IOException e) {
 			logger.error("Failed to read values from {}.", procedureFile.getAbsolutePath(), e);
+		}
+	}
+
+	private void ingestMedicationRequests(HealthDataOutputStream healthDataOutputStream, File medicationRequestFile) {
+		if (medicationRequestFile == null) {
+			logger.info("No MedicationRequests file supplied.");
+			return;
+		}
+		logger.info("Reading MedicationRequests from {}.", medicationRequestFile.getPath());
+		ObjectReader objectReader = objectMapper.readerFor(FHIRMedicationRequest.class);
+		Date start = new Date();
+		try {
+			long active = 0;
+			long all = 0;
+			MappingIterator<FHIRMedicationRequest> medicationRequestMappingIterator = objectReader.readValues(medicationRequestFile);
+			while (medicationRequestMappingIterator.hasNext()) {
+				FHIRMedicationRequest fhirMedicationRequest = medicationRequestMappingIterator.next();
+				String subjectId = FHIRHelper.getSubjectId(fhirMedicationRequest.getSubject());
+				if (fhirMedicationRequest.isActiveOrder() && subjectId != null) {
+					String conceptId = getSnomedCode(fhirMedicationRequest.getMedicationCodeableConcept());
+					if (conceptId != null && fhirMedicationRequest.getAuthoredOn() != null) {
+						ClinicalEncounter encounter = new ClinicalEncounter(fhirMedicationRequest.getAuthoredOn(), parseLong(conceptId));
+						healthDataOutputStream.addClinicalEncounter(subjectId, encounter);
+						active++;
+						if (active % 1_000 == 0) {
+							logger.info("Consumed {} Medications into store.", NumberFormat.getNumberInstance().format(active));
+						}
+					}
+				}
+				all++;
+			}
+
+			logger.info("Consumed {} Medications from {} in {} seconds. {} were inactive, not confirmed or not SNOMED CT codes so were discarded.",
+					NumberFormat.getNumberInstance().format(active), medicationRequestFile.getPath(), (new Date().getTime() - start.getTime()) / 1_000, all - active);
+		} catch (IOException e) {
+			logger.error("Failed to read values from {}.", medicationRequestFile.getAbsolutePath(), e);
 		}
 	}
 

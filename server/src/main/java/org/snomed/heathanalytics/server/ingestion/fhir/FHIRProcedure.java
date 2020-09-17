@@ -12,16 +12,6 @@ public class FHIRProcedure {
 	private Date performedDateTime;
 	private FHIRPeriod performedPeriod;
 
-	public String getSubjectId() {
-		if (subject != null) {
-			String reference = subject.getReference();
-			if (!Strings.isNullOrEmpty(reference) && reference.startsWith("Patient/")) {
-				return reference.substring(8);
-			}
-		}
-		return null;
-	}
-
 	public boolean isComplete() {
 		return "completed".equals(status);
 	}

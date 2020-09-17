@@ -42,16 +42,6 @@ public class FHIRCondition {
 		return true;
 	}
 
-	public String getSubjectId() {
-		if (subject != null) {
-			String reference = subject.getReference();
-			if (!Strings.isNullOrEmpty(reference) && reference.startsWith("Patient/")) {
-				return reference.substring(8);
-			}
-		}
-		return null;
-	}
-
 	public FHIRCodeableConcept getCode() {
 		return code;
 	}

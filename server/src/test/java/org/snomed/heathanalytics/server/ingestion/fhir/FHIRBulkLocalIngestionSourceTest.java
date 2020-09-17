@@ -30,7 +30,8 @@ public class FHIRBulkLocalIngestionSourceTest extends AbstractDataTest {
 		FHIRBulkLocalIngestionSourceConfiguration configuration = new FHIRBulkLocalIngestionSourceConfiguration(
 				new File("src/test/resources/fhir/Patient.ndjson"),
 				new File("src/test/resources/fhir/Condition.ndjson"),
-				new File("src/test/resources/fhir/Procedure.ndjson"));
+				new File("src/test/resources/fhir/Procedure.ndjson"),
+				new File("src/test/resources/fhir/MedicationRequest.ndjson"));
 
 		new FHIRBulkLocalIngestionSource(objectMapper).stream(configuration, elasticOutputStream);
 
@@ -46,7 +47,7 @@ public class FHIRBulkLocalIngestionSourceTest extends AbstractDataTest {
 		assertEquals("Patient{roleId='83ae838f-9ab6-ca5c-778c-5b4054d79c57', gender=MALE, dob=1977-04-26, encounters=[ClinicalEncounter{conceptId='261352009', dateLong=1582537115000}, ClinicalEncounter{conceptId='430193006', dateLong=1310463515000}]}",
 				getPatientString("83ae838f-9ab6-ca5c-778c-5b4054d79c57"));
 
-		assertEquals("Patient{roleId='a21e4c80-e45a-57c8-00bf-32788b395837', gender=MALE, dob=1995-04-17, encounters=null}",
+		assertEquals("Patient{roleId='a21e4c80-e45a-57c8-00bf-32788b395837', gender=MALE, dob=1995-04-17, encounters=[ClinicalEncounter{conceptId='416897008', dateLong=-366615702000}]}",
 				getPatientString("a21e4c80-e45a-57c8-00bf-32788b395837"));
 	}
 

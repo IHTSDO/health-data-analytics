@@ -1,0 +1,27 @@
+{
+	"resourceType": "MedicationRequest",
+	"id": "38830ac2-2d49-1cfc-5ff2-7673a82148c7",
+	"status": "active",
+	"intent": "order",
+	"medicationCodeableConcept": {
+		"coding": [
+			{
+				"system": "http://snomed.info/sct",
+				"code": "416897008",
+				"display": "Tumor necrosis factor alpha inhibitor-containing product"
+			}
+		],
+		"text": "Tumor necrosis factor alpha inhibitor-containing product"
+	},
+	"subject": {
+		"reference": "Patient/ad18dd89-926a-800b-47df-1821bb098e36"
+	},
+	"encounter": {
+		"reference": "Encounter/d645ca1e-918d-289c-10b0-75c09f514f84"
+	},
+	"authoredOn": "1958-05-20T18:18:18+00:00",
+	"requester": {
+		"reference": "Practitioner/e931b02e-7868-385b-895c-4ce1a7972ac4",
+		"display": "Dr. Damaris45 Borer986"
+	}
+}

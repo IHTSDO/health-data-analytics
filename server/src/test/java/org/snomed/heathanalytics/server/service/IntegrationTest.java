@@ -8,26 +8,21 @@ import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.metrics.scripted.ParsedScriptedMetric;
 import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ConceptImpl;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.snomed.heathanalytics.model.ClinicalEncounter;
 import org.snomed.heathanalytics.model.Gender;
 import org.snomed.heathanalytics.model.Patient;
-import org.snomed.heathanalytics.server.TestConfig;
+import org.snomed.heathanalytics.server.AbstractDataTest;
 import org.snomed.heathanalytics.server.TestUtils;
 import org.snomed.heathanalytics.server.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.server.model.*;
-import org.snomed.heathanalytics.server.store.PatientRepository;
 import org.snomed.heathanalytics.server.testutil.TestSnomedQueryServiceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 import org.springframework.data.elasticsearch.core.aggregation.AggregatedPage;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -38,9 +33,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = TestConfig.class)
-public class IntegrationTest {
+public class IntegrationTest extends AbstractDataTest {
 
 	@Autowired
 	private QueryService queryService;
@@ -53,9 +46,6 @@ public class IntegrationTest {
 
 	@Autowired
 	private ElasticOutputStream healthDataStream;
-
-	@Autowired
-	private PatientRepository patientRepository;
 
 	@Autowired
 	private CPTService cptService;
@@ -315,11 +305,6 @@ public class IntegrationTest {
 		concept.setFsn("");
 		allConcepts.add(concept);
 		return concept;
-	}
-
-	@After
-	public void clearIndexes() {
-		patientRepository.deleteAll();
 	}
 
 	// Method for manual hacking/testing against a local instance

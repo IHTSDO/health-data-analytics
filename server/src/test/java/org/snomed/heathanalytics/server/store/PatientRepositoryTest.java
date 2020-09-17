@@ -1,25 +1,21 @@
 package org.snomed.heathanalytics.server.store;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.snomed.heathanalytics.model.ClinicalEncounter;
 import org.snomed.heathanalytics.model.Gender;
 import org.snomed.heathanalytics.model.Patient;
-import org.snomed.heathanalytics.server.TestConfig;
+import org.snomed.heathanalytics.server.AbstractDataTest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = TestConfig.class)
-public class PatientRepositoryTest {
+public class PatientRepositoryTest extends AbstractDataTest {
 
 	@Autowired
 	private PatientRepository patientRepository;

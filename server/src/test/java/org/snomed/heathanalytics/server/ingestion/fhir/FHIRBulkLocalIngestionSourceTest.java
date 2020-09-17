@@ -1,26 +1,20 @@
 package org.snomed.heathanalytics.server.ingestion.fhir;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.After;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.snomed.heathanalytics.model.Patient;
-import org.snomed.heathanalytics.server.TestConfig;
+import org.snomed.heathanalytics.server.AbstractDataTest;
 import org.snomed.heathanalytics.server.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.server.store.PatientRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.io.File;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = TestConfig.class)
-public class FHIRBulkLocalIngestionSourceTest {
+public class FHIRBulkLocalIngestionSourceTest extends AbstractDataTest {
 
 	@Autowired
 	private ObjectMapper objectMapper;
@@ -58,11 +52,6 @@ public class FHIRBulkLocalIngestionSourceTest {
 
 	private String getPatientString(String id) {
 		return patientRepository.findById(id).orElseGet(Patient::new).toString();
-	}
-
-	@After
-	public void tearDown() {
-		patientRepository.deleteAll();
 	}
 
 }

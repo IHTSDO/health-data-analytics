@@ -1,25 +1,20 @@
 package org.snomed.heathanalytics.server.service;
 
 import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ConceptImpl;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.snomed.heathanalytics.model.ClinicalEncounter;
 import org.snomed.heathanalytics.model.Gender;
 import org.snomed.heathanalytics.model.Patient;
-import org.snomed.heathanalytics.server.TestConfig;
+import org.snomed.heathanalytics.server.AbstractDataTest;
 import org.snomed.heathanalytics.server.TestUtils;
 import org.snomed.heathanalytics.server.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.server.model.CohortCriteria;
 import org.snomed.heathanalytics.server.model.EncounterCriterion;
 import org.snomed.heathanalytics.server.model.StatisticalCorrelationReport;
 import org.snomed.heathanalytics.server.model.StatisticalCorrelationReportDefinition;
-import org.snomed.heathanalytics.server.store.PatientRepository;
 import org.snomed.heathanalytics.server.testutil.TestSnomedQueryServiceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -29,9 +24,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.snomed.heathanalytics.server.TestUtils.date;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = TestConfig.class)
-public class StatisticTestingIntegrationTest {
+public class StatisticTestingIntegrationTest extends AbstractDataTest {
 
 	@Autowired
 	private SnomedService snomedService;
@@ -41,9 +34,6 @@ public class StatisticTestingIntegrationTest {
 
 	@Autowired
 	private ElasticOutputStream healthDataStream;
-
-	@Autowired
-	private PatientRepository patientRepository;
 
 	private ConceptImpl hypertension;
 	private ConceptImpl diabetes;
@@ -55,8 +45,6 @@ public class StatisticTestingIntegrationTest {
 
 	@Before
 	public void setup() throws IOException, ParseException {
-		clearIndexes();
-
 		// Set up ECL query service test data
 		List<ConceptImpl> allConcepts = new ArrayList<>();
 
@@ -129,6 +117,7 @@ public class StatisticTestingIntegrationTest {
 		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2016, 0, 1), diabetes.getId()));
 		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2016, 3, 10), paracetamol.getId()));
 		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2017, 2, 1), acuteQWaveMyocardialInfarction.getId()));
+		healthDataStream.flush();
 	}
 
 	@Test
@@ -190,11 +179,6 @@ public class StatisticTestingIntegrationTest {
 		concept.setFsn("");
 		allConcepts.add(concept);
 		return concept;
-	}
-
-	@After
-	public void clearIndexes() {
-		patientRepository.deleteAll();
 	}
 
 }

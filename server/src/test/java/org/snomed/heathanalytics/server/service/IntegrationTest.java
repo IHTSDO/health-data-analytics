@@ -251,6 +251,28 @@ public class IntegrationTest extends AbstractDataTest {
 	}
 
 	@Test
+	public void testCohortExclusion() throws ServiceException {
+		// criteria for breast screening
+		CohortCriteria cohortCriteria = new CohortCriteria(new EncounterCriterion("<<" + breastScreening.getId().toString()));
+
+		// No filter
+		assertEquals(4, queryService.fetchCohort(cohortCriteria).getTotalElements());
+
+		cohortCriteria.setMinAgeNow(40);
+		cohortCriteria.setMaxAgeNow(60);
+		assertEquals(4, queryService.fetchCohort(cohortCriteria).getTotalElements());
+
+		// Use ExclusionCriteria to exclude patients between 50 and 51 years old
+		cohortCriteria.getExclusionCriteria().add(new CohortCriteria(null, 50, 51));
+		assertEquals(3, queryService.fetchCohort(cohortCriteria).getTotalElements());
+
+		// Use ExclusionCriteria to exclude patients with at least 2 screens 22-26 months apart
+		cohortCriteria.getExclusionCriteria().add(new CohortCriteria(new EncounterCriterion(breastScreeningId)
+				.setFrequency(new Frequency(2, 22, 26, TimeUnit.MONTH))));
+		assertEquals(2, queryService.fetchCohort(cohortCriteria).getTotalElements());
+	}
+
+	@Test
 	public void testReportWithCPTAnalysis() throws ServiceException {
 		Map<String, CPTCode> snomedToCptMap = cptService.getSnomedToCptMap();
 		CPTCode dummyCpt = snomedToCptMap.get(breastScreeningId);

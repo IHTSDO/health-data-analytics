@@ -7,16 +7,25 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-@JsonPropertyOrder({"gender", "minAgeNow", "maxAgeNow", "encounterCriteria"})
+@JsonPropertyOrder({"gender", "minAgeNow", "maxAgeNow", "encounterCriteria", "exclusionCriteria"})
 public class CohortCriteria {
 
 	private Gender gender;
 	private Integer minAgeNow;
 	private Integer maxAgeNow;
 	private final List<EncounterCriterion> encounterCriteria;
+	private final List<CohortCriteria> exclusionCriteria;
 
 	public CohortCriteria() {
 		encounterCriteria = new ArrayList<>();
+		exclusionCriteria = new ArrayList<>();
+	}
+
+	public CohortCriteria(Gender gender, Integer minAgeNow, Integer maxAgeNow) {
+		this();
+		this.gender = gender;
+		this.minAgeNow = minAgeNow;
+		this.maxAgeNow = maxAgeNow;
 	}
 
 	public CohortCriteria(EncounterCriterion encounterCriterion) {
@@ -61,6 +70,7 @@ public class CohortCriteria {
 			maxAgeNow = criteriaToCopyFrom.maxAgeNow;
 		}
 		encounterCriteria.addAll(criteriaToCopyFrom.encounterCriteria);
+		exclusionCriteria.addAll(criteriaToCopyFrom.exclusionCriteria);
 	}
 
 	public Gender getGender() {
@@ -94,6 +104,10 @@ public class CohortCriteria {
 		return encounterCriteria;
 	}
 
+	public List<CohortCriteria> getExclusionCriteria() {
+		return exclusionCriteria;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
@@ -102,11 +116,12 @@ public class CohortCriteria {
 		return gender == that.gender &&
 				Objects.equals(minAgeNow, that.minAgeNow) &&
 				Objects.equals(maxAgeNow, that.maxAgeNow) &&
-				Objects.equals(encounterCriteria, that.encounterCriteria);
+				Objects.equals(encounterCriteria, that.encounterCriteria) &&
+				Objects.equals(exclusionCriteria, that.exclusionCriteria);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(gender, minAgeNow, maxAgeNow, encounterCriteria);
+		return Objects.hash(gender, minAgeNow, maxAgeNow, encounterCriteria, exclusionCriteria);
 	}
 }

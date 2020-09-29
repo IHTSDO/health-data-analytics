@@ -73,12 +73,14 @@ public class QueryService {
 		validateCriteria(patientCriteria);
 
 		BoolQueryBuilder patientQuery = getPatientClauses(patientCriteria.getGender(), patientCriteria.getMinAgeNow(), patientCriteria.getMaxAgeNow(), now);
-
 		List<EncounterCriterion> encounterCriteria = patientCriteria.getEncounterCriteria();
 
 		// Fetch conceptIds of each criterion
 		Map<String, List<Long>> eclToConceptsMap = new HashMap<>();
-		for (EncounterCriterion criterion : encounterCriteria) {
+		List<EncounterCriterion> allEncounterCriteria = new ArrayList<>(encounterCriteria);
+		List<CohortCriteria> exclusionCriteria = patientCriteria.getExclusionCriteria();
+		exclusionCriteria.forEach(excludeCohort -> allEncounterCriteria.addAll(excludeCohort.getEncounterCriteria()));
+		for (EncounterCriterion criterion : allEncounterCriteria) {
 			String criterionEcl = getGivenOrSubsetEcl(criterion);
 			if (criterionEcl != null) {
 				if (!eclToConceptsMap.containsKey(criterionEcl)) {
@@ -88,8 +90,17 @@ public class QueryService {
 			}
 		}
 
-		BoolQueryBuilder patientEncounterFilter = getPatientEncounterFilter(encounterCriteria, eclToConceptsMap);
-		patientQuery.filter(patientEncounterFilter);
+		BoolQueryBuilder filterBoolBuilder = boolQuery();
+		filterBoolBuilder.must(getPatientEncounterFilter(encounterCriteria, eclToConceptsMap));
+		for (CohortCriteria exclusionCriterion : exclusionCriteria) {
+			BoolQueryBuilder exclusionBool = boolQuery();
+			exclusionBool.must(getPatientClauses(exclusionCriterion.getGender(), exclusionCriterion.getMinAgeNow(), exclusionCriterion.getMaxAgeNow(), now));
+			if (!exclusionCriterion.getEncounterCriteria().isEmpty()) {
+				exclusionBool.must(getPatientEncounterFilter(exclusionCriterion.getEncounterCriteria(), eclToConceptsMap));
+			}
+			filterBoolBuilder.mustNot(exclusionBool);
+		}
+		patientQuery.filter(filterBoolBuilder);
 
 		Map<Long, TermHolder> conceptTerms = new Long2ObjectOpenHashMap<>();
 		PageRequest pageable = PageRequest.of(page, size);
@@ -196,33 +207,44 @@ public class QueryService {
 	}
 
 	private void validateCriteria(CohortCriteria patientCriteria) {
+		doValidateCriteria("", patientCriteria);
+		for (int i = 0; i < patientCriteria.getExclusionCriteria().size(); i++) {
+			CohortCriteria excludeCohort = patientCriteria.getExclusionCriteria().get(i);
+			doValidateCriteria(format("ExcludeCohort[%s].", i), excludeCohort);
+			if (!excludeCohort.getExclusionCriteria().isEmpty()) {
+				throw new IllegalArgumentException("An ExcludeCohort may not have a further ExcludeCohort. Nested ExcludeCohorts are not supported.");
+			}
+		}
+	}
+
+	private void doValidateCriteria(String prefix, CohortCriteria patientCriteria) {
 		List<EncounterCriterion> encounterCriteria = patientCriteria.getEncounterCriteria();
 		for (int i = 0; i < encounterCriteria.size(); i++) {
 			EncounterCriterion encounterCriterion = encounterCriteria.get(i);
 			if ((Strings.isNullOrEmpty(encounterCriterion.getConceptECL()) && Strings.isNullOrEmpty(encounterCriterion.getConceptSubsetId()))
 					|| (!Strings.isNullOrEmpty(encounterCriterion.getConceptECL()) && !Strings.isNullOrEmpty(encounterCriterion.getConceptSubsetId()))) {
-				throw new IllegalArgumentException(format("EncounterCriterion[%s] must have either conceptECL or conceptSubsetId.", i));
+				throw new IllegalArgumentException(format("%sEncounterCriterion[%s] must have either conceptECL or conceptSubsetId.", prefix, i));
 			}
 			Frequency frequency = encounterCriterion.getFrequency();
 			if (frequency != null) {
 				if (!encounterCriterion.isHas()) {
-					throw new IllegalArgumentException(format("EncounterCriterion[%s].frequency can only be used when has=true.", i));
+					throw new IllegalArgumentException(format("%sEncounterCriterion[%s].frequency can only be used when has=true.", prefix, i));
 				}
 				if (frequency.getMinRepetitions() == null || frequency.getMinRepetitions() < 1) {
-					throw new IllegalArgumentException(format("EncounterCriterion[%s].frequency.minRepetitions must be a positive integer greater than 1.", i));
+					throw new IllegalArgumentException(format("%sEncounterCriterion[%s].frequency.minRepetitions must be a positive integer greater than 1.", prefix, i));
 				}
 				if (frequency.getMinTimeBetween() != null && frequency.getMinTimeBetween() < 0) {
-					throw new IllegalArgumentException(format("EncounterCriterion[%s].frequency.minTimeBetween must be a positive integer.", i));
+					throw new IllegalArgumentException(format("%sEncounterCriterion[%s].frequency.minTimeBetween must be a positive integer.", prefix, i));
 				}
 				if (frequency.getMaxTimeBetween() != null && frequency.getMaxTimeBetween() < 0) {
-					throw new IllegalArgumentException(format("EncounterCriterion[%s].frequency.maxTimeBetween must be a positive integer.", i));
+					throw new IllegalArgumentException(format("%sEncounterCriterion[%s].frequency.maxTimeBetween must be a positive integer.", prefix, i));
 				}
 				if (frequency.getMinTimeBetween() != null && frequency.getMaxTimeBetween() != null
 						&& frequency.getMinTimeBetween() > frequency.getMaxTimeBetween()) {
-					throw new IllegalArgumentException(format("EncounterCriterion[%s].frequency.minTimeBetween must be less than maxTimeBetween.", i));
+					throw new IllegalArgumentException(format("%sEncounterCriterion[%s].frequency.minTimeBetween must be less than maxTimeBetween.", prefix, i));
 				}
 				if (frequency.getTimeUnit() == null && (frequency.getMinTimeBetween() != null || frequency.getMaxTimeBetween() != null)) {
-					throw new IllegalArgumentException(format("EncounterCriterion[%s].frequency.timeUnit is required when minTimeBetween or maxTimeBetween is set.", i));
+					throw new IllegalArgumentException(format("%sEncounterCriterion[%s].frequency.timeUnit is required when minTimeBetween or maxTimeBetween is set.", prefix, i));
 				}
 			}
 		}

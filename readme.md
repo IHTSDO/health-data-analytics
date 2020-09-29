@@ -10,9 +10,9 @@
 ## Background and strategic fit
 SNOMED CT’s distinguishing feature is its logical framework.  Unlike ICD terms which are not based on Description Logic, SNOMED features the ability to do logical subsumption searches to find cohorts of patients, medications, or conditions.
 
-Every kind of quality measure, outcomes measurement or retrospective research involving cohorts of patients depends on defining lists of clinical terms sometimes called “value sets”.
+Every kind of quality measure, outcomes measurement or retrospective research involving cohorts of patients depends on defining lists of clinical terms sometimes called "value sets".
 
-When these types of data analysis are done with ICD or other non-SNOMED terminologies, the creation of value sets requires human experts and is prone to errors. The humans creating the value sets must remember all the possible ways to refer to a condition, and ICD does not allow more than one parent, so Viral Pneumonia much be either a respiratory disease or an infectious disease but can’t be both.
+When these types of data analysis are done with ICD or other non-SNOMED terminologies, the creation of value sets requires human experts and is prone to errors. The humans creating the value sets must remember all the possible ways to refer to a condition, and ICD does not allow more than one parent, so Viral Pneumonia must be either a respiratory disease or an infectious disease but can’t be both.
 
 In SNOMED because of its logical structure, you can search hierarchies and do logical role based searches. This allows you to create value sets without arbitrary knowledge of which synonyms are used to describe a term.
 
@@ -31,8 +31,17 @@ This demo tool is a real tool. If we were to get some real patient data and stre
 
 ## Technical Information
 
+### FHIR Resources
+Patient records in Bulk FHIR resource (NDJSON) format can be loaded.
+The following resource types are supported:
+- Patient
+- Condition
+- Procedure
+- MedicationRequest
+These are all mapped to the simple data model taking the start date and first SNOMED CT code to create a Clinical Event. Only confirmed, active resources are loaded.
+
 ### Web User Interface
-A frontend web application for this API is available [here](https://github.com/IHTSDO/health-data-analytics-frontend).
+A frontend web application for this API is available: [health-data-analytics-ui](https://github.com/IHTSDO/health-data-analytics-ui).
 
 ### Data Model
 The data model is very simple:
@@ -41,12 +50,12 @@ The data model is very simple:
   - dob
   - dobYear (for optimisation)
   - gender (MALE / FEMALE)
-  - encounters (many ClinicalEncounters)
-- ClinicalEncounter
+  - events (many Clinical Events)
+- Clinical Event
   - date
   - conceptId (SNOMED CT Concept Identifier)
 
-A clinical encounter could represent an observation, finding, drug prescription or procedure depending on the SNOMED CT concept used.
+A clinical event could represent an observation, finding, drug prescription or procedure depending on the SNOMED CT concept used.
 
 ### Project Setup
 #### Prerequisites
@@ -94,7 +103,7 @@ To delete existing patient data make an HTTP delete request to the Elasticsearch
 curl -XDELETE localhost:9200/patient
 ```
 
-#### CPT Codes
+#### CPT Codes (optional)
 If CPT codes are loaded cost information can be provided for the procedures within the records of a selected cohort of patients.
 Within the application directory create a directory named `cpt-codes` containing the files `cpt-codes.txt` and `snomed-cpt-map.txt`.
 These files will be loaded when the application starts.

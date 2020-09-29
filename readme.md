@@ -1,7 +1,8 @@
 # Health Data Analytics Demonstrator
 
 ## Capabilities
-- Value set generator that works with SNOMED subsumption with inclusion, exclusion and attribute constraints.
+- Ability to load Bulk FHIR resources for analysis.
+- Value set creator that works with SNOMED subsumption with inclusion, exclusion and attribute constraints.
 - Data analysis tool which finds cohorts of patients with given conditions, procedures and/or prescriptions.
 - Statistical testing to measure how a procedure or drug affects the chances of a subsequent disorder.
 - Demo data generator which creates a large population of patients including disease associations and conditions.
@@ -26,19 +27,19 @@ Real patient data (a large population linked to SNOMED) is practically impossibl
 
 
 ## Summary
-This demo tool is a real tool. If we were to get some real patient data and stream it into the tool then we could explore for real associations.
-
+This demo tool is a real tool. If we were to get some real patient data and load it into the tool then we could explore for real associations.
 
 ## Technical Information
 
-### FHIR Resources
-Patient records in Bulk FHIR resource (NDJSON) format can be loaded.
+### FHIR Resource Support
+Patient data in Bulk FHIR resource (NDJSON) format can be loaded.
 The following resource types are supported:
 - Patient
 - Condition
 - Procedure
 - MedicationRequest
-These are all mapped to the simple data model taking the start date and first SNOMED CT code to create a Clinical Event. Only confirmed, active resources are loaded.
+
+These are all mapped to the simple internal data model taking the start date and first SNOMED CT code to create a Clinical Event. Only confirmed, active resources are loaded. For example if a Condition has a `verificationStatus` using the `http://terminology.hl7.org/CodeSystem/condition-ver-status` system and the value is not `confirmed` then it will be ignored.
 
 ### Web User Interface
 A frontend web application for this API is available: [health-data-analytics-ui](https://github.com/IHTSDO/health-data-analytics-ui).

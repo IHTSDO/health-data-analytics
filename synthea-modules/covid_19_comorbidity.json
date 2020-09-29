@@ -9,11 +9,7 @@
       "distributed_transition": [
         {
           "transition": "Track Selection",
-          "distribution": 0.4
-        },
-        {
-          "transition": "Terminal",
-          "distribution": 0.6
+          "distribution": 1
         }
       ]
     },
@@ -242,7 +238,8 @@
         {
           "system": "SNOMED-CT",
           "code": 73211009,
-          "display": "Diabetes mellitus"
+          "display": "Diabetes mellitus",
+          "value_set": "http://snomed.info/sct?fhir_vs=ecl/<<73211009"
         }
       ],
       "direct_transition": "COVID_19_detected_D"
@@ -329,7 +326,8 @@
         {
           "system": "SNOMED-CT",
           "code": 38341003,
-          "display": "Hypertensive disorder"
+          "display": "Hypertensive disorder",
+          "value_set": "http://snomed.info/sct?fhir_vs=ecl/<<38341003"
         }
       ],
       "direct_transition": "COVID_19_detected_E"
@@ -394,7 +392,8 @@
         {
           "system": "SNOMED-CT",
           "code": 414916001,
-          "display": "Obesity"
+          "display": "Obesity",
+          "value_set": "http://snomed.info/sct?fhir_vs=ecl/<<414916001"
         }
       ],
       "direct_transition": "COVID_19_detected_C"
@@ -423,7 +422,8 @@
         {
           "system": "SNOMED-CT",
           "code": 414916001,
-          "display": "Obesity"
+          "display": "Obesity",
+          "value_set": "http://snomed.info/sct?fhir_vs=ecl/<<414916001"
         }
       ],
       "direct_transition": "Diabetes_mellitus_G"
@@ -436,7 +436,8 @@
         {
           "system": "SNOMED-CT",
           "code": 73211009,
-          "display": "Diabetes mellitus"
+          "display": "Diabetes mellitus",
+          "value_set": "http://snomed.info/sct?fhir_vs=ecl/<<73211009"
         }
       ],
       "direct_transition": "COVID_19_detected_G"
@@ -522,7 +523,8 @@
         {
           "system": "SNOMED-CT",
           "code": 414916001,
-          "display": "Obesity"
+          "display": "Obesity",
+          "value_set": "http://snomed.info/sct?fhir_vs=ecl/<<414916001"
         }
       ],
       "direct_transition": "Hypertensive_disorder H"
@@ -535,7 +537,8 @@
         {
           "system": "SNOMED-CT",
           "code": 38341003,
-          "display": "Hypertensive disorder"
+          "display": "Hypertensive disorder",
+          "value_set": "http://snomed.info/sct?fhir_vs=ecl/<<38341003"
         }
       ],
       "direct_transition": "COVID_19_detected_H"
@@ -622,7 +625,8 @@
         {
           "system": "SNOMED-CT",
           "code": 73211009,
-          "display": "Diabetes mellitus"
+          "display": "Diabetes mellitus",
+          "value_set": "http://snomed.info/sct?fhir_vs=ecl/<<73211009"
         }
       ],
       "direct_transition": "Hypertensive_disorder_I"
@@ -635,7 +639,8 @@
         {
           "system": "SNOMED-CT",
           "code": 38341003,
-          "display": "Hypertensive disorder"
+          "display": "Hypertensive disorder",
+          "value_set": "http://snomed.info/sct?fhir_vs=ecl/<<38341003"
         }
       ],
       "direct_transition": "COVID_19_detected_I"
@@ -722,7 +727,8 @@
         {
           "system": "SNOMED-CT",
           "code": 73211009,
-          "display": "Diabetes mellitus"
+          "display": "Diabetes mellitus",
+          "value_set": "http://snomed.info/sct?fhir_vs=ecl/<<73211009"
         }
       ],
       "direct_transition": "Hypertensive_disorder_J"
@@ -735,7 +741,8 @@
         {
           "system": "SNOMED-CT",
           "code": 38341003,
-          "display": "Hypertensive disorder"
+          "display": "Hypertensive disorder",
+          "value_set": "http://snomed.info/sct?fhir_vs=ecl/<<38341003"
         }
       ],
       "direct_transition": "COVID_19_detected_J"
@@ -782,7 +789,8 @@
         {
           "system": "SNOMED-CT",
           "code": 414916001,
-          "display": "Obesity"
+          "display": "Obesity",
+          "value_set": "http://snomed.info/sct?fhir_vs=ecl/<<414916001"
         }
       ],
       "direct_transition": "Diabetes_mellitus_J"

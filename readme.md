@@ -73,18 +73,29 @@ mvn clean install
 Extract the SNOMED CT archive to a directory named `release` in the root of the project. Only the Snapshot files will be used so any others can be removed if needed.
 
 ### Synthetic Patient Generation
-If you would like to use synthetic data a patient population can be generated using the `generator` module.  
-From the root of the project the following command will generate 1,000,000 patients, which takes ~1 minute.
+If you would like to use synthetic data there are two ways to generate a patient population to load into the analytics API. Synthea Patient Generator to generate FHIR Bulk resources or the built in Patient Generator.
+
+#### Using Synthea Patient Generator
+The [Synthea](https://synthetichealth.github.io/synthea) project can be used to generate healthcare data in Bulk FHIR format which can be loaded into this API. Synthea has more than 50 [modules](https://github.com/synthetichealth/synthea/tree/master/src/main/resources/modules) which contain rules derived from real data to help to generate realistic healthcare data.
+
+Synthea has on online [Module Builder](https://synthetichealth.github.io/module-builder/#example_module) which can be used to edit or create new modules to simulate specific scenarios. SNOMED International donated an enhancement to the Module Builder to allow SNOMED CT Value Sets to be used in module states. Using this feature creates richer patient data because a concept within the value set is used rather than the same concept every time. The [bulk data](https://github.com/synthetichealth/synthea/blob/v2.6.1/src/main/resources/synthea.properties#L19) and [terminology service](https://github.com/synthetichealth/synthea/blob/v2.6.1/src/main/resources/synthea.properties#L195) options should be enabled when generating data.
+
+A few Synthea modules have been created to support SNOMED CT [demonstration scenarios](synthea-modules).
+
+#### Built In Patient Generator
+Alternatively a synthetic patient population can be generated using the build in `generator` module. This option supports only a [small number of scenarios](generator/src/main/java/org/snomed/heathanalytics/datageneration/DemoPatientDataGenerator.java) but is much more performant.
+
+From the root of the project the following command will generate ~1,200,000 patients, which takes ~1 minute.
 ```bash
 java -Xms3g -jar generator/target/generator*.jar
 ``` 
 Command options:
 - `--population-size` Optional. Defaults to 1,248,322.
 
-The generated population will be written in NDJSON format to a directory named `patient-data-for-import`.
+The generated population will be written in native bulk NDJSON format to a directory named `patient-data-for-import`.
 
 ### Server
-The server module provides the Data Analytics API. A Java application using Spring Boot with Swagger API documentation.
+The Data Analytics API is a Java application using Spring Boot with Swagger API documentation.
 
 #### Elasticsearch
 The server requires a standalone Elasticsearch deployment. Elasticsearch can be run locally. There are also hosted solutions available from AWS and Elastic.co.
@@ -92,10 +103,20 @@ The Elasticsearch server _must_ be version 6.x, version 7.x will not work. We re
 https://www.elastic.co/downloads/past-releases#elasticsearch
 
 #### Patient Data Import
-Once Elasticsearch is running patient data, in NDJSON format using the model above, can be imported into the server with this command: 
+Once Elasticsearch is running patient data can be imported into the server from either FHIR or native format.
+
+- Import FHIR Bulk resources from a directory containing the `.ndjson` files:
+```bash
+java -Xms3g -jar server/target/server*.jar --import-population-fhir='my-documents/fhir-resources'
+```
+
+Or
+
+- Import native bulk resources:
 ```bash
 java -Xms3g -jar server/target/server*.jar --import-population='patient-data-for-import'
 ```
+
 The program will exit when all patient data has been consumed.
 
 Running the import again will add to the existing data. 

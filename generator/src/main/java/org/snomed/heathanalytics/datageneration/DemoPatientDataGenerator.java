@@ -121,7 +121,8 @@ public class DemoPatientDataGenerator {
 			scenarioBrcaTamoxifen(patient, age, healthRecordDate);
 			scenarioDiabSmokeFootAmp(patient, age, healthRecordDate);
 			scenarioLymphAnthCHF(patient, age, healthRecordDate);
-			scenarioCOVID19(patient, age, healthRecordDate);
+			// Using Synthea for this
+			// scenarioCOVID19(patient, age, healthRecordDate);
 		}
 		return patient;
 	}

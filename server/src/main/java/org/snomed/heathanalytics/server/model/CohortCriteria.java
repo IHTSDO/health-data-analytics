@@ -38,6 +38,11 @@ public class CohortCriteria {
 		return this;
 	}
 
+	public CohortCriteria addExclusionCriterion(CohortCriteria criterion) {
+		exclusionCriteria.add(criterion);
+		return this;
+	}
+
 	public CohortCriteria clone() {
 		CohortCriteria cohortCriteria = new CohortCriteria();
 		cohortCriteria.gender = gender;
@@ -45,6 +50,9 @@ public class CohortCriteria {
 		cohortCriteria.maxAgeNow = maxAgeNow;
 		for (EncounterCriterion encounterCriterion : encounterCriteria) {
 			cohortCriteria.addEncounterCriterion(encounterCriterion.clone());
+		}
+		for (CohortCriteria exclusionCriterion : exclusionCriteria) {
+			cohortCriteria.addExclusionCriterion(exclusionCriterion.clone());
 		}
 		return cohortCriteria;
 	}
@@ -123,5 +131,16 @@ public class CohortCriteria {
 	@Override
 	public int hashCode() {
 		return Objects.hash(gender, minAgeNow, maxAgeNow, encounterCriteria, exclusionCriteria);
+	}
+
+	@Override
+	public String toString() {
+		return "CohortCriteria{" +
+				"gender=" + gender +
+				", minAgeNow=" + minAgeNow +
+				", maxAgeNow=" + maxAgeNow +
+				", encounterCriteria=" + encounterCriteria +
+				", exclusionCriteria=" + exclusionCriteria +
+				'}';
 	}
 }

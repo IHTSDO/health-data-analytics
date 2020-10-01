@@ -346,8 +346,7 @@ public class QueryService {
 
 						// Find all encounters for this patient with a matching conceptId
 					"	List dates = new ArrayList();" +
-					"	for (int o = 0; o < doc['encounters.conceptId'].length; o++) {" +
-					"		String conceptDateString = doc['encounters.conceptDate.keyword'][o];" +
+					"	for (String conceptDateString : doc['encounters.conceptDate.keyword']) {" +
 					"		int commaIndex = conceptDateString.indexOf(',');" +
 					"		long otherEncounterConceptId = Long.parseLong(conceptDateString.substring(0, commaIndex));" +
 					"		long otherEncounterDate = Long.parseLong(conceptDateString.substring(commaIndex + 1));" +

@@ -124,14 +124,13 @@ public class QueryService {
 									// Force elements of includeConcepts set to be of type Long.
 									// Elasticsearch converts number params to the smallest number type which we don't want.
 									"Set forceLongSet = new HashSet();" +
-									"for (int l = 0; l < params.includeConcepts.size(); l++) {" +
-									"	forceLongSet.add((Long) params.includeConcepts.get(l));" +
+									"for (def includeConcept : params.includeConcepts) {" +
+									"	forceLongSet.add((Long) includeConcept);" +
 									"}" +
 									"state.includeConcepts = forceLongSet;", params))
 							.mapScript(new Script(
 									"Map concepts = state.concepts;" +
-									"for (int i = 0; i < doc['encounters.conceptId'].length; i++) {" +
-									"	Long conceptIdLong = doc['encounters.conceptId'][i];" +
+									"for (Long conceptIdLong : doc['encounters.conceptId']) {" +
 									"	if (state.includeConcepts.contains(conceptIdLong)) {" +
 									"		String conceptId = conceptIdLong.toString();" +
 									"		if (concepts.containsKey(conceptId)) {" +
@@ -368,8 +367,7 @@ public class QueryService {
 					"	dates.sort(null);" +
 					"	long relativeEncounterTime = dates.remove(0);" +
 					"	int repetitionsFound = 1;" +
-					"	for (int o = 0; 0 < dates.size(); o++) {" +
-					"		long nextEncounterTime = dates.get(o);" +
+					"	for (long nextEncounterTime : dates) {" +
 					"		if (minTimeBetween != null) {" +
 					"			long minTime = relativeEncounterTime + (minTimeBetween.intValue() * timeUnitMillis);" +
 					"			if (nextEncounterTime < minTime) {" +
@@ -406,15 +404,13 @@ public class QueryService {
 					"boolean match = false;" +
 					"long baseEncounterDate = 0;" +
 					// Iterate each criterion to validate the encounters for this patient document
-					"for (int e = 0; e < criterionMapsList.length; e++) {" +
-
-					"	def criterionMap = criterionMapsList.get(e);" +
+					"for (def criterionMap : criterionMapsList) {" +
 //					"	Debug.explain('criterionMapsList:' + criterionMapsList);" +
 					"	List criterionConceptIds = params.eclToConceptsMap.get(criterionMap.get('conceptECL'));" +
 						// Force elements of criterionConceptIds to be long. Elasticsearch converts number params to the smallest number type which we don't want.
 					"	List forceLongList = new ArrayList();" +
-					"	for (int l = 0; l < criterionConceptIds.size(); l++) {" +
-					"		forceLongList.add(((Long) criterionConceptIds.get(l)).longValue());" +
+					"	for (def criterionConceptId : criterionConceptIds) {" +
+					"		forceLongList.add(((Long) criterionConceptId).longValue());" +
 					"	}" +
 					"	criterionConceptIds = forceLongList;" +
 					"" +
@@ -435,31 +431,32 @@ public class QueryService {
 
 						// Iterate patient's encounters
 					"	boolean encounterMatchFound = false;" +
-					"	for (int i = 0; encounterMatchFound == false && i < doc['encounters.conceptId'].length; i++) {" +
-					"		String conceptDateString = doc['encounters.conceptDate.keyword'][i];" +
-					"		int commaIndex = conceptDateString.indexOf(',');" +
-					"		long encounterConceptId = Long.parseLong(conceptDateString.substring(0, commaIndex));" +
-					"		long encounterDate = Long.parseLong(conceptDateString.substring(commaIndex + 1));" +
-					"		if (criterionConceptIds.contains(encounterConceptId)) {" +
-					"			if ((minEncounterDate == 0 || encounterDate >= minEncounterDate)" +
-					"					&& (maxEncounterDate == 0 || encounterDate <= maxEncounterDate)) {" +
+					"	for (String conceptDateString : doc['encounters.conceptDate.keyword']) {" +
+					"		if (encounterMatchFound == false) {" +
+					"			int commaIndex = conceptDateString.indexOf(',');" +
+					"			long encounterConceptId = Long.parseLong(conceptDateString.substring(0, commaIndex));" +
+					"			long encounterDate = Long.parseLong(conceptDateString.substring(commaIndex + 1));" +
+					"			if (criterionConceptIds.contains(encounterConceptId)) {" +
+					"				if ((minEncounterDate == 0 || encounterDate >= minEncounterDate)" +
+					"						&& (maxEncounterDate == 0 || encounterDate <= maxEncounterDate)) {" +
 
-					"				if (!criterionMap.get('has')) {" +
-										// Criterion clauses match but criterion is negated
-//					"					Debug.explain('Criterion clauses match but criterion is negated e:' + e + ', baseEncounterDate:' + baseEncounterDate);" +// TODO remove
-					"					return false;" +
-					"				}" +
+					"					if (!criterionMap.get('has')) {" +
+											// Criterion clauses match but criterion is negated
+//					"						Debug.explain('Criterion clauses match but criterion is negated e:' + e + ', baseEncounterDate:' + baseEncounterDate);" +// TODO remove
+					"						return false;" +
+					"					}" +
 					"" +
-									// This encounter matches so far, frequency check next
-					"				boolean frequencyMatch = frequencyMatch(doc, criterionMap, criterionConceptIds);" +
-					"				if (frequencyMatch == false) {" +
-//					"					Debug.explain('frequencyMatch: false');"
-					"					return false;" +
-					"				}" +
+										// This encounter matches so far, frequency check next
+					"					boolean frequencyMatch = frequencyMatch(doc, criterionMap, criterionConceptIds);" +
+					"					if (frequencyMatch == false) {" +
+//					"						Debug.explain('frequencyMatch: false');"
+					"						return false;" +
+					"					}" +
 
-									// This criterion positive match
-					"				baseEncounterDate = encounterDate;" +
-					"				encounterMatchFound = true;" +
+										// This criterion positive match
+					"					baseEncounterDate = encounterDate;" +
+					"					encounterMatchFound = true;" +
+					"				}" +
 					"			}" +
 					"		}" +
 					"	}" +

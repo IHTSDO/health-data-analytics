@@ -51,6 +51,7 @@ The data model is very simple:
   - dob
   - dobYear (for optimisation)
   - gender (MALE / FEMALE)
+  - event count
   - events (many Clinical Events)
 - Clinical Event
   - date

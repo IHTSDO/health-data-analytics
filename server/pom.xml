@@ -15,6 +15,8 @@
 
 	<properties>
 		<packageName>health-data-analytics</packageName>
+		<!-- used for import of FHIR resources -->
+		<fhir.version>5.1.0</fhir.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -59,6 +61,22 @@
 			<artifactId>embedded-elasticsearch</artifactId>
 			<version>2.10.0</version>
 			<scope>test</scope>
+		</dependency>
+		<!-- used for import of FHIR resources -->
+		<dependency>
+			<groupId>ca.uhn.hapi.fhir</groupId>
+			<artifactId>hapi-fhir-base</artifactId>
+			<version>${fhir.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>ca.uhn.hapi.fhir</groupId>
+			<artifactId>hapi-fhir-structures-r4</artifactId>
+			<version>${fhir.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>ca.uhn.hapi.fhir</groupId>
+			<artifactId>hapi-fhir-structures-dstu3</artifactId>
+			<version>${fhir.version}</version>
 		</dependency>
 	</dependencies>
 	<build>

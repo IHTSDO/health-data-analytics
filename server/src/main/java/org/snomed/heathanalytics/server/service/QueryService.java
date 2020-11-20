@@ -195,21 +195,10 @@ public class QueryService {
 							snomedService.findConcept(conceptId.toString()).getFsn()
 					);
 				} catch (ServiceException e) {
-					conceptTerms.get(conceptId).setTerm(""); //Explicitly, set term to empty string to allow filtering
 				}
 			}
 			timer.split("Fetching concept terms");
 		}
-		//remove all encounters without concept fsn
-		//note: it's not just a visual thing: if the snomed service cannot resolve them they could also not
-		//      have being used for cohort searching (that's at least my opinion)
-		patients.getContent().forEach(patient -> {
-			if (patient.getEncounters() != null) {
-				patient.setEncounters(
-					patient.getEncounters().stream().filter(clinicalEncounter -> !clinicalEncounter.getConceptTerm().isEmpty()).collect(Collectors.toSet())
-				);
-			}
-		});
 		logger.info("Times: {}", timer.getTimes());
 		return patients;
 	}

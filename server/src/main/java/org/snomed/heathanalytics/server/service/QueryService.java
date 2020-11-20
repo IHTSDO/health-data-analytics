@@ -188,19 +188,17 @@ public class QueryService {
 					encounter.setConceptTerm(conceptTerms.computeIfAbsent(encounter.getConceptId(), conceptId -> new TermHolder())));
 		});
 		if (!conceptTerms.isEmpty()) {
-			try {
-				for (Long conceptId : conceptTerms.keySet()) {
-					ConceptResult conceptResult = snomedService.findConcept(conceptId.toString());
-					if (conceptResult != null) {
-						conceptTerms.get(conceptId).setTerm(conceptResult.getFsn());
-					}
+			for (Long conceptId : conceptTerms.keySet()) {
+				//catch every look up exception, otherwise no concept id will be found after first error
+				try {
+					conceptTerms.get(conceptId).setTerm(
+							snomedService.findConcept(conceptId.toString()).getFsn()
+					);
+				} catch (ServiceException e) {
 				}
-			} catch (ServiceException e) {
-				logger.warn("Failed to retrieve concept terms", e);
 			}
 			timer.split("Fetching concept terms");
 		}
-
 		logger.info("Times: {}", timer.getTimes());
 		return patients;
 	}

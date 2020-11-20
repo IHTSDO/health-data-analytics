@@ -117,6 +117,19 @@ Or
 java -Xms3g -jar server/target/server*.jar --import-population='patient-data-for-import'
 ```
 
+Or
+
+- Import single file FHIR resources:
+
+```bash
+java -Xms3g -jar server/target/server*.jar --import-population-fhir-single='patient-data-for-import'
+```
+The optional parameter "--import-fhir-version" specifies the FHIR version. Currently, version 3 ("dstu3") and
+4 ("r4") are supported. The default is "r4". 
+Each file has to contain a "Bundle" or "Collection" resource.
+Import of 10,000 patients (roughly 25GB data) from https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/QDXLWR
+takes about 20min on an I7 notebook.
+
 The program will exit when all patient data has been consumed.
 
 Running the import again will add to the existing data. 

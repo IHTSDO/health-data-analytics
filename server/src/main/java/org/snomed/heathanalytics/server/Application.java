@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.server.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.server.ingestion.fhir.FHIRBulkLocalIngestionSource;
 import org.snomed.heathanalytics.server.ingestion.fhir.FHIRBulkLocalIngestionSourceConfiguration;
+import org.snomed.heathanalytics.server.ingestion.fhir.FHIRLocalIngestionSource;
+import org.snomed.heathanalytics.server.ingestion.fhir.FHIRLocalIngestionSourceConfiguration;
 import org.snomed.heathanalytics.server.ingestion.localdisk.LocalFileNDJsonIngestionSource;
 import org.snomed.heathanalytics.server.ingestion.localdisk.LocalFileNDJsonIngestionSourceConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +45,8 @@ public class Application implements ApplicationRunner {
 
 	public static final String IMPORT_POPULATION_NATIVE = "import-population";
 	public static final String IMPORT_POPULATION_FHIR = "import-population-fhir";
+	public static final String IMPORT_POPULATION_FHIR_SINGLE_RESOURCES = "import-population-fhir-single";
+	public static final String IMPORT_FHIR_VERSION = "import-fhir-version";
 
 	private static final File INDEX_DIRECTORY = new File("snomed-index");
 
@@ -71,6 +75,16 @@ public class Application implements ApplicationRunner {
 				throw new IllegalArgumentException("Option " + IMPORT_POPULATION_FHIR + " requires one directory name after the equals character.");
 			}
 			importPopulationFHIRFormat(new File(values.get(0)));
+			System.exit(0);
+		}
+		if (applicationArguments.containsOption(IMPORT_POPULATION_FHIR_SINGLE_RESOURCES)) {
+			List<String> values = applicationArguments.getOptionValues(IMPORT_POPULATION_FHIR_SINGLE_RESOURCES);
+			if (values.size() != 1) {
+				throw new IllegalArgumentException("Option " + IMPORT_POPULATION_FHIR_SINGLE_RESOURCES + " requires at least a directory name after the equals character.");
+			}
+			List<String> fhirVersionOption = applicationArguments.getOptionValues(IMPORT_FHIR_VERSION);
+			final String fhirVersion = (fhirVersionOption != null && fhirVersionOption.size()==1)?fhirVersionOption.get(0):"R4";
+			importPopulationSingleFhirResources(new File(values.get(0)), fhirVersion);
 			System.exit(0);
 		}
 	}
@@ -116,12 +130,17 @@ public class Application implements ApplicationRunner {
 	}
 
 	private void importPopulationNativeFormat(File populationNDJSONDirectory) {
-		logger.info("******** Importing patent data in native format from {} ...", populationNDJSONDirectory.getPath());
+		logger.info("******** Importing patient data in native format from {} ...", populationNDJSONDirectory.getPath());
 		new LocalFileNDJsonIngestionSource(objectMapper()).stream(new LocalFileNDJsonIngestionSourceConfiguration(populationNDJSONDirectory), elasticOutputStream);
 	}
 
+	private void importPopulationSingleFhirResources(File populationSingleFhirResourcesDirectory, String fhirVersion) {
+		logger.info("******** Importing patient data from single FHIR {} resources from {} ...", fhirVersion, populationSingleFhirResourcesDirectory.getPath());
+		new FHIRLocalIngestionSource().stream(new FHIRLocalIngestionSourceConfiguration(populationSingleFhirResourcesDirectory, fhirVersion), elasticOutputStream);
+	}
+
 	private void importPopulationFHIRFormat(File populationNDJSONDirectory) {
-		logger.info("******** Importing patent data in FHIR format from {} ...", populationNDJSONDirectory.getPath());
+		logger.info("******** Importing patient data in FHIR format from {} ...", populationNDJSONDirectory.getPath());
 		if (!populationNDJSONDirectory.isDirectory()) {
 			throw new IllegalArgumentException(String.format("The path '%s' is not a directory.", populationNDJSONDirectory.getAbsolutePath()));
 		}

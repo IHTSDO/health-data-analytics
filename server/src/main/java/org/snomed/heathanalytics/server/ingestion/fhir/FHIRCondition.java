@@ -1,5 +1,6 @@
 package org.snomed.heathanalytics.server.ingestion.fhir;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import org.elasticsearch.common.Strings;
 
 import java.util.Date;
@@ -11,6 +12,21 @@ public class FHIRCondition {
 	private FHIRCodeableConcept clinicalStatus;
 	private FHIRCodeableConcept verificationStatus;
 	private Date onsetDateTime;
+
+	public FHIRCondition() {
+	}
+
+	public FHIRCondition(FHIRReference subject, FHIRCodeableConcept code, FHIRCodeableConcept clinicalStatus, FHIRCodeableConcept verificationStatus, Date onsetDateTime) {
+		this.subject = subject;
+		this.code = code;
+		this.clinicalStatus = clinicalStatus;
+		this.verificationStatus = verificationStatus;
+		this.onsetDateTime = onsetDateTime;
+	}
+
+	public String getResourceType() {
+		return "Condition";
+	}
 
 	public boolean isConfirmedActive() {
 		if (clinicalStatus != null) {
@@ -46,6 +62,8 @@ public class FHIRCondition {
 		return code;
 	}
 
+	// 1982-10-26T09:38:35+00:00
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ssXXX")
 	public Date getOnsetDateTime() {
 		return onsetDateTime;
 	}

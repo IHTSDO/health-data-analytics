@@ -10,6 +10,19 @@ public class FHIRPatient {
 	private String gender;
 	private Date birthDate;
 
+	public FHIRPatient() {
+	}
+
+	public FHIRPatient(String id, String gender, Date birthDate) {
+		this.id = id;
+		this.gender = gender;
+		this.birthDate = birthDate;
+	}
+
+	public String getResourceType() {
+		return "Patient";
+	}
+
 	public String getId() {
 		return id;
 	}

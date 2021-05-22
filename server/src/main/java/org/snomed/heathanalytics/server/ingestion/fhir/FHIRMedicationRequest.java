@@ -10,6 +10,21 @@ public class FHIRMedicationRequest {
 	private String intent;
 	private Date authoredOn;
 
+	public FHIRMedicationRequest() {
+	}
+
+	public FHIRMedicationRequest(FHIRReference subject, FHIRCodeableConcept medicationCodeableConcept, String status, String intent, Date authoredOn) {
+		this.subject = subject;
+		this.medicationCodeableConcept = medicationCodeableConcept;
+		this.status = status;
+		this.intent = intent;
+		this.authoredOn = authoredOn;
+	}
+
+	public String getResourceType() {
+		return "MedicationRequest";
+	}
+
 	public boolean isActiveOrder() {
 		return "active".equals(status) && intent != null && intent.contains("order");
 	}

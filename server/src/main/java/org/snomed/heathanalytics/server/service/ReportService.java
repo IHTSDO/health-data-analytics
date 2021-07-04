@@ -3,6 +3,7 @@ package org.snomed.heathanalytics.server.service;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.server.model.*;
+import org.snomed.heathanalytics.server.service.stats.StatisticsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,9 @@ public class ReportService {
 
 	@Autowired
 	private QueryService queryService;
+
+	@Autowired
+	private StatisticsService statisticsService;
 
 	public Report runReport(ReportDefinition reportDefinition) throws ServiceException {
 		Timer timer = new Timer();
@@ -34,6 +38,15 @@ public class ReportService {
 
 		LoggerFactory.getLogger(getClass()).info("Times: {}", timer.getTimes());
 		return report;
+	}
+
+	public PatientPageWithEncounterFrequencyDistribution runFrequencyDistributionReport(CohortCriteria cohortCriteria) throws ServiceException {
+		PatientPageWithEncounterFrequencyDistribution page = queryService.fetchCohortEncounterFrequencyDistribution(cohortCriteria);
+		Map<Long, Long> conceptCounts = page.getConceptCounts();
+		System.out.println("conceptCounts size =" + conceptCounts.size());
+		Map<Long, Long> sortedConceptCounts = statisticsService.fillAndSortFrequencyDistribution(conceptCounts);
+		page.setConceptCounts(sortedConceptCounts);
+		return page;
 	}
 
 	public StatisticalCorrelationReport runStatisticalReport(StatisticalCorrelationReportDefinition reportDefinition) throws ServiceException {
@@ -115,5 +128,4 @@ public class ReportService {
 	private void removeLast(List<EncounterCriterion> list) {
 		list.remove(list.size() - 1);
 	}
-
 }

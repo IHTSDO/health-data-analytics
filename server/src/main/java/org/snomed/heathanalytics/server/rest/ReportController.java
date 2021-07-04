@@ -2,10 +2,7 @@ package org.snomed.heathanalytics.server.rest;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.snomed.heathanalytics.server.model.Report;
-import org.snomed.heathanalytics.server.model.ReportDefinition;
-import org.snomed.heathanalytics.server.model.StatisticalCorrelationReport;
-import org.snomed.heathanalytics.server.model.StatisticalCorrelationReportDefinition;
+import org.snomed.heathanalytics.server.model.*;
 import org.snomed.heathanalytics.server.pojo.Stats;
 import org.snomed.heathanalytics.server.service.QueryService;
 import org.snomed.heathanalytics.server.service.ReportService;
@@ -54,6 +51,17 @@ public class ReportController {
 	@ResponseBody
 	public Report runReport(@RequestBody ReportDefinition reportDefinition) throws ServiceException {
 		return reportService.runReport(reportDefinition);
+	}
+
+	@ApiOperation(value = "Create a report of patient encounter frequency distribution.",
+			notes = "Create a report of patient encounter frequency distribution. " +
+					"For each encounter recorded, a hit for every ancestor of that concept is also recorded.  \n" +
+					"So, for example, if there is an encounter of 'Insulin dependent diabetes mellitus type IA', a hit for concepts 'Diabetes mellitus type 1', " +
+					"'Diabetes mellitus', 'Disorder of endocrine system' etc are also recorded in the frequency results.")
+	@RequestMapping(value = "/encounter-frequency-report", method = RequestMethod.POST, produces = "application/json")
+	@ResponseBody
+	public PatientPageWithEncounterFrequencyDistribution runFrequencyDistributionReport(@RequestBody CohortCriteria cohortCriteria) throws ServiceException {
+		return reportService.runFrequencyDistributionReport(cohortCriteria);
 	}
 
 	@ApiOperation(value = "Statistical encounter correlation report.",

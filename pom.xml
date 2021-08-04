@@ -12,6 +12,7 @@
 		<module>model</module>
 		<module>generator</module>
 		<module>server</module>
+		<module>utilities</module>
 	</modules>
 
 	<name>SNOMED Health Data Analytics Demonstrator</name>

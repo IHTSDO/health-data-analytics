@@ -8,7 +8,10 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class EncounterCluster {
 
@@ -22,12 +25,53 @@ public class EncounterCluster {
 		String termToConceptMapFile = "barts-core-problem-list-map.txt";
 		String encounterFrequencyFile = "Criteria Frequency - everyone_social.150621-problems.csv";
 		String relationshipFile = "release/Snapshot/Terminology/sct2_Relationship_Snapshot_INT_20210131.txt";
+		int minEncounterFrequency = 100;
 
 		Map<String, Long> termToConceptMap = readTermToConceptMap(termToConceptMapFile);
 		Map<Long, Integer> encounterFrequency = readEncounterFrequency(encounterFrequencyFile, termToConceptMap);
 		final Map<Long, Node> nodeMap = buildHierarchy(relationshipFile);
 
 		addEncountersToNodes(encounterFrequency, nodeMap);
+
+		final Node rootConcept = nodeMap.get(138875005L);
+		clusterEncounters(rootConcept, minEncounterFrequency, new HashSet<>());
+	}
+
+	private boolean clusterEncounters(Node conceptNode, int minEncounterFrequency, Set<Long> clusterPoints) {
+		final Long conceptId = conceptNode.getId();
+		if (clusterPoints.contains(conceptId)) {
+			return false;
+		}
+		final Integer frequency = conceptNode.getAggregateFrequency();
+		if (frequency > 0 && frequency < minEncounterFrequency) {
+			return true;
+		}
+
+		boolean clusteringRequired = false;
+		for (Node child : conceptNode.getChildren()) {
+			if (clusterEncounters(child, minEncounterFrequency, clusterPoints)) {
+				clusteringRequired = true;
+			}
+		}
+		if (clusteringRequired) {
+			Map<Long, Integer> insufficientChildFrequencies = conceptNode.getChildren().stream()
+					.filter(node -> node.getAggregateFrequency() > 0 && node.getAggregateFrequency() < minEncounterFrequency)
+					.collect(Collectors.toMap(Node::getId, Node::getAggregateFrequency));
+			Map<Long, Integer> sufficientChildFrequencies = conceptNode.getChildren().stream()
+					.filter(node -> node.getAggregateFrequency() > 0 && node.getAggregateFrequency() >= minEncounterFrequency)
+					.collect(Collectors.toMap(Node::getId, Node::getAggregateFrequency));
+
+			String childFrequenciesMessage = sufficientChildFrequencies.isEmpty() ? "" : String.format(", and those with sufficient frequency:%s", sufficientChildFrequencies);
+			final Integer ownFrequency = conceptNode.getFrequency();
+			String ownFrequencyMessage = ownFrequency != null ? String.format(", own frequency:%s", ownFrequency) : "";
+
+			logger.info("Concept {}, with aggregated frequency {}, should be used to summarise concepts without sufficient frequency:{}{}{}.",
+					conceptId, conceptNode.getAggregateFrequency(), insufficientChildFrequencies, childFrequenciesMessage, ownFrequencyMessage);
+
+			clusterPoints.add(conceptId);
+		}
+
+		return false;
 	}
 
 	private Map<String, Long> readTermToConceptMap(String termToConceptMapFile) {

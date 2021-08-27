@@ -7,25 +7,38 @@ import org.snomed.heathanalytics.util.model.Node;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class EncounterCluster {
 
-	public static void main(String[] args) {
-		new EncounterCluster().run();
+	public static final long ROOT_CONCEPT = 138875005L;
+	public static final String TERM_TO_CONCEPT_MAP = "-term-to-concept-map";
+	public static final String ENCOUNTER_FREQUENCY = "-encounter-frequency-file";
+	public static final String RELATIONSHIPS = "-relationship-file";
+	public static final String MIN_ENCOUNTER_FREQUENCY = "-min-encounter-frequency";
+	public static final String MIN_FREQUENCY_DEFAULT = "100";
+	public static final String HELP = "-help";
+
+	// -term-to-concept-map barts-core-problem-list-map.txt
+	// -encounter-frequency-file "Criteria Frequency - everyone_social.150621-problems.csv"
+	// -relationship-file ../release/Snapshot/Terminology/sct2_Relationship_Snapshot_INT_20210731.txt
+	// -min-encounter-frequency 100
+	public static void main(String[] args) throws IOException {
+		new EncounterCluster().run(Arrays.asList(args));
 	}
 
 	final Logger logger = LoggerFactory.getLogger(getClass());
+	private void run(List<String> args) throws IOException {
+		if (args.isEmpty() || args.contains(HELP)) {
+			printHelp();
+			return;
+		}
 
-	private void run() {
-		String termToConceptMapFile = "barts-core-problem-list-map.txt";
-		String encounterFrequencyFile = "Criteria Frequency - everyone_social.150621-problems.csv";
-		String relationshipFile = "release/Snapshot/Terminology/sct2_Relationship_Snapshot_INT_20210131.txt";
-		int minEncounterFrequency = 100;
+		String termToConceptMapFile = getArgValue(TERM_TO_CONCEPT_MAP, args);
+		String encounterFrequencyFile = getArgValue(ENCOUNTER_FREQUENCY, args);
+		String relationshipFile = getArgValue(RELATIONSHIPS, args);
+		int minEncounterFrequency = Integer.parseInt(getArgValue(MIN_ENCOUNTER_FREQUENCY, args, MIN_FREQUENCY_DEFAULT));
 
 		Map<String, Long> termToConceptMap = readTermToConceptMap(termToConceptMapFile);
 		Map<Long, Integer> encounterFrequency = readEncounterFrequency(encounterFrequencyFile, termToConceptMap);
@@ -33,8 +46,30 @@ public class EncounterCluster {
 
 		addEncountersToNodes(encounterFrequency, nodeMap);
 
-		final Node rootConcept = nodeMap.get(138875005L);
+		final Node rootConcept = nodeMap.get(ROOT_CONCEPT);
 		clusterEncounters(rootConcept, minEncounterFrequency, new HashSet<>());
+
+		// List of concepts with no clinical meaning - do not cluster here
+		// Ask for number of categories up front
+		// List of concepts to leave alone / not cluster
+		// Output all encounters and clusters (new list)
+	}
+
+	private String getArgValue(String key, List<String> args) {
+		return getArgValue(key, args, null);
+	}
+
+	private String getArgValue(String key, List<String> args, String defaultValue) {
+		final int index = args.indexOf(key);
+		if (index == -1 || index == args.size() - 1) {
+			return defaultValue;
+		}
+		return args.get(index + 1);
+	}
+
+	private void printHelp() {
+		System.out.printf("Usage: %s \"file-path\" %s \"file-path\" %s \"file-path\" [%s 100]%n",
+				TERM_TO_CONCEPT_MAP, ENCOUNTER_FREQUENCY, RELATIONSHIPS, MIN_ENCOUNTER_FREQUENCY);
 	}
 
 	private boolean clusterEncounters(Node conceptNode, int minEncounterFrequency, Set<Long> clusterPoints) {
@@ -130,7 +165,7 @@ public class EncounterCluster {
 
 	}
 
-	private Map<Long, Node> buildHierarchy(String relationshipFile) {
+	private Map<Long, Node> buildHierarchy(String relationshipFile) throws IOException {
 		Map<Long, Node> nodeMap = new HashMap<>();
 		try (BufferedReader mapReader = new BufferedReader(new FileReader(relationshipFile))) {
 			final String header = mapReader.readLine();
@@ -151,8 +186,6 @@ public class EncounterCluster {
 				}
 			}
 			logger.info("Loaded {} active concepts into hierarchy.", nodeMap.size());
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
 		return nodeMap;
 

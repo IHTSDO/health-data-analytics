@@ -2,15 +2,21 @@ package org.snomed.heathanalytics.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.heathanalytics.util.model.Feature;
 import org.snomed.heathanalytics.util.model.Node;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class EncounterCluster {
+
+	// Development roadmap:
+	// Output complete list of features with: conceptId, overall frequency, included weak encounters, included sub-features - DONE
+	// Output list of original encounters with: conceptId, count of times included in a feature - DONE
+	// Input list of concepts to leave alone / not cluster
+	// Input list of concepts with no clinical meaning - do not cluster here
+	// Input number of categories required
 
 	public static final long ROOT_CONCEPT = 138875005L;
 	public static final String TERM_TO_CONCEPT_MAP = "-term-to-concept-map";
@@ -30,29 +36,91 @@ public class EncounterCluster {
 
 	final Logger logger = LoggerFactory.getLogger(getClass());
 	private void run(List<String> args) throws IOException {
+		// Output help if no input arguments or help requested
 		if (args.isEmpty() || args.contains(HELP)) {
 			printHelp();
 			return;
 		}
 
+		// Read input arguments
 		String termToConceptMapFile = getArgValue(TERM_TO_CONCEPT_MAP, args);
 		String encounterFrequencyFile = getArgValue(ENCOUNTER_FREQUENCY, args);
 		String relationshipFile = getArgValue(RELATIONSHIPS, args);
 		int minEncounterFrequency = Integer.parseInt(getArgValue(MIN_ENCOUNTER_FREQUENCY, args, MIN_FREQUENCY_DEFAULT));
 
+		// Read input files
 		Map<String, Long> termToConceptMap = readTermToConceptMap(termToConceptMapFile);
-		Map<Long, Integer> encounterFrequency = readEncounterFrequency(encounterFrequencyFile, termToConceptMap);
+		Map<Long, Long> encounterFrequencyMap = readEncounterFrequency(encounterFrequencyFile, termToConceptMap);
 		final Map<Long, Node> nodeMap = buildHierarchy(relationshipFile);
 
-		addEncountersToNodes(encounterFrequency, nodeMap);
+		// Map encounters and frequencies into concept hierarchy
+		addEncountersToNodes(encounterFrequencyMap, nodeMap);
 
+		// Traverse hierarchy and perform clustering where needed
 		final Node rootConcept = nodeMap.get(ROOT_CONCEPT);
-		clusterEncounters(rootConcept, minEncounterFrequency, new HashSet<>());
+		final Map<Long, Feature> clusterPoints = new HashMap<>();
+		clusterEncounters(rootConcept, minEncounterFrequency, clusterPoints);
+		logger.info("Clustering complete.");
 
-		// List of concepts with no clinical meaning - do not cluster here
-		// Ask for number of categories up front
-		// List of concepts to leave alone / not cluster
-		// Output all encounters and clusters (new list)
+		// Build list of all features including clusters and survivors for output
+		final Map<Long, Feature> features = new HashMap<>(clusterPoints);
+		// Add surviving encounters to feature list
+		for (Map.Entry<Long, Long> encounterFrequency : encounterFrequencyMap.entrySet()) {
+			final Long conceptId = encounterFrequency.getKey();
+			if (!features.containsKey(conceptId) && encounterFrequency.getValue() >= minEncounterFrequency) {
+				features.put(conceptId, Feature.newSurvivingFeature(conceptId, encounterFrequency.getValue()));
+			}
+		}
+
+		// Output complete list of features
+		final String outputFeaturesFilename = "features.tsv";
+		try (BufferedWriter featureListWriter = new BufferedWriter(new FileWriter(outputFeaturesFilename))) {
+			featureListWriter.write("featureConceptId\toverallFrequency\tincludesWeakEncounters\tincludesSubFeatures");
+			featureListWriter.newLine();
+			for (Feature feature : features.values()) {
+				featureListWriter.write(String.format("%s\t%s\t%s\t%s", feature.getConceptId(), feature.getAggregatedFrequency(),
+						stringWithoutBraces(feature.getWeakConcepts()),
+						stringWithoutBraces(feature.getSubFeatures())));
+				featureListWriter.newLine();
+			}
+		}
+		logger.info("Written complete feature list to \"{}\". {} features including {} clusters.", outputFeaturesFilename,
+				features.size(), features.values().stream().filter(Feature::isCluster).count());
+
+		// Output list of original encounters with feature inclusion count
+		final String outputEncounterFeatureInclusionFilename = "encounter_feature_inclusion.tsv";
+		int encounterIncludedInAFeature = 0;
+		try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputEncounterFeatureInclusionFilename))) {
+			writer.write("encounterConceptId\tsufficientFrequency\tfeatureInclusionCount");
+			writer.newLine();
+			for (Long encounterConceptId : encounterFrequencyMap.keySet()) {
+				int inclusions = 0;
+				for (Feature feature : features.values()) {
+					if (feature.getConceptId().equals(encounterConceptId) ||
+							feature.getWeakConcepts().contains(encounterConceptId) ||
+							feature.getSubFeatures().contains(encounterConceptId)) {
+						inclusions++;
+					}
+				}
+				if (inclusions > 0) {
+					encounterIncludedInAFeature++;
+				}
+				writer.write(encounterConceptId.toString());
+				writer.write("\t");
+				writer.write(String.valueOf(encounterFrequencyMap.get(encounterConceptId) >= minEncounterFrequency));
+				writer.write("\t");
+				writer.write(String.valueOf(inclusions));
+				writer.newLine();
+			}
+		}
+		logger.info("Written encounter feature inclusion list to \"{}\". Out of {} encounter concepts {} were included in one or more features, {} were included in none.",
+				outputEncounterFeatureInclusionFilename, encounterFrequencyMap.size(),
+				encounterIncludedInAFeature, encounterFrequencyMap.size() - encounterIncludedInAFeature);
+
+	}
+
+	private String stringWithoutBraces(Collection<?> collection) {
+		return collection.toString().replace("[", "").replace("]", "");
 	}
 
 	private String getArgValue(String key, List<String> args) {
@@ -72,12 +140,12 @@ public class EncounterCluster {
 				TERM_TO_CONCEPT_MAP, ENCOUNTER_FREQUENCY, RELATIONSHIPS, MIN_ENCOUNTER_FREQUENCY);
 	}
 
-	private boolean clusterEncounters(Node conceptNode, int minEncounterFrequency, Set<Long> clusterPoints) {
+	private boolean clusterEncounters(Node conceptNode, int minEncounterFrequency, Map<Long, Feature> clusterPoints) {
 		final Long conceptId = conceptNode.getId();
-		if (clusterPoints.contains(conceptId)) {
+		if (clusterPoints.containsKey(conceptId)) {
 			return false;
 		}
-		final Integer frequency = conceptNode.getAggregateFrequency();
+		final Long frequency = conceptNode.getAggregateFrequency();
 		if (frequency > 0 && frequency < minEncounterFrequency) {
 			return true;
 		}
@@ -89,21 +157,21 @@ public class EncounterCluster {
 			}
 		}
 		if (clusteringRequired) {
-			Map<Long, Integer> insufficientChildFrequencies = conceptNode.getChildren().stream()
+			Map<Long, Long> insufficientChildFrequencies = conceptNode.getChildren().stream()
 					.filter(node -> node.getAggregateFrequency() > 0 && node.getAggregateFrequency() < minEncounterFrequency)
 					.collect(Collectors.toMap(Node::getId, Node::getAggregateFrequency));
-			Map<Long, Integer> sufficientChildFrequencies = conceptNode.getChildren().stream()
+			Map<Long, Long> sufficientChildFrequencies = conceptNode.getChildren().stream()
 					.filter(node -> node.getAggregateFrequency() > 0 && node.getAggregateFrequency() >= minEncounterFrequency)
 					.collect(Collectors.toMap(Node::getId, Node::getAggregateFrequency));
 
 			String childFrequenciesMessage = sufficientChildFrequencies.isEmpty() ? "" : String.format(", and those with sufficient frequency:%s", sufficientChildFrequencies);
-			final Integer ownFrequency = conceptNode.getFrequency();
+			final Long ownFrequency = conceptNode.getFrequency();
 			String ownFrequencyMessage = ownFrequency != null ? String.format(", own frequency:%s", ownFrequency) : "";
 
 			logger.info("Concept {}, with aggregated frequency {}, should be used to summarise concepts without sufficient frequency:{}{}{}.",
 					conceptId, conceptNode.getAggregateFrequency(), insufficientChildFrequencies, childFrequenciesMessage, ownFrequencyMessage);
 
-			clusterPoints.add(conceptId);
+			clusterPoints.put(conceptId, Feature.newCluster(conceptId, conceptNode.getAggregateFrequency(), insufficientChildFrequencies.keySet(), sufficientChildFrequencies.keySet()));
 		}
 
 		return false;
@@ -133,8 +201,8 @@ public class EncounterCluster {
 		return termToConceptMap;
 	}
 
-	private Map<Long, Integer> readEncounterFrequency(String encounterFrequencyFile, Map<String, Long> termToConceptMap) {
-		Map<Long, Integer> encounterFrequencyMap = new HashMap<>();
+	private Map<Long, Long> readEncounterFrequency(String encounterFrequencyFile, Map<String, Long> termToConceptMap) {
+		Map<Long, Long> encounterFrequencyMap = new HashMap<>();
 		try (BufferedReader mapReader = new BufferedReader(new FileReader(encounterFrequencyFile))) {
 			final String header = mapReader.readLine();
 			logger.info("Reading encounter frequency map with header line: {}", header);
@@ -149,7 +217,7 @@ public class EncounterCluster {
 					final String term = values[0].toLowerCase().replace("_", " ");
 					final Long concept = termToConceptMap.get(term);
 					if (concept != null) {
-						encounterFrequencyMap.put(concept, Integer.parseInt(values[1]));
+						encounterFrequencyMap.put(concept, Long.parseLong(values[1]));
 					} else {
 						logger.warn("Term {} not found in map. Line {} of encounter file not used.", term, line);
 					}
@@ -191,9 +259,9 @@ public class EncounterCluster {
 
 	}
 
-	private void addEncountersToNodes(Map<Long, Integer> encounterFrequency, Map<Long, Node> nodeMap) {
+	private void addEncountersToNodes(Map<Long, Long> encounterFrequency, Map<Long, Node> nodeMap) {
 		int added = 0;
-		for (Map.Entry<Long, Integer> entry : encounterFrequency.entrySet()) {
+		for (Map.Entry<Long, Long> entry : encounterFrequency.entrySet()) {
 			final Node node = nodeMap.get(entry.getKey());
 			if (node != null) {
 				node.setFrequency(entry.getValue());

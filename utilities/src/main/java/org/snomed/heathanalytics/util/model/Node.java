@@ -9,14 +9,14 @@ public class Node {
 	private final Long id;
 	private final Set<Node> parents;
 	private final Set<Node> children;
-	private Integer frequency;
-	private Integer aggregateFrequency;
+	private Long frequency;
+	private Long aggregateFrequency;
 
 	public Node(Long id) {
 		this.id = id;
 		parents = new HashSet<>();
 		children = new HashSet<>();
-		aggregateFrequency = 0;
+		aggregateFrequency = 0L;
 	}
 
 	public Long getId() {
@@ -32,23 +32,23 @@ public class Node {
 		return children;
 	}
 
-	public void setFrequency(Integer frequency) {
+	public void setFrequency(Long frequency) {
 		this.frequency = frequency;
 		addToAggregateFrequency(frequency);
 	}
 
-	private void addToAggregateFrequency(Integer frequency) {
+	private void addToAggregateFrequency(Long frequency) {
 		aggregateFrequency += frequency;
 		for (Node parent : parents) {
 			parent.addToAggregateFrequency(frequency);
 		}
 	}
 
-	public Integer getFrequency() {
+	public Long getFrequency() {
 		return frequency;
 	}
 
-	public Integer getAggregateFrequency() {
+	public Long getAggregateFrequency() {
 		return aggregateFrequency;
 	}
 

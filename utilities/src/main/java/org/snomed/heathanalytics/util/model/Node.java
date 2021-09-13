@@ -3,20 +3,20 @@ package org.snomed.heathanalytics.util.model;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 
 public class Node {
 
 	private final Long id;
-	private final Set<Node> parents;
 	private final Set<Node> children;
 	private Long frequency;
-	private Long aggregateFrequency;
+	private boolean covered;
 
 	public Node(Long id) {
 		this.id = id;
-		parents = new HashSet<>();
 		children = new HashSet<>();
-		aggregateFrequency = 0L;
+		frequency = 0L;
 	}
 
 	public Long getId() {
@@ -24,7 +24,6 @@ public class Node {
 	}
 
 	public void addParent(Node parentNode) {
-		parents.add(parentNode);
 		parentNode.getChildren().add(this);
 	}
 
@@ -34,22 +33,62 @@ public class Node {
 
 	public void setFrequency(Long frequency) {
 		this.frequency = frequency;
-		addToAggregateFrequency(frequency);
-	}
-
-	private void addToAggregateFrequency(Long frequency) {
-		aggregateFrequency += frequency;
-		for (Node parent : parents) {
-			parent.addToAggregateFrequency(frequency);
-		}
 	}
 
 	public Long getFrequency() {
 		return frequency;
 	}
 
+	public boolean hasFrequency() {
+		return frequency > 0;
+	}
+
 	public Long getAggregateFrequency() {
-		return aggregateFrequency;
+		final AtomicLong aggFrequency = new AtomicLong();
+		doGetAggregateFrequency(aggFrequency, child -> true, new HashSet<>());
+		return aggFrequency.get();
+	}
+
+	public Long getRemainingAggregateFrequency() {
+		final AtomicLong aggFrequency = new AtomicLong();
+		doGetAggregateFrequency(aggFrequency, child -> !child.isCovered(), new HashSet<>());
+		return aggFrequency.get();
+	}
+
+	private void doGetAggregateFrequency(AtomicLong aggFrequency, Predicate<Node> predicate, Set<Long> visited) {
+		if (!visited.contains(id)) {
+			visited.add(id);
+			aggFrequency.addAndGet(frequency);
+			for (Node child : children) {
+				if (predicate.test(child)) {
+					child.doGetAggregateFrequency(aggFrequency, predicate, visited);
+				}
+			}
+		}
+	}
+
+	public boolean isCovered() {
+		return covered;
+	}
+
+	public void markAsCoveredIncDescendants() {
+		covered = true;
+		for (Node child : children) {
+			child.markAsCoveredIncDescendants();
+		}
+	}
+
+	public Set<Node> getDescendants() {
+		Set<Node> set = new HashSet<>();
+		doGetDescendants(set);
+		return set;
+	}
+
+	private void doGetDescendants(Set<Node> set) {
+		for (Node child : children) {
+			set.add(child);
+			child.doGetDescendants(set);
+		}
 	}
 
 	@Override

@@ -7,12 +7,13 @@ import org.snomed.heathanalytics.util.model.Node;
 
 import java.io.*;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class EncounterCluster {
 
 	// Development roadmap:
-	// Output complete list of features with: conceptId, overall frequency, included weak encounters, included sub-features - DONE
+	// Output complete list of features with: conceptId, remaining-aggregate-frequency, total-aggregate-frequency, included weak encounters, included sub-features - DONE
 	// Output list of original encounters with: conceptId, count of times included in a feature - DONE
 	// Input list of concepts to leave alone / not cluster
 	// Input list of concepts with no clinical meaning - do not cluster here
@@ -58,27 +59,20 @@ public class EncounterCluster {
 
 		// Traverse hierarchy and perform clustering where needed
 		final Node rootConcept = nodeMap.get(ROOT_CONCEPT);
-		final Map<Long, Feature> clusterPoints = new HashMap<>();
-		clusterEncounters(rootConcept, minEncounterFrequency, clusterPoints);
+		final Map<Long, Feature> features = new HashMap<>();
+		clusterEncounters(rootConcept, minEncounterFrequency, features);
 		logger.info("Clustering complete.");
-
-		// Build list of all features including clusters and survivors for output
-		final Map<Long, Feature> features = new HashMap<>(clusterPoints);
-		// Add surviving encounters to feature list
-		for (Map.Entry<Long, Long> encounterFrequency : encounterFrequencyMap.entrySet()) {
-			final Long conceptId = encounterFrequency.getKey();
-			if (!features.containsKey(conceptId) && encounterFrequency.getValue() >= minEncounterFrequency) {
-				features.put(conceptId, Feature.newSurvivingFeature(conceptId, encounterFrequency.getValue()));
-			}
-		}
 
 		// Output complete list of features
 		final String outputFeaturesFilename = "features.tsv";
 		try (BufferedWriter featureListWriter = new BufferedWriter(new FileWriter(outputFeaturesFilename))) {
-			featureListWriter.write("featureConceptId\toverallFrequency\tincludesWeakEncounters\tincludesSubFeatures");
+			featureListWriter.write("featureConceptId\tremainingAggregateFrequency\ttotalAggregateFrequency\tincludesWeakEncounters\tincludesSubFeatures");
 			featureListWriter.newLine();
 			for (Feature feature : features.values()) {
-				featureListWriter.write(String.format("%s\t%s\t%s\t%s", feature.getConceptId(), feature.getAggregatedFrequency(),
+				featureListWriter.write(String.format("%s\t%s\t%s\t%s\t%s",
+						feature.getConceptId(),
+						feature.getRemainingAggregateFrequency(),
+						feature.getAggregateFrequency(),
 						stringWithoutBraces(feature.getWeakConcepts()),
 						stringWithoutBraces(feature.getSubFeatures())));
 				featureListWriter.newLine();
@@ -140,41 +134,81 @@ public class EncounterCluster {
 				TERM_TO_CONCEPT_MAP, ENCOUNTER_FREQUENCY, RELATIONSHIPS, MIN_ENCOUNTER_FREQUENCY);
 	}
 
-	private boolean clusterEncounters(Node conceptNode, int minEncounterFrequency, Map<Long, Feature> clusterPoints) {
+	/**
+	 * Walk the hierarchy top down, depth first.
+	 * Starting at the top, keep walking down the hierarchy until either finding leaves or a level where the aggregate frequency is not sufficient.
+	 * - If leaves are found that have sufficient frequency create features from these.
+	 * - Otherwise if any level is found that has insufficient aggregate frequency signal to the parent level that clustering is required.
+	 * When a parent level receives the cluster signal calculate the aggregate frequency excluding concepts already within a feature.
+	 * - If the calculated aggregate frequency is sufficient create a feature at this level.
+	 * - Otherwise allow the hierarchy walking to continue.
+	 *
+	 * @param conceptNode    		The current node within the linked hierarchy
+	 * @param minEncounterFrequency	The minimum encounter frequency required for feature to be made
+	 * @param features				The map of features created so far
+	 * @return Flag to signal to parent if this level requires clustering
+	 */
+	private boolean clusterEncounters(Node conceptNode, int minEncounterFrequency, Map<Long, Feature> features) {
 		final Long conceptId = conceptNode.getId();
-		if (clusterPoints.containsKey(conceptId)) {
-			return false;
-		}
-		final Long frequency = conceptNode.getAggregateFrequency();
-		if (frequency > 0 && frequency < minEncounterFrequency) {
+		Long remainingAggregateFrequency = conceptNode.getRemainingAggregateFrequency();
+		if (remainingAggregateFrequency > 0 && remainingAggregateFrequency < minEncounterFrequency) {
+			// Ask parent to cluster
 			return true;
 		}
 
-		boolean clusteringRequired = false;
+		boolean childrenRequestedClustering = false;
 		for (Node child : conceptNode.getChildren()) {
-			if (clusterEncounters(child, minEncounterFrequency, clusterPoints)) {
-				clusteringRequired = true;
+			if (!child.isCovered() && clusterEncounters(child, minEncounterFrequency, features)) {
+				childrenRequestedClustering = true;
 			}
 		}
-		if (clusteringRequired) {
-			Map<Long, Long> insufficientChildFrequencies = conceptNode.getChildren().stream()
-					.filter(node -> node.getAggregateFrequency() > 0 && node.getAggregateFrequency() < minEncounterFrequency)
-					.collect(Collectors.toMap(Node::getId, Node::getAggregateFrequency));
-			Map<Long, Long> sufficientChildFrequencies = conceptNode.getChildren().stream()
-					.filter(node -> node.getAggregateFrequency() > 0 && node.getAggregateFrequency() >= minEncounterFrequency)
-					.collect(Collectors.toMap(Node::getId, Node::getAggregateFrequency));
 
-			String childFrequenciesMessage = sufficientChildFrequencies.isEmpty() ? "" : String.format(", and those with sufficient frequency:%s", sufficientChildFrequencies);
-			final Long ownFrequency = conceptNode.getFrequency();
-			String ownFrequencyMessage = ownFrequency != null ? String.format(", own frequency:%s", ownFrequency) : "";
-
-			logger.info("Concept {}, with aggregated frequency {}, should be used to summarise concepts without sufficient frequency:{}{}{}.",
-					conceptId, conceptNode.getAggregateFrequency(), insufficientChildFrequencies, childFrequenciesMessage, ownFrequencyMessage);
-
-			clusterPoints.put(conceptId, Feature.newCluster(conceptId, conceptNode.getAggregateFrequency(), insufficientChildFrequencies.keySet(), sufficientChildFrequencies.keySet()));
+		// Grab updated remaining aggregate frequency - this may now be lower because child concepts may have been included in a feature
+		remainingAggregateFrequency = conceptNode.getRemainingAggregateFrequency();
+		if (remainingAggregateFrequency == 0) {
+			// No encounter data left to create a feature from
+			conceptNode.markAsCoveredIncDescendants();
+			return false;
 		}
 
-		return false;
+		if (remainingAggregateFrequency < minEncounterFrequency) {
+			// Insufficient frequency to create a feature here
+			// Ask parent to cluster
+			return true;
+		} else {
+			// Sufficient frequency
+			if (childrenRequestedClustering) {
+				final Set<Node> descendants = conceptNode.getDescendants();
+				Map<Long, Long> insufficientChildFrequencies = descendants.stream()
+						.filter(Node::hasFrequency)
+						.filter(Predicate.not(Node::isCovered))
+						.collect(Collectors.toMap(Node::getId, Node::getFrequency));
+
+				Set<Long> includedInOtherFeatures = descendants.stream()
+						.filter(Node::hasFrequency)
+						.filter(Node::isCovered)
+						.map(Node::getId)
+						.collect(Collectors.toSet());
+
+
+				String childFrequenciesMessage = includedInOtherFeatures.isEmpty() ? "" : String.format(". Concepts in sub-features:%s", includedInOtherFeatures);
+				String ownFrequencyMessage = conceptNode.hasFrequency() ? String.format(" and own frequency:%s", conceptNode.getFrequency()) : "";
+
+				logger.info("New cluster at concept {}, with remaining-aggregate-frequency {} including weak descendants:{}{}{}.",
+						conceptId, remainingAggregateFrequency, insufficientChildFrequencies, ownFrequencyMessage, childFrequenciesMessage);
+
+				features.put(conceptId, Feature.newCluster(conceptId, conceptNode.getAggregateFrequency(), remainingAggregateFrequency,
+						insufficientChildFrequencies.keySet(), includedInOtherFeatures));
+			} else {
+				// Single encounter survives as feature
+				features.put(conceptId, Feature.newSurvivingFeature(conceptId, conceptNode.getFrequency()));
+			}
+
+			// Set covered flag for ancestors and self. Decrement remaining aggregate frequency.
+			conceptNode.markAsCoveredIncDescendants();
+
+			return false;
+		}
 	}
 
 	private Map<String, Long> readTermToConceptMap(String termToConceptMapFile) {

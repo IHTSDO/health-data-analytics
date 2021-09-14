@@ -23,6 +23,7 @@ public class EncounterCluster {
 	public static final String TERM_TO_CONCEPT_MAP = "-term-to-concept-map";
 	public static final String ENCOUNTER_FREQUENCY = "-encounter-frequency-file";
 	public static final String RELATIONSHIPS = "-relationship-file";
+	public static final String DESCRIPTIONS = "-description-file";
 	public static final String MIN_ENCOUNTER_FREQUENCY = "-min-encounter-frequency";
 	public static final String MIN_FREQUENCY_DEFAULT = "100";
 	public static final String HELP = "-help";
@@ -30,6 +31,8 @@ public class EncounterCluster {
 	public static final Set<Long> NO_CLINICAL_MEANING = Set.of(
 			138875005L,// 138875005 | SNOMED CT Concept (SNOMED RT+CTV3) |
 			404684003L,// 404684003 | Clinical finding (finding) |
+			118240005L,// 118240005 | Finding by method (finding) |
+			118228005L,// 118228005 | Functional finding (finding) |
 			64572001L,// 64572001 | Disease (disorder) |
 			362965005L,// 362965005 | Disorder of body system (disorder) |
 			441742003L,// 441742003 | Evaluation finding (finding) |
@@ -58,11 +61,13 @@ public class EncounterCluster {
 		String termToConceptMapFile = getArgValue(TERM_TO_CONCEPT_MAP, args);
 		String encounterFrequencyFile = getArgValue(ENCOUNTER_FREQUENCY, args);
 		String relationshipFile = getArgValue(RELATIONSHIPS, args);
+		String descriptionsFile = getArgValue(DESCRIPTIONS, args);
 		int minEncounterFrequency = Integer.parseInt(getArgValue(MIN_ENCOUNTER_FREQUENCY, args, MIN_FREQUENCY_DEFAULT));
 
 		// Read input files
 		Map<String, Long> termToConceptMap = readTermToConceptMap(termToConceptMapFile);
 		Map<Long, Long> encounterFrequencyMap = readEncounterFrequency(encounterFrequencyFile, termToConceptMap);
+		Map<Long, String> conceptFsnMap = readFSNDescriptions(descriptionsFile);
 		final Map<Long, Node> nodeMap = buildHierarchy(relationshipFile);
 
 		// Map encounters and frequencies into concept hierarchy
@@ -77,11 +82,12 @@ public class EncounterCluster {
 		// Output complete list of features
 		final String outputFeaturesFilename = "features.tsv";
 		try (BufferedWriter featureListWriter = new BufferedWriter(new FileWriter(outputFeaturesFilename))) {
-			featureListWriter.write("featureConceptId\tremainingAggregateFrequency\ttotalAggregateFrequency\tincludesWeakEncounters\tincludesSubFeatures");
+			featureListWriter.write("featureConceptId\tFSN\tremainingAggregateFrequency\ttotalAggregateFrequency\tincludesWeakEncounters\tincludesSubFeatures");
 			featureListWriter.newLine();
 			for (Feature feature : features.values()) {
-				featureListWriter.write(String.format("%s\t%s\t%s\t%s\t%s",
+				featureListWriter.write(String.format("%s\t%s\t%s\t%s\t%s\t%s",
 						feature.getConceptId(),
+						conceptFsnMap.get(feature.getConceptId()),
 						feature.getRemainingAggregateFrequency(),
 						feature.getAggregateFrequency(),
 						stringWithoutBraces(feature.getWeakConcepts()),
@@ -141,8 +147,8 @@ public class EncounterCluster {
 	}
 
 	private void printHelp() {
-		System.out.printf("Usage: %s \"file-path\" %s \"file-path\" %s \"file-path\" [%s 100]%n",
-				TERM_TO_CONCEPT_MAP, ENCOUNTER_FREQUENCY, RELATIONSHIPS, MIN_ENCOUNTER_FREQUENCY);
+		System.out.printf("Usage: %s \"file-path\" %s \"file-path\" %s \"file-path\" %s \"file-path\" [%s 100]%n",
+				TERM_TO_CONCEPT_MAP, ENCOUNTER_FREQUENCY, RELATIONSHIPS, DESCRIPTIONS, MIN_ENCOUNTER_FREQUENCY);
 	}
 
 	/**
@@ -282,6 +288,27 @@ public class EncounterCluster {
 		}
 		return encounterFrequencyMap;
 
+	}
+
+	private Map<Long, String> readFSNDescriptions(String descriptionsFile) throws IOException {
+		Map<Long, String> conceptFsnMap = new HashMap<>();
+		try (BufferedReader mapReader = new BufferedReader(new FileReader(descriptionsFile))) {
+			final String header = mapReader.readLine();
+			logger.info("Reading description file with header line: {}", header);
+
+			String line;
+			while ((line = mapReader.readLine()) != null) {
+				String[] values = line.split("\\t");
+				// id	effectiveTime	active	moduleId	conceptId	languageCode	typeId	term	caseSignificanceId
+				//	0	1				2		3			4			5				6		7		8
+
+				// If active FSN - 900000000000003001 | Fully specified name (core metadata concept) |
+				if (values[2].equals("1") && values[6].equals("900000000000003001")) {
+					conceptFsnMap.put(Long.parseLong(values[4]), values[7]);
+				}
+			}
+		}
+		return conceptFsnMap;
 	}
 
 	private Map<Long, Node> buildHierarchy(String relationshipFile) throws IOException {

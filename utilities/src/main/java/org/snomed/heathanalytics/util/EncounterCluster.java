@@ -27,6 +27,17 @@ public class EncounterCluster {
 	public static final String MIN_FREQUENCY_DEFAULT = "100";
 	public static final String HELP = "-help";
 
+	public static final Set<Long> NO_CLINICAL_MEANING = Set.of(
+			138875005L,// 138875005 | SNOMED CT Concept (SNOMED RT+CTV3) |
+			404684003L,// 404684003 | Clinical finding (finding) |
+			64572001L,// 64572001 | Disease (disorder) |
+			362965005L,// 362965005 | Disorder of body system (disorder) |
+			441742003L,// 441742003 | Evaluation finding (finding) |
+			71388002L,// 71388002 | Procedure (procedure) |
+			128927009L,// 128927009 | Procedure by method (procedure) |
+			1L//
+	);
+
 	// -term-to-concept-map barts-core-problem-list-map.txt
 	// -encounter-frequency-file "Criteria Frequency - everyone_social.150621-problems.csv"
 	// -relationship-file ../release/Snapshot/Terminology/sct2_Relationship_Snapshot_INT_20210731.txt
@@ -177,6 +188,12 @@ public class EncounterCluster {
 			return true;
 		} else {
 			// Sufficient frequency
+
+			if (NO_CLINICAL_MEANING.contains(conceptId)) {
+				// Clustering not possible here
+				return true;
+			}
+
 			if (childrenRequestedClustering) {
 				final Set<Node> descendants = conceptNode.getDescendants();
 				Map<Long, Long> insufficientChildFrequencies = descendants.stream()

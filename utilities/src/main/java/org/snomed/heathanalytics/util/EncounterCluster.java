@@ -98,6 +98,28 @@ public class EncounterCluster {
 		logger.info("Written complete feature list to \"{}\". {} features including {} clusters.", outputFeaturesFilename,
 				features.size(), features.values().stream().filter(Feature::isCluster).count());
 
+		// Output encounter to feature map
+		final String encounterToFeatureMap = "encounter_to_feature_map.tsv";
+		try (BufferedWriter writer = new BufferedWriter(new FileWriter(encounterToFeatureMap))) {
+			writer.write("encounterConceptId\tfeatureConceptIds");
+			writer.newLine();
+			for (Long encounterConceptId : encounterFrequencyMap.keySet()) {
+				Set<String> featureIds = new HashSet<>();
+				for (Feature feature : features.values()) {
+					if (feature.getConceptId().equals(encounterConceptId) ||
+							feature.getWeakConcepts().contains(encounterConceptId) ||
+							feature.getSubFeatures().contains(encounterConceptId)) {
+						featureIds.add(feature.getConceptId().toString());
+					}
+				}
+				writer.write(encounterConceptId.toString());
+				writer.write("\t");
+				writer.write(String.join(",", featureIds));
+				writer.newLine();
+			}
+		}
+		logger.info("Written encounter to feature map to \"{}\".", encounterToFeatureMap);
+
 		// Output list of original encounters with feature inclusion count
 		final String outputEncounterFeatureInclusionFilename = "encounter_feature_inclusion.tsv";
 		int encounterIncludedInAFeature = 0;

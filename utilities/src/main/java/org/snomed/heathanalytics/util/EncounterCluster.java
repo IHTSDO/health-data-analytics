@@ -15,6 +15,7 @@ public class EncounterCluster {
 	// Development roadmap:
 	// Output complete list of features with: conceptId, remaining-aggregate-frequency, total-aggregate-frequency, included weak encounters, included sub-features - DONE
 	// Output list of original encounters with: conceptId, count of times included in a feature - DONE
+	// Input list of forced clusters - DONE
 	// Input list of concepts to leave alone / not cluster
 	// Input list of concepts with no clinical meaning - do not cluster here
 	// Input number of categories required
@@ -22,6 +23,7 @@ public class EncounterCluster {
 	public static final long ROOT_CONCEPT = 138875005L;
 	public static final String TERM_TO_CONCEPT_MAP = "-term-to-concept-map";
 	public static final String ENCOUNTER_FREQUENCY = "-encounter-frequency-file";
+	public static final String FORCE_CLUSTERS = "-force-clusters";
 	public static final String RELATIONSHIPS = "-relationship-file";
 	public static final String DESCRIPTIONS = "-description-file";
 	public static final String MIN_ENCOUNTER_FREQUENCY = "-min-encounter-frequency";
@@ -42,6 +44,7 @@ public class EncounterCluster {
 	);
 
 	// -term-to-concept-map barts-core-problem-list-map.txt
+	// -force-clusters force-clusters.txt
 	// -encounter-frequency-file "Criteria Frequency - everyone_social.150621-problems.csv"
 	// -relationship-file ../release/Snapshot/Terminology/sct2_Relationship_Snapshot_INT_20210731.txt
 	// -min-encounter-frequency 100
@@ -60,6 +63,7 @@ public class EncounterCluster {
 		// Read input arguments
 		String termToConceptMapFile = getArgValue(TERM_TO_CONCEPT_MAP, args);
 		String encounterFrequencyFile = getArgValue(ENCOUNTER_FREQUENCY, args);
+		String forceClusterFile = getArgValue(FORCE_CLUSTERS, args);
 		String relationshipFile = getArgValue(RELATIONSHIPS, args);
 		String descriptionsFile = getArgValue(DESCRIPTIONS, args);
 		int minEncounterFrequency = Integer.parseInt(getArgValue(MIN_ENCOUNTER_FREQUENCY, args, MIN_FREQUENCY_DEFAULT));
@@ -67,6 +71,7 @@ public class EncounterCluster {
 		// Read input files
 		Map<String, Long> termToConceptMap = readTermToConceptMap(termToConceptMapFile);
 		Map<Long, Long> encounterFrequencyMap = readEncounterFrequency(encounterFrequencyFile, termToConceptMap);
+		Set<String> forcedClusters = readForceClusterFile(forceClusterFile);
 		Map<Long, String> conceptFsnMap = readFSNDescriptions(descriptionsFile);
 		final Map<Long, Node> nodeMap = buildHierarchy(relationshipFile);
 
@@ -76,7 +81,7 @@ public class EncounterCluster {
 		// Traverse hierarchy and perform clustering where needed
 		final Node rootConcept = nodeMap.get(ROOT_CONCEPT);
 		final Map<Long, Feature> features = new HashMap<>();
-		clusterEncounters(rootConcept, minEncounterFrequency, features);
+		clusterEncounters(rootConcept, minEncounterFrequency, forcedClusters, features);
 		logger.info("Clustering complete.");
 
 		// Output complete list of features
@@ -169,8 +174,8 @@ public class EncounterCluster {
 	}
 
 	private void printHelp() {
-		System.out.printf("Usage: %s \"file-path\" %s \"file-path\" %s \"file-path\" %s \"file-path\" [%s 100]%n",
-				TERM_TO_CONCEPT_MAP, ENCOUNTER_FREQUENCY, RELATIONSHIPS, DESCRIPTIONS, MIN_ENCOUNTER_FREQUENCY);
+		System.out.printf("Usage: %s \"file-path\" %s \"file-path\" %s \"file-path\" %s \"file-path\" %s \"file-path\" [%s 100]%n",
+				TERM_TO_CONCEPT_MAP, ENCOUNTER_FREQUENCY, FORCE_CLUSTERS, RELATIONSHIPS, DESCRIPTIONS, MIN_ENCOUNTER_FREQUENCY);
 	}
 
 	/**
@@ -182,42 +187,44 @@ public class EncounterCluster {
 	 * - If the calculated aggregate frequency is sufficient create a feature at this level.
 	 * - Otherwise allow the hierarchy walking to continue.
 	 *
-	 * @param conceptNode    		The current node within the linked hierarchy
-	 * @param minEncounterFrequency	The minimum encounter frequency required for feature to be made
-	 * @param features				The map of features created so far
+	 * @param conceptNode            The current node within the linked hierarchy
+	 * @param minEncounterFrequency    The minimum encounter frequency required for feature to be made
+	 * @param forcedClusters         Set of conceptIds where clusters should always be added, regardless of encounter frequency
+	 * @param features                The map of features created so far
 	 * @return Flag to signal to parent if this level requires clustering
 	 */
-	private boolean clusterEncounters(Node conceptNode, int minEncounterFrequency, Map<Long, Feature> features) {
+	private boolean clusterEncounters(Node conceptNode, int minEncounterFrequency, Set<String> forcedClusters, Map<Long, Feature> features) {
 		final Long conceptId = conceptNode.getId();
 		Long remainingAggregateFrequency = conceptNode.getRemainingAggregateFrequency();
-		if (remainingAggregateFrequency > 0 && remainingAggregateFrequency < minEncounterFrequency) {
+		boolean forceCluster = forcedClusters.contains(conceptId.toString());
+		if (remainingAggregateFrequency > 0 && remainingAggregateFrequency < minEncounterFrequency && !forceCluster) {
 			// Ask parent to cluster
 			return true;
 		}
 
 		boolean childrenRequestedClustering = false;
 		for (Node child : conceptNode.getChildren()) {
-			if (!child.isCovered() && clusterEncounters(child, minEncounterFrequency, features)) {
+			if (!child.isCovered() && clusterEncounters(child, minEncounterFrequency, forcedClusters, features)) {
 				childrenRequestedClustering = true;
 			}
 		}
 
 		// Grab updated remaining aggregate frequency - this may now be lower because child concepts may have been included in a feature
 		remainingAggregateFrequency = conceptNode.getRemainingAggregateFrequency();
-		if (remainingAggregateFrequency == 0) {
+		if (remainingAggregateFrequency == 0 && !forceCluster) {
 			// No encounter data left to create a feature from
 			conceptNode.markAsCoveredIncDescendants();
 			return false;
 		}
 
-		if (remainingAggregateFrequency < minEncounterFrequency) {
+		if (remainingAggregateFrequency < minEncounterFrequency && !forceCluster) {
 			// Insufficient frequency to create a feature here
 			// Ask parent to cluster
 			return true;
 		} else {
 			// Sufficient frequency
 
-			if (NO_CLINICAL_MEANING.contains(conceptId)) {
+			if (NO_CLINICAL_MEANING.contains(conceptId) && !forceCluster) {
 				// Clustering not possible here
 				return true;
 			}
@@ -291,7 +298,7 @@ public class EncounterCluster {
 			while ((line = mapReader.readLine()) != null) {
 				lineNum++;
 				String[] values = line.split(",");
-				if (values.length > 1 && values[1].matches("[0-9]+")) {
+				if (values.length > 1 && isNumber(values[1])) {
 
 					final String term = values[0].toLowerCase().replace("_", " ");
 					final Long concept = termToConceptMap.get(term);
@@ -310,6 +317,31 @@ public class EncounterCluster {
 		}
 		return encounterFrequencyMap;
 
+	}
+
+	private Set<String> readForceClusterFile(String forceClusterFilepath) throws IOException {
+		Set<String> forcedClusters = new HashSet<>();
+		if (forceClusterFilepath == null || forceClusterFilepath.isEmpty()) {
+			return forcedClusters;
+		}
+		File forceClusterFile = new File(forceClusterFilepath);
+		if (!forceClusterFile.isFile()) {
+			logger.error("Filed to read force cluster file {}, file does not exist.", forceClusterFile.getAbsolutePath());
+		}
+
+		try (BufferedReader reader = new BufferedReader(new FileReader(forceClusterFile))) {
+			String line;
+			String header = reader.readLine();
+			while ((line = reader.readLine()) != null) {
+				if (isNumber(line)) {
+					forcedClusters.add(line);
+				} else {
+					logger.warn("Skipped value {} from forced cluster file, not a number / concept id", line);
+				}
+			}
+		}
+
+		return forcedClusters;
 	}
 
 	private Map<Long, String> readFSNDescriptions(String descriptionsFile) throws IOException {
@@ -372,4 +404,9 @@ public class EncounterCluster {
 		}
 		logger.info("Added frequency data for {} encounters.", added);
 	}
+
+	private boolean isNumber(String value) {
+		return value.matches("[0-9]+");
+	}
+
 }

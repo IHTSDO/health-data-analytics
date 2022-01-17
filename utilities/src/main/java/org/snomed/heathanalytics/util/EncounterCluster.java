@@ -67,6 +67,7 @@ public class EncounterCluster {
 		String forceClusterFile = getArgValue(FORCE_CLUSTERS, args);
 		String relationshipFile = getArgValue(RELATIONSHIPS, args);
 		String descriptionsFile = getArgValue(DESCRIPTIONS, args);
+		boolean excludeAncestorFeatures = getArgFlag(EXCLUDE_ANCESTOR_CLUSTERS, args);
 		int minEncounterFrequency = Integer.parseInt(getArgValue(MIN_ENCOUNTER_FREQUENCY, args, MIN_FREQUENCY_DEFAULT));
 
 		// Read input files
@@ -114,7 +115,7 @@ public class EncounterCluster {
 				for (Feature feature : features.values()) {
 					if (feature.getConceptId().equals(encounterConceptId) ||
 							feature.getWeakConcepts().contains(encounterConceptId) ||
-							feature.getSubFeatures().contains(encounterConceptId)) {
+							(!excludeAncestorFeatures && feature.getSubFeatures().contains(encounterConceptId))) {
 						featureIds.add(feature.getConceptId().toString());
 					}
 				}
@@ -124,7 +125,7 @@ public class EncounterCluster {
 				writer.newLine();
 			}
 		}
-		logger.info("Written encounter to feature map to \"{}\".", encounterToFeatureMap);
+		logger.info("Written encounter to cluster map to \"{}\". Ancestor clusters are {}.", encounterToFeatureMap, excludeAncestorFeatures ? "excluded" : "included");
 
 		// Output list of original encounters with feature inclusion count
 		final String outputEncounterFeatureInclusionFilename = "encounter_cluster_inclusion.txt";
@@ -137,7 +138,7 @@ public class EncounterCluster {
 				for (Feature feature : features.values()) {
 					if (feature.getConceptId().equals(encounterConceptId) ||
 							feature.getWeakConcepts().contains(encounterConceptId) ||
-							feature.getSubFeatures().contains(encounterConceptId)) {
+							(!excludeAncestorFeatures && feature.getSubFeatures().contains(encounterConceptId))) {
 						inclusions++;
 					}
 				}
@@ -172,6 +173,10 @@ public class EncounterCluster {
 			return defaultValue;
 		}
 		return args.get(index + 1);
+	}
+
+	private boolean getArgFlag(String key, List<String> args) {
+		return args.contains(key);
 	}
 
 	private void printHelp() {

@@ -27,6 +27,7 @@ public class EncounterCluster {
 	public static final String RELATIONSHIPS = "-relationship-file";
 	public static final String DESCRIPTIONS = "-description-file";
 	public static final String MIN_ENCOUNTER_FREQUENCY = "-min-encounter-frequency";
+	public static final String EXCLUDE_ANCESTOR_CLUSTERS = "-exclude-ancestor-clusters";
 	public static final String MIN_FREQUENCY_DEFAULT = "100";
 	public static final String HELP = "-help";
 
@@ -45,7 +46,7 @@ public class EncounterCluster {
 
 	// -term-to-concept-map barts-core-problem-list-map.txt
 	// -force-clusters force-clusters.txt
-	// -encounter-frequency-file "Criteria Frequency - everyone_social.150621-problems.csv"
+	// -encounter-frequency-file "CriteriaFrequency.txt"
 	// -relationship-file ../release/Snapshot/Terminology/sct2_Relationship_Snapshot_INT_20210731.txt
 	// -min-encounter-frequency 100
 	public static void main(String[] args) throws IOException {
@@ -85,9 +86,9 @@ public class EncounterCluster {
 		logger.info("Clustering complete.");
 
 		// Output complete list of features
-		final String outputFeaturesFilename = "features.tsv";
+		final String outputFeaturesFilename = "clusters.txt";
 		try (BufferedWriter featureListWriter = new BufferedWriter(new FileWriter(outputFeaturesFilename))) {
-			featureListWriter.write("featureConceptId\tFSN\tremainingAggregateFrequency\ttotalAggregateFrequency\tincludesWeakEncounters\tincludesSubFeatures");
+			featureListWriter.write("clusterConceptId\tFSN\tremainingAggregateFrequency\ttotalAggregateFrequency\tincludesWeakEncounters\tincludesSubClusters");
 			featureListWriter.newLine();
 			for (Feature feature : features.values()) {
 				featureListWriter.write(String.format("%s\t%s\t%s\t%s\t%s\t%s",
@@ -100,13 +101,13 @@ public class EncounterCluster {
 				featureListWriter.newLine();
 			}
 		}
-		logger.info("Written complete feature list to \"{}\". {} features including {} clusters.", outputFeaturesFilename,
+		logger.info("Written complete cluster list to \"{}\". {} features including {} clusters.", outputFeaturesFilename,
 				features.size(), features.values().stream().filter(Feature::isCluster).count());
 
 		// Output encounter to feature map
-		final String encounterToFeatureMap = "encounter_to_feature_map.tsv";
+		final String encounterToFeatureMap = "encounter_to_cluster_map.txt";
 		try (BufferedWriter writer = new BufferedWriter(new FileWriter(encounterToFeatureMap))) {
-			writer.write("encounterConceptId\tfeatureConceptIds");
+			writer.write("encounterConceptId\tclusterConceptIds");
 			writer.newLine();
 			for (Long encounterConceptId : encounterFrequencyMap.keySet()) {
 				Set<String> featureIds = new HashSet<>();
@@ -126,10 +127,10 @@ public class EncounterCluster {
 		logger.info("Written encounter to feature map to \"{}\".", encounterToFeatureMap);
 
 		// Output list of original encounters with feature inclusion count
-		final String outputEncounterFeatureInclusionFilename = "encounter_feature_inclusion.tsv";
+		final String outputEncounterFeatureInclusionFilename = "encounter_cluster_inclusion.txt";
 		int encounterIncludedInAFeature = 0;
 		try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputEncounterFeatureInclusionFilename))) {
-			writer.write("encounterConceptId\tsufficientFrequency\tfeatureInclusionCount");
+			writer.write("encounterConceptId\tsufficientFrequency\tclusterInclusionCount");
 			writer.newLine();
 			for (Long encounterConceptId : encounterFrequencyMap.keySet()) {
 				int inclusions = 0;
@@ -151,7 +152,7 @@ public class EncounterCluster {
 				writer.newLine();
 			}
 		}
-		logger.info("Written encounter feature inclusion list to \"{}\". Out of {} encounter concepts {} were included in one or more features, {} were included in none.",
+		logger.info("Written encounter cluster inclusion list to \"{}\". Out of {} encounter concepts {} were included in one or more clusters, {} were included in none.",
 				outputEncounterFeatureInclusionFilename, encounterFrequencyMap.size(),
 				encounterIncludedInAFeature, encounterFrequencyMap.size() - encounterIncludedInAFeature);
 
@@ -297,7 +298,7 @@ public class EncounterCluster {
 			int lineNum = 1;
 			while ((line = mapReader.readLine()) != null) {
 				lineNum++;
-				String[] values = line.split(",");
+				String[] values = line.split("\\t");
 				if (values.length > 1 && isNumber(values[1])) {
 
 					final String term = values[0].toLowerCase().replace("_", " ");

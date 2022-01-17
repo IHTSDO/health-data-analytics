@@ -60,5 +60,5 @@ java -jar -term-to-concept-map barts-core-problem-list-map.txt -encounter-freque
 - `-force-clusters <filename>`
   - TSV file with list of concepts that must be clusters.
 - `-exclude-ancestor-clusters`
-  - Stop clusters including descendant clusters in the final encounter to cluster map.
+  - Stop clusters including ancestor clusters in the final encounter to cluster map.
   - Although this nesting is semantically correct suppressing nesting in the output may be desirable to stop feature overlap.

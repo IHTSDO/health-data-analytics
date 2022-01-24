@@ -83,17 +83,8 @@ Synthea has on online [Module Builder](https://synthetichealth.github.io/module-
 
 A few Synthea modules have been created to support SNOMED CT [demonstration scenarios](synthea-modules).
 
-#### Built In Patient Generator
-Alternatively a synthetic patient population can be generated using the build in `generator` module. This option supports only a [small number of scenarios](generator/src/main/java/org/snomed/heathanalytics/datageneration/DemoPatientDataGenerator.java) but is much more performant.
-
-From the root of the project the following command will generate ~1,200,000 patients, which takes ~1 minute.
-```bash
-java -Xms3g -jar generator/target/generator*.jar
-``` 
-Command options:
-- `--population-size` Optional. Defaults to 1,248,322.
-
-The generated population will be written in native bulk NDJSON format to a directory named `patient-data-for-import`.
+#### Built-In Patient Generator
+Alternatively a synthetic patient population can be generated using the [built-in generator](generator/README.md) which is very fast.
 
 ### Server
 The Data Analytics API is a Java application using Spring Boot with Swagger API documentation.

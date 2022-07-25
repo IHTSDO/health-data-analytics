@@ -38,7 +38,7 @@ The jar is output in the target directory.
 ### Run
 Run the jar on the command line using the java command:
 ```
-java -jar -term-to-concept-map barts-core-problem-list-map.txt -encounter-frequency-file CriteriaFrequency-problems.txt -force-clusters force-cluster.txt -relationship-file SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z/Snapshot/Terminology/sct2_Relationship_Snapshot_INT_20210731.txt -description-file SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z/Snapshot/Terminology/sct2_Description_Snapshot-en_INT_20210731.txt -min-encounter-frequency 200 -exclude-ancestor-features
+java -jar target/utilities-*with-dependencies.jar -term-to-concept-map barts-core-problem-list-map.txt -encounter-frequency-file CriteriaFrequency-problems.txt -force-clusters force-cluster.txt -relationship-file SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z/Snapshot/Terminology/sct2_Relationship_Snapshot_INT_20210731.txt -description-file SnomedCT_InternationalRF2_PRODUCTION_20210731T120000Z/Snapshot/Terminology/sct2_Description_Snapshot-en_INT_20210731.txt -min-encounter-frequency 200 -exclude-ancestor-features
 ```
 #### Required arguments
 - All input and output files use tab separated format.

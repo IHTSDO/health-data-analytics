@@ -1,7 +1,7 @@
 package org.snomed.heathanalytics.server.ingestion.fhir;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.server.AbstractDataTest;
 import org.snomed.heathanalytics.server.ingestion.elasticsearch.ElasticOutputStream;
@@ -12,7 +12,7 @@ import org.springframework.data.domain.Pageable;
 import java.io.File;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class FHIRBulkLocalIngestionSourceTest extends AbstractDataTest {
 

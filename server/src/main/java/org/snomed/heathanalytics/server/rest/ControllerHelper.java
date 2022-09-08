@@ -1,9 +1,6 @@
 package org.snomed.heathanalytics.server.rest;
 
 import org.snomed.heathanalytics.server.service.NotFoundException;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.elasticsearch.core.aggregation.impl.AggregatedPageImpl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,14 +14,6 @@ class ControllerHelper {
 				.fromCurrentRequest().path("/{id}")
 				.buildAndExpand(id).toUri());
 		return new ResponseEntity<>(httpHeaders, HttpStatus.CREATED);
-	}
-
-	static <T> org.springframework.data.domain.Page<T> aggregatedPageWorkaround(org.springframework.data.domain.Page<T> page) {
-		if (page instanceof AggregatedPageImpl) {
-			AggregatedPageImpl<T> aggPage = (AggregatedPageImpl<T>) page;
-			return new PageImpl<>(page.getContent(), PageRequest.of(aggPage.getNumber(), aggPage.getSize()), aggPage.getTotalElements());
-		}
-		return page;
 	}
 
 	static void throwIfNotFound(Object object, String type) {

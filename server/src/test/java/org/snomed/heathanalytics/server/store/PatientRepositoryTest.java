@@ -1,6 +1,6 @@
 package org.snomed.heathanalytics.server.store;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.snomed.heathanalytics.model.ClinicalEncounter;
 import org.snomed.heathanalytics.model.Gender;
 import org.snomed.heathanalytics.model.Patient;
@@ -12,8 +12,9 @@ import java.util.GregorianCalendar;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 public class PatientRepositoryTest extends AbstractDataTest {
 
@@ -38,6 +39,6 @@ public class PatientRepositoryTest extends AbstractDataTest {
 		ClinicalEncounter encounter = encounters.iterator().next();
 		assertEquals(new GregorianCalendar(2000, Calendar.JULY, 5, 10, 15).getTime().getTime(), encounter.getDateLong());
 		assertEquals(new GregorianCalendar(2000, Calendar.JULY, 5, 10, 15).getTime(), encounter.getDate());
-		assertEquals(new Long(123123), encounter.getConceptId());
+		assertEquals(123123L, encounter.getConceptId());
 	}
 }

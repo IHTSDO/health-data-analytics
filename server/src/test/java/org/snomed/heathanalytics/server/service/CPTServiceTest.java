@@ -1,12 +1,12 @@
 package org.snomed.heathanalytics.server.service;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.snomed.heathanalytics.server.model.CPTCode;
 
 import java.io.IOException;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CPTServiceTest {
 
@@ -25,7 +25,8 @@ public class CPTServiceTest {
 		assertEquals(3, snomedToCptMap.size());
 
 		for (String cptCode : cptCodes.keySet()) {
-			assertTrue(String.format("Code %s found in loaded map.", cptCode), snomedToCptMap.values().stream().anyMatch(code -> code.getCptCode().equals(cptCode)));
+			assertTrue(snomedToCptMap.values().stream().anyMatch(code -> code.getCptCode().equals(cptCode)),
+					String.format("Code %s found in loaded map.", cptCode));
 		}
 
 		assertEquals("12345", snomedToCptMap.get("268547008").getCptCode());

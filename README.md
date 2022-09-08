@@ -61,10 +61,11 @@ A clinical event could represent an observation, finding, drug prescription or p
 
 ### Project Setup
 #### Prerequisites
-- Java 8 or later
+- Java 11
 - 4G of memory
-- SNOMED CT release RF2 archive
 - Patient data (can be generated)
+- Access to a FHIR Terminology Server with SNOMED CT
+  - Public Snowstorm is default
 
 Build the project using maven.
 ```bash
@@ -91,8 +92,8 @@ The Data Analytics API is a Java application using Spring Boot with Swagger API 
 
 #### Elasticsearch
 The server requires a standalone Elasticsearch deployment. Elasticsearch can be run locally. There are also hosted solutions available from AWS and Elastic.co.
-The Elasticsearch server _must_ be version 6.x, version 7.x will not work. We recommend the latest 6.8.x patch release.
-https://www.elastic.co/downloads/past-releases#elasticsearch
+The Elasticsearch server _must_ be version 7.10, version 8 or later will not work.  
+We recommend the latest 7.10.x patch release, available [here](https://www.elastic.co/downloads/past-releases#elasticsearch-oss).
 
 #### Patient Data Import
 Once Elasticsearch is running patient data can be imported into the server from either FHIR or native format.

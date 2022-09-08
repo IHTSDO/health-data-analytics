@@ -1,8 +1,9 @@
 package org.snomed.heathanalytics.server.service;
 
 import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ConceptImpl;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.snomed.heathanalytics.model.ClinicalEncounter;
 import org.snomed.heathanalytics.model.Gender;
 import org.snomed.heathanalytics.model.Patient;
@@ -13,20 +14,19 @@ import org.snomed.heathanalytics.server.model.CohortCriteria;
 import org.snomed.heathanalytics.server.model.EncounterCriterion;
 import org.snomed.heathanalytics.server.model.StatisticalCorrelationReport;
 import org.snomed.heathanalytics.server.model.StatisticalCorrelationReportDefinition;
-import org.snomed.heathanalytics.server.testutil.TestSnomedQueryServiceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
-import java.io.IOException;
-import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.snomed.heathanalytics.server.TestUtils.date;
 
 public class StatisticTestingIntegrationTest extends AbstractDataTest {
 
-	@Autowired
+	@MockBean
 	private SnomedService snomedService;
 
 	@Autowired
@@ -43,8 +43,8 @@ public class StatisticTestingIntegrationTest extends AbstractDataTest {
 
 	private static final int YEAR_IN_DAYS = 365;
 
-	@Before
-	public void setup() throws IOException, ParseException {
+	@BeforeEach
+	public void setup() throws ServiceException {
 		// Set up ECL query service test data
 		List<ConceptImpl> allConcepts = new ArrayList<>();
 
@@ -65,7 +65,9 @@ public class StatisticTestingIntegrationTest extends AbstractDataTest {
 		// 51234001 |Paracetamol|
 		paracetamol = createConcept("51234001", allConcepts);
 
-		snomedService.setSnomedQueryService(TestSnomedQueryServiceBuilder.createWithConcepts(allConcepts.toArray(new ConceptImpl[]{})));
+		Mockito.when(snomedService.getConceptIds("<<38341003")).thenReturn(Collections.singletonList(38341003L));
+		Mockito.when(snomedService.getConceptIds("<<51234001")).thenReturn(Collections.singletonList(51234001L));
+		Mockito.when(snomedService.getConceptIds("<<22298006")).thenReturn(List.of(22298006L, 304914007L));
 
 		//
 		// Set up some data for this test

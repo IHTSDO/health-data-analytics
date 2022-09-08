@@ -8,7 +8,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchAutoConfiguration;
+import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.List;
 
-@SpringBootApplication(exclude = {ElasticsearchAutoConfiguration.class, ElasticsearchDataAutoConfiguration.class})
+@SpringBootApplication(exclude = {ElasticsearchRepositoriesAutoConfiguration.class, ElasticsearchDataAutoConfiguration.class})
 public class Application implements ApplicationRunner {
 
 	public static final String POPULATION_SIZE = "population-size";
@@ -47,8 +47,7 @@ public class Application implements ApplicationRunner {
 
 	@Bean
 	public DemoPatientDataGenerator exampleDataSource() {
-		File releaseDirectory = new File("release");
-		return new DemoPatientDataGenerator(new SnomedConceptService(releaseDirectory));
+		return new DemoPatientDataGenerator(new SnomedConceptService("https://snowstorm.ihtsdotools.org/fhir"));
 	}
 
 	@Bean

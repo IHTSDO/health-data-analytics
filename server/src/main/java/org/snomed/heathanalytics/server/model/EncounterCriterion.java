@@ -13,10 +13,10 @@ public class EncounterCriterion {
 	private String conceptSubsetId;
 	private Frequency frequency;
 
-	// Value of -1 means apply constrain with unbounded value, otherwise use null.
+	// Value of -1 means apply constraint with unbounded value, otherwise use null.
 	private Integer withinDaysBeforePreviouslyMatchedEncounter;
 
-	// Value of -1 means apply constrain with unbounded value, otherwise use null
+	// Value of -1 means apply constraint with unbounded value, otherwise use null
 	private Integer withinDaysAfterPreviouslyMatchedEncounter;
 
 	private boolean includeCPTAnalysis = false;

@@ -1,15 +1,9 @@
 package org.snomed.heathanalytics.server.service;
 
-import org.apache.http.HttpHost;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.metrics.scripted.ParsedScriptedMetric;
 import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ConceptImpl;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.snomed.heathanalytics.model.ClinicalEncounter;
 import org.snomed.heathanalytics.model.Gender;
 import org.snomed.heathanalytics.model.Patient;
@@ -17,31 +11,27 @@ import org.snomed.heathanalytics.server.AbstractDataTest;
 import org.snomed.heathanalytics.server.TestUtils;
 import org.snomed.heathanalytics.server.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.server.model.*;
-import org.snomed.heathanalytics.server.testutil.TestSnomedQueryServiceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
-import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
-import org.springframework.data.elasticsearch.core.aggregation.AggregatedPage;
-import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class IntegrationTest extends AbstractDataTest {
 
 	@Autowired
-	private QueryService queryService;
+	private PatientQueryService patientQueryService;
 
 	@Autowired
 	private ReportService reportService;
 
-	@Autowired
+	@MockBean
 	private SnomedService snomedService;
 
 	@Autowired
@@ -58,8 +48,8 @@ public class IntegrationTest extends AbstractDataTest {
 	private final String breastScreeningId = "268547008";
 	private final String breastMammographyId = "566571000119105";
 
-	@Before
-	public void setup() throws IOException, ParseException {
+	@BeforeEach
+	public void setup() throws IOException, ParseException, ServiceException {
 		// Set up ECL query service test data
 		List<ConceptImpl> allConcepts = new ArrayList<>();
 
@@ -78,8 +68,11 @@ public class IntegrationTest extends AbstractDataTest {
 		breastScreening = newConcept(breastScreeningId, allConcepts);
 		breastMammography = newConcept(breastMammographyId, allConcepts);
 
-		snomedService.setSnomedQueryService(TestSnomedQueryServiceBuilder.createWithConcepts(allConcepts.toArray(new ConceptImpl[]{})));
-
+		Mockito.when(snomedService.getConceptIds(breastScreeningId)).thenReturn(List.of(268547008L));
+		Mockito.when(snomedService.getConceptIds(breastMammographyId)).thenReturn(List.of(566571000119105L));
+		Mockito.when(snomedService.getConceptIds("<<22298006")).thenReturn(List.of(22298006L, 304914007L));
+		Mockito.when(snomedService.getConceptIds("<<268547008")).thenReturn(List.of(268547008L));
+		Mockito.when(snomedService.getConceptIds("<<38341003")).thenReturn(List.of(38341003L));
 
 		// Set up tiny set of integration test data.
 		// There is no attempt to make this realistic, we are just testing the logic.
@@ -142,7 +135,7 @@ public class IntegrationTest extends AbstractDataTest {
 		EncounterCriterion firstExposureCriterion = new EncounterCriterion("<<" + myocardialInfarction.getId().toString());
 		CohortCriteria cohortCriteria = new CohortCriteria(firstExposureCriterion);
 
-		Page<Patient> patients = queryService.fetchCohort(cohortCriteria);
+		Page<Patient> patients = patientQueryService.fetchCohort(cohortCriteria);
 
 		assertEquals(1, patients.getTotalElements());
 		Patient patient = patients.getContent().get(0);
@@ -156,7 +149,7 @@ public class IntegrationTest extends AbstractDataTest {
 		CohortCriteria patientCriteria = new CohortCriteria(hypertensionExposureCriterion);
 
 		// We get both Bob and Dave
-		Page<Patient> patients = queryService.fetchCohort(patientCriteria);
+		Page<Patient> patients = patientQueryService.fetchCohort(patientCriteria);
 		assertEquals("[1, 2]", toSortedPatientIdList(patients).toString());
 
 
@@ -165,21 +158,21 @@ public class IntegrationTest extends AbstractDataTest {
 		patientCriteria.addEncounterCriterion(inclusionCriteria);
 
 		// No matches because Bob had Myocardial Infarction 10 days after Hypertension is recorded
-		patients = queryService.fetchCohort(patientCriteria);
+		patients = patientQueryService.fetchCohort(patientCriteria);
 		assertEquals("[]", toSortedPatientIdList(patients).toString());
 
 		// Extend search to 12 days after the primaryExposure
 		inclusionCriteria.setWithinDaysAfterPreviouslyMatchedEncounter(12);
 
 		// Now Bob is in the cohort
-		patients = queryService.fetchCohort(patientCriteria);
+		patients = patientQueryService.fetchCohort(patientCriteria);
 		assertEquals("[1]", toSortedPatientIdList(patients).toString());
 
 		// Switch to exclude patients who had Myocardial Infarction
 		inclusionCriteria.setHas(false);
 
 		// Now only Dave is in
-		patients = queryService.fetchCohort(patientCriteria);
+		patients = patientQueryService.fetchCohort(patientCriteria);
 		assertEquals("[2]", toSortedPatientIdList(patients).toString());
 	}
 
@@ -188,13 +181,13 @@ public class IntegrationTest extends AbstractDataTest {
 		CohortCriteria cohortCriteria = new CohortCriteria(new EncounterCriterion("<<" + myocardialInfarction.getId().toString()));
 
 		// No gender filter
-		Page<Patient> patients = queryService.fetchCohort(cohortCriteria);
+		Page<Patient> patients = patientQueryService.fetchCohort(cohortCriteria);
 		assertEquals(1, patients.getTotalElements());
 		assertEquals(Gender.MALE, patients.iterator().next().getGender());
 
 		// Females
 		cohortCriteria.setGender(Gender.FEMALE);
-		assertEquals(0, queryService.fetchCohort(cohortCriteria).getTotalElements());
+		assertEquals(0, patientQueryService.fetchCohort(cohortCriteria).getTotalElements());
 
 		// Males
 		cohortCriteria.setGender(Gender.MALE);
@@ -207,46 +200,46 @@ public class IntegrationTest extends AbstractDataTest {
 		CohortCriteria cohortCriteria = new CohortCriteria(new EncounterCriterion("<<" + myocardialInfarction.getId().toString()));
 
 		// No age filter
-		assertEquals(1, queryService.fetchCohort(cohortCriteria).getTotalElements());
+		assertEquals(1, patientQueryService.fetchCohort(cohortCriteria).getTotalElements());
 
 		cohortCriteria.setMinAgeNow(36);
-		assertEquals(0, queryService.fetchCohort(cohortCriteria).getTotalElements());
+		assertEquals(0, patientQueryService.fetchCohort(cohortCriteria).getTotalElements());
 
 		cohortCriteria.setMinAgeNow(35);
-		assertEquals(1, queryService.fetchCohort(cohortCriteria).getTotalElements());
+		assertEquals(1, patientQueryService.fetchCohort(cohortCriteria).getTotalElements());
 
 		cohortCriteria.setMinAgeNow(30);
 		cohortCriteria.setMaxAgeNow(31);
-		assertEquals(0, queryService.fetchCohort(cohortCriteria).getTotalElements());
+		assertEquals(0, patientQueryService.fetchCohort(cohortCriteria).getTotalElements());
 
 		cohortCriteria.setMinAgeNow(30);
 		cohortCriteria.setMaxAgeNow(38);
-		assertEquals(1, queryService.fetchCohort(cohortCriteria).getTotalElements());
+		assertEquals(1, patientQueryService.fetchCohort(cohortCriteria).getTotalElements());
 	}
 
 	@Test
 	public void testTreatmentFrequencySelection() throws ServiceException {
-		assertEquals(6, queryService.fetchCohortCount(new CohortCriteria()));
-		assertEquals(4, queryService.fetchCohortCount(new CohortCriteria().setGender(Gender.FEMALE)));
-		assertEquals(4, queryService.fetchCohortCount(new CohortCriteria(new EncounterCriterion(breastScreeningId))));
+		assertEquals(6, patientQueryService.fetchCohortCount(new CohortCriteria()));
+		assertEquals(4, patientQueryService.fetchCohortCount(new CohortCriteria().setGender(Gender.FEMALE)));
+		assertEquals(4, patientQueryService.fetchCohortCount(new CohortCriteria(new EncounterCriterion(breastScreeningId))));
 
 		// At least 2 screens 10-14 months apart
-		assertEquals(2, queryService.fetchCohortCount(new CohortCriteria()
+		assertEquals(2, patientQueryService.fetchCohortCount(new CohortCriteria()
 				.addEncounterCriterion(new EncounterCriterion(breastScreeningId).setFrequency(new Frequency(2, 10, 14, TimeUnit.MONTH)))
 		));
 
 		// 2 screens and at least one mammography
-		assertEquals(1, queryService.fetchCohortCount(new CohortCriteria()
+		assertEquals(1, patientQueryService.fetchCohortCount(new CohortCriteria()
 				.addEncounterCriterion(new EncounterCriterion(breastScreeningId).setFrequency(new Frequency(2, 10, 14, TimeUnit.MONTH)))
 				.addEncounterCriterion(new EncounterCriterion(breastMammographyId))
 		));
 
 		// At least 3 screens 10-14 months apart
-		assertEquals(2, queryService.fetchCohortCount(new CohortCriteria(new EncounterCriterion(breastScreeningId)
+		assertEquals(2, patientQueryService.fetchCohortCount(new CohortCriteria(new EncounterCriterion(breastScreeningId)
 				.setFrequency(new Frequency(3, 10, 14, TimeUnit.MONTH)))));
 
 		// At least 2 screens 22-26 months apart
-		assertEquals(1, queryService.fetchCohortCount(new CohortCriteria(new EncounterCriterion(breastScreeningId)
+		assertEquals(1, patientQueryService.fetchCohortCount(new CohortCriteria(new EncounterCriterion(breastScreeningId)
 				.setFrequency(new Frequency(2, 22, 26, TimeUnit.MONTH)))));
 	}
 
@@ -256,20 +249,21 @@ public class IntegrationTest extends AbstractDataTest {
 		CohortCriteria cohortCriteria = new CohortCriteria(new EncounterCriterion("<<" + breastScreening.getId().toString()));
 
 		// No filter
-		assertEquals(4, queryService.fetchCohort(cohortCriteria).getTotalElements());
+		assertEquals(4, patientQueryService.fetchCohort(cohortCriteria).getTotalElements());
 
 		cohortCriteria.setMinAgeNow(40);
 		cohortCriteria.setMaxAgeNow(60);
-		assertEquals(4, queryService.fetchCohort(cohortCriteria).getTotalElements());
+		assertEquals(4, patientQueryService.fetchCohort(cohortCriteria).getTotalElements());
 
 		// Use ExclusionCriteria to exclude patients between 50 and 51 years old
 		cohortCriteria.getExclusionCriteria().add(new CohortCriteria(null, 50, 51));
-		assertEquals(3, queryService.fetchCohort(cohortCriteria).getTotalElements());
+		assertEquals(3, patientQueryService.fetchCohort(cohortCriteria).getTotalElements());
 
 		// Use ExclusionCriteria to exclude patients with at least 2 screens 22-26 months apart
 		cohortCriteria.getExclusionCriteria().add(new CohortCriteria(new EncounterCriterion(breastScreeningId)
 				.setFrequency(new Frequency(2, 22, 26, TimeUnit.MONTH))));
-		assertEquals(2, queryService.fetchCohort(cohortCriteria).getTotalElements());
+
+		assertEquals(2, patientQueryService.fetchCohort(cohortCriteria).getTotalElements());
 	}
 
 	@Test
@@ -330,52 +324,52 @@ public class IntegrationTest extends AbstractDataTest {
 	}
 
 	// Method for manual hacking/testing against a local instance
-	public static void main(String[] args) {
-		ElasticsearchRestTemplate restTemplate = new ElasticsearchRestTemplate(new RestHighLevelClient(RestClient.builder(new HttpHost("localhost", 9200))));
-		Set<Long> includeConcepts = new HashSet<>();
-		includeConcepts.add(384151000119104L);
-		Map<String, Object> params = new HashMap<>();
-		params.put("includeConcepts", includeConcepts);
-		NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder()
-				.withQuery(termQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, "384151000119104"))
-				.addAggregation(
-					AggregationBuilders.scriptedMetric("encounterConceptCounts")
-							.initScript(new Script("state.concepts = new HashMap()"))
-							.mapScript(new Script(ScriptType.INLINE, "painless",
-									"for (int i = 0; i < doc['encounters.conceptId'].length; i++) {" +
-									"	Map concepts = state.concepts;" +
-									"	Long conceptIdLong = doc['encounters.conceptId'][i];" +
-									"	if (params.includeConcepts.contains(conceptIdLong)) {" +
-									"		String conceptId = conceptIdLong.toString();" +
-									"		if (concepts.containsKey(conceptId)) {" +
-									"			long count = concepts.get(conceptId).longValue() + 1L;" +
-									"			concepts.put(conceptId, count);" +
-									"		} else {" +
-									"			concepts.put(conceptId, 1L);" +
-									"		}" +
-									"	}" +
-									"}", params))
-							.combineScript(new Script("return state;"))
-							.reduceScript(new Script("Map allConcepts = new HashMap();" +
-									"for (state in states) {" +
-									"	if (state.concepts != null) {" +
-									"		for (conceptId in state.concepts.keySet()) {" +
-									"			if (allConcepts.containsKey(conceptId)) {" +
-									"				long count = allConcepts.get(conceptId) + state.concepts.get(conceptId);" +
-									"				allConcepts.put(conceptId, count);" +
-									"			} else {" +
-									"				allConcepts.put(conceptId, state.concepts.get(conceptId));" +
-									"			}" +
-									"		}" +
-									"	}" +
-									"}" +
-									"return allConcepts;")));
-		AggregatedPage<Patient> patients = restTemplate.queryForPage(nativeSearchQueryBuilder.build(), Patient.class);
-		AggregatedPage<Patient> aggregatedPage = (AggregatedPage<Patient>) patients;
-		ParsedScriptedMetric encounterConceptCounts = (ParsedScriptedMetric) aggregatedPage.getAggregation("encounterConceptCounts");
-		@SuppressWarnings("unchecked")
-		Map<String, Long> conceptCounts = (Map<String, Long>) encounterConceptCounts.aggregation();
-		System.out.println(conceptCounts);
-	}
+//	public static void main(String[] args) {
+//		ElasticsearchRestTemplate restTemplate = new ElasticsearchRestTemplate(new RestHighLevelClient(RestClient.builder(new HttpHost("localhost", 9200))));
+//		Set<Long> includeConcepts = new HashSet<>();
+//		includeConcepts.add(384151000119104L);
+//		Map<String, Object> params = new HashMap<>();
+//		params.put("includeConcepts", includeConcepts);
+//		NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder()
+//				.withQuery(termQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, "384151000119104"))
+//				.addAggregation(
+//					AggregationBuilders.scriptedMetric("encounterConceptCounts")
+//							.initScript(new Script("state.concepts = new HashMap()"))
+//							.mapScript(new Script(ScriptType.INLINE, "painless",
+//									"for (int i = 0; i < doc['encounters.conceptId'].length; i++) {" +
+//									"	Map concepts = state.concepts;" +
+//									"	Long conceptIdLong = doc['encounters.conceptId'][i];" +
+//									"	if (params.includeConcepts.contains(conceptIdLong)) {" +
+//									"		String conceptId = conceptIdLong.toString();" +
+//									"		if (concepts.containsKey(conceptId)) {" +
+//									"			long count = concepts.get(conceptId).longValue() + 1L;" +
+//									"			concepts.put(conceptId, count);" +
+//									"		} else {" +
+//									"			concepts.put(conceptId, 1L);" +
+//									"		}" +
+//									"	}" +
+//									"}", params))
+//							.combineScript(new Script("return state;"))
+//							.reduceScript(new Script("Map allConcepts = new HashMap();" +
+//									"for (state in states) {" +
+//									"	if (state.concepts != null) {" +
+//									"		for (conceptId in state.concepts.keySet()) {" +
+//									"			if (allConcepts.containsKey(conceptId)) {" +
+//									"				long count = allConcepts.get(conceptId) + state.concepts.get(conceptId);" +
+//									"				allConcepts.put(conceptId, count);" +
+//									"			} else {" +
+//									"				allConcepts.put(conceptId, state.concepts.get(conceptId));" +
+//									"			}" +
+//									"		}" +
+//									"	}" +
+//									"}" +
+//									"return allConcepts;")));
+//		AggregatedPage<Patient> patients = restTemplate.queryForPage(nativeSearchQueryBuilder.build(), Patient.class);
+//		AggregatedPage<Patient> aggregatedPage = (AggregatedPage<Patient>) patients;
+//		ParsedScriptedMetric encounterConceptCounts = (ParsedScriptedMetric) aggregatedPage.getAggregation("encounterConceptCounts");
+//		@SuppressWarnings("unchecked")
+//		Map<String, Long> conceptCounts = (Map<String, Long>) encounterConceptCounts.aggregation();
+//		System.out.println(conceptCounts);
+//	}
 
 }

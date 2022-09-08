@@ -1,4 +1,4 @@
-package org.snomed.heathanalytics.datageneration;
+package org.snomed.heathanalytics.server.service;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
@@ -6,7 +6,6 @@ import ca.uhn.fhir.rest.server.exceptions.BaseServerResponseException;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.hl7.fhir.r4.model.Parameters;
 import org.hl7.fhir.r4.model.ValueSet;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
 import java.util.Map;
@@ -21,12 +20,12 @@ public class SnomedConceptService {
 	private final IGenericClient fhirClient;
 	private final Map<Long, List<Long>> conceptDescendantMap;
 
-	public SnomedConceptService(@Value("${fhir-terminology-server-url}") String fhirTerminologyServerUrl) {
-		fhirClient = FhirContext.forR4().newRestfulGenericClient(fhirTerminologyServerUrl);
+	public SnomedConceptService() {
+		fhirClient = FhirContext.forR4().newRestfulGenericClient("https://snowstorm.ihtsdotools.org/fhir");
 		conceptDescendantMap = new Long2ObjectOpenHashMap<>();
 	}
 
-	public Long selectRandomDescendantOf(String conceptId) throws ServiceException {
+	public Long expandValueSet(String conceptId) throws ServiceException {
 		long conceptIdLong = parseLong(conceptId);
 		List<Long> descendants = conceptDescendantMap.get(conceptIdLong);
 		if (descendants == null) {

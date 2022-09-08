@@ -9,8 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 
-import static org.snomed.heathanalytics.server.rest.ControllerHelper.aggregatedPageWorkaround;
-
 @RestController
 @Api(tags = "Concept Subsets", description = "-")
 public class SubsetController {
@@ -23,7 +21,7 @@ public class SubsetController {
 	public org.springframework.data.domain.Page<Subset> listSubsets(
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "100") int size) {
-		return aggregatedPageWorkaround(subsetRepository.findAll(PageRequest.of(page, size)));
+		return subsetRepository.findAll(PageRequest.of(page, size));
 	}
 
 	@RequestMapping(value = "/subsets/{subsetId}", method = RequestMethod.GET, produces = "application/json")

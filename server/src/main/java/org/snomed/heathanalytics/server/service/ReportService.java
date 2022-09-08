@@ -14,7 +14,7 @@ import java.util.Map;
 public class ReportService {
 
 	@Autowired
-	private QueryService queryService;
+	private PatientQueryService patientQueryService;
 
 	public Report runReport(ReportDefinition reportDefinition) throws ServiceException {
 		Timer timer = new Timer();
@@ -22,9 +22,9 @@ public class ReportService {
 		CohortCriteria patientCriteria = reportDefinition.getCriteria();
 		int count;
 		if (patientCriteria != null) {
-			count = queryService.fetchCohortCount(patientCriteria);
+			count = patientQueryService.fetchCohortCount(patientCriteria);
 		} else {
-			count = (int) queryService.getStats().getPatientCount();
+			count = (int) patientQueryService.getStats().getPatientCount();
 		}
 		timer.split("cohort count");
 		Report report = new Report(reportDefinition.getName(), count, patientCriteria);
@@ -51,28 +51,28 @@ public class ReportService {
 		List<EncounterCriterion> encounterCriteria = patientCriteria.getEncounterCriteria();
 		encounterCriteria.add(treatmentCriterion);
 		encounterCriteria.add(negativeOutcomeCriterion);
-		int withTreatmentWithNegativeOutcomeCount = queryService.fetchCohortCount(patientCriteria);
+		int withTreatmentWithNegativeOutcomeCount = patientQueryService.fetchCohortCount(patientCriteria);
 
 		// B. Count patients WITH treatment
 		removeLast(encounterCriteria);
-		int withTreatmentCount = queryService.fetchCohortCount(patientCriteria);
+		int withTreatmentCount = patientQueryService.fetchCohortCount(patientCriteria);
 
 		// Has test variable chance of outcome = A / B
 
 		// C. Count patients WITHOUT treatment, WITH negative outcome
 		treatmentCriterion.setHas(false);
 		encounterCriteria.add(negativeOutcomeCriterion);
-		int withoutTreatmentWithNegativeOutcomeCount = queryService.fetchCohortCount(patientCriteria);
+		int withoutTreatmentWithNegativeOutcomeCount = patientQueryService.fetchCohortCount(patientCriteria);
 
 		// D. Count patients WITHOUT test variable
 		removeLast(encounterCriteria);
-		int withoutTreatmentCount = queryService.fetchCohortCount(patientCriteria);
+		int withoutTreatmentCount = patientQueryService.fetchCohortCount(patientCriteria);
 		treatmentCriterion.setHas(true);// reset
 
 		// Has not test variable chance of outcome = C / D
 
 		return new StatisticalCorrelationReport(
-				(int) queryService.getStats().getPatientCount(),
+				(int) patientQueryService.getStats().getPatientCount(),
 				withTreatmentCount,
 				withTreatmentWithNegativeOutcomeCount,
 				withoutTreatmentCount,
@@ -91,7 +91,7 @@ public class ReportService {
 
 			for (SubReportDefinition reportDefinition : groupList) {
 				CohortCriteria combinedCriteria = combineCriteria(patientCriteria, reportDefinition.getCriteria());
-				Page<Patient> patientsPage = queryService.fetchCohort(combinedCriteria);
+				Page<Patient> patientsPage = patientQueryService.fetchCohort(combinedCriteria);
 				timer.split("Fetch for " + reportDefinition.getName());
 				Map<String, CPTTotals> cptTotals = null;
 				if (patientsPage instanceof PatientPageWithCPTTotals) {

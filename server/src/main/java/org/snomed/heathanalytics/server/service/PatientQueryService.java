@@ -6,9 +6,10 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.metrics.scripted.ParsedScriptedMetric;
-import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
+import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.metrics.ParsedScriptedMetric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.model.ClinicalEncounter;
@@ -20,11 +21,14 @@ import org.snomed.heathanalytics.server.pojo.Stats;
 import org.snomed.heathanalytics.server.store.SubsetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-import org.springframework.data.elasticsearch.core.aggregation.AggregatedPage;
+import org.springframework.data.elasticsearch.core.SearchHit;
+import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
-import org.springframework.data.elasticsearch.core.query.SearchQuery;
+import org.springframework.data.elasticsearch.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -34,7 +38,7 @@ import static java.lang.String.format;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
 @Service
-public class QueryService {
+public class PatientQueryService {
 
 	@Autowired
 	private SnomedService snomedService;
@@ -51,7 +55,7 @@ public class QueryService {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public Stats getStats() {
-		SearchQuery searchQuery = new NativeSearchQueryBuilder().build();
+		NativeSearchQuery searchQuery = new NativeSearchQueryBuilder().build();
 		long patientCount = elasticsearchTemplate.count(searchQuery, Patient.class);
 		return new Stats(new Date(), patientCount);
 	}
@@ -160,14 +164,21 @@ public class QueryService {
 		}
 
 		// Grab page of Patients from Elasticsearch.
-		Page<Patient> patients = elasticsearchTemplate.queryForPage(patientElasticQuery.build(), Patient.class);
+		Query query = patientElasticQuery.build();
+		query.setTrackTotalHits(true);
+		SearchHits<Patient> searchHits = elasticsearchTemplate.search(query, Patient.class);
+		List<Patient> content = searchHits.stream().map(SearchHit::getContent).collect(Collectors.toList());
+		Page<Patient> patients = new PageImpl<>(content, query.getPageable(), searchHits.getTotalHits());
+
 		timer.split("Fetching patients");
 		if (!encounterCriteriaWithCPTAnalysis.isEmpty()) {
 
-			AggregatedPage<Patient> aggregatedPage = (AggregatedPage<Patient>) patients;
-			ParsedScriptedMetric encounterConceptCounts = (ParsedScriptedMetric) aggregatedPage.getAggregation("encounterConceptCounts");
+			Aggregations aggregations = searchHits.getAggregations();
+			Map<String, Aggregation> stringAggregationMap = aggregations.asMap();
+			ParsedScriptedMetric encounterConceptCounts = (ParsedScriptedMetric) stringAggregationMap.get("encounterConceptCounts");
+			Object aggregation = encounterConceptCounts.aggregation();
 			@SuppressWarnings("unchecked")
-			Map<String, Integer> conceptCounts = (Map<String, Integer>) encounterConceptCounts.aggregation();
+			Map<String, Integer> conceptCounts = (Map<String, Integer>) aggregation;
 			Map<String, CPTCode> snomedToCptMap = cptService.getSnomedToCptMap();
 			Map<String, CPTTotals> cptTotalsMap = new HashMap<>();
 			for (String conceptId : conceptCounts.keySet()) {
@@ -190,12 +201,12 @@ public class QueryService {
 		if (!conceptTerms.isEmpty()) {
 			for (Long conceptId : conceptTerms.keySet()) {
 				//catch every look up exception, otherwise no concept id will be found after first error
-				try {
-					conceptTerms.get(conceptId).setTerm(
-							snomedService.findConcept(conceptId.toString()).getFsn()
-					);
-				} catch (ServiceException e) {
-				}
+//				try {
+//					conceptTerms.get(conceptId).setTerm(
+//							snomedService.findConcept(conceptId.toString()).getFsn()
+//					);
+//				} catch (ServiceException e) {
+//				}
 			}
 			timer.split("Fetching concept terms");
 		}
@@ -314,6 +325,7 @@ public class QueryService {
 
 			/*
 				The following script is written in the Elasticsearch Painless script which is a Java like language.
+				This runs on each Elasticsearch node as a map-reduce function.
 				The script is purposefully basic using a minimum set of core Java classes.
 				The following Java features do not seem to work in the Painless language: type autoboxing, recursive methods, incrementing variables, calling a function and returning the value on one line.
 			 */
@@ -345,10 +357,10 @@ public class QueryService {
 					"	List dates = new ArrayList();" +
 					"	for (String conceptDateString : doc['encounters.conceptDate.keyword']) {" +
 					"		int commaIndex = conceptDateString.indexOf(',');" +
-					"		long otherEncounterConceptId = Long.parseLong(conceptDateString.substring(0, commaIndex));" +
-					"		long otherEncounterDate = Long.parseLong(conceptDateString.substring(commaIndex + 1));" +
-					"		if (criterionConceptIds.contains(otherEncounterConceptId)) {" +
-					"			dates.add(otherEncounterDate);" +
+					"		long candidateEncounterConceptId = Long.parseLong(conceptDateString.substring(0, commaIndex));" +
+					"		long candidateEncounterDate = Long.parseLong(conceptDateString.substring(commaIndex + 1));" +
+					"		if (criterionConceptIds.contains(candidateEncounterConceptId)) {" +
+					"			dates.add(candidateEncounterDate);" +
 					"		}" +
 					"	}" +
 					"" +
@@ -398,6 +410,9 @@ public class QueryService {
 					"if (criterionMapsList.isEmpty()) {" +
 					"	return true;" +
 					"}\n" +
+//					"Debug.explain(criterionMapsList);" +
+//					"Debug.explain(doc['encounters.conceptDate.keyword']);" +
+					// doc['encounters.conceptDate.keyword']
 
 					"boolean match = false;" +
 					"long baseEncounterDate = 0;" +

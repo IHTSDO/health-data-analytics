@@ -37,6 +37,11 @@ public class ClinicalEncounter {
 	public ClinicalEncounter(Date date, Long conceptId) {
 		dateLong = date.getTime();
 		this.conceptId = conceptId;
+		updateConceptDate();
+	}
+
+	private void updateConceptDate() {
+		conceptDate = conceptId + "," + dateLong;
 	}
 
 	public ClinicalEncounter(Calendar date, Long conceptId) {
@@ -73,7 +78,8 @@ public class ClinicalEncounter {
 
 	@JsonView({View.API.class, View.Elasticsearch.class})
 	public String getConceptDate() {
-		return conceptId + "," + dateLong;
+		updateConceptDate();
+		return conceptDate;
 	}
 
 	@JsonView(View.API.class)

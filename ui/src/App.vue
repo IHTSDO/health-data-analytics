@@ -4,12 +4,7 @@
       <b-row>
         <h2>SNOMED Analytics</h2>
       </b-row>
-      <b-row>
-        <b-col cols="4">
-          <OutcomeComparison/>
-        </b-col>
-        <b-col>Graphs</b-col>
-      </b-row>
+      <OutcomeComparison/>
     </b-container>
   </div>
 </template>

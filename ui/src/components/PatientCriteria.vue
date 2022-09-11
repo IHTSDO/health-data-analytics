@@ -22,7 +22,7 @@
 import axios from 'axios';
 
 export default {
-    name: 'ConceptConstraint',
+    name: 'PatientCriteria',
     props: {
         constraint: Object
     },

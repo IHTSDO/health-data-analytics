@@ -1,11 +1,13 @@
 <template>
     <div>
+        {{display}}
         <b-form-input
                 v-model="searchInput"
                 debounce="500"
                 name="gender-options3"
                 v-b-tooltip.right
                 :title="selected.codeTerm"
+                :style="style"
             ></b-form-input>
         <div class="typeahead">
             <b-dropdown id="dropdown-1" text="Dropdown Button" ref="searchResults"
@@ -24,7 +26,9 @@ import axios from 'axios';
 export default {
     name: 'ConceptConstraint',
     props: {
-        constraint: Object
+        display: String,
+        eclBinding: String,
+        constraint: Object,
     },
     data() {
         return {
@@ -35,9 +39,20 @@ export default {
             selected: {}
         }
     },
+    computed: {
+        style() {
+            if (this.constraint.color) {
+                return "background-color: " + this.constraint.color
+            }
+            return ""
+        }
+    },
     mounted() {
         if (this.constraint.initial) {
             this.FHIRSearch(this.constraint.initial);
+        }
+        if (!this.eclBinding) {
+            console.warn('No ECL binding defined.');
         }
     },
     watch: {
@@ -52,7 +67,7 @@ export default {
     methods: {
         FHIRSearch(input) {
             console.log('FHIRSearch');
-            axios.get('health-analytics-api/concepts?prefix=' + input + '&ecl=<<404684003&limit=10')
+            axios.get('health-analytics-api/concepts?prefix=' + input + '&ecl=' + this.eclBinding + '&limit=10')
             .then(response => {
                 if (response.data.length == 1) {
                     this.selectResult(response.data[0]);

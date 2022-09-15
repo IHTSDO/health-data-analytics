@@ -8,6 +8,7 @@
                     style="max-width: 20rem;"
                     class="mb-2">
                     <b-card-text>
+
                         <b-form-group label="Gender">
                             <b-form-radio-group
                                 id="gender-group"
@@ -17,25 +18,13 @@
                             ></b-form-radio-group>
                         </b-form-group>
                         <b-form-group label="Condition" >
-                            <ConceptConstraint :constraint="condition" v-on:update:constraint="condition = $event"/>
+                            <ConceptConstraint :constraint="condition" :eclBinding="'*'" v-on:update:constraint="condition = $event"/>
                         </b-form-group>
+
                         Cohort Size: {{cohortSize}}
                         <div hidden>{{patientCriteriaTrigger}}</div>
                     </b-card-text>
                 </b-card>
-                <!-- <b-card
-                    title="Patient Groups"
-                    tag="article"
-                    style="max-width: 20rem;"
-                    class="mb-2">
-                    <b-card-text>
-                        <b-form-group v-for="group in group" v-bind:key="group.name">
-                            <ConceptConstraint :constraint="outcome" v-on:update:constraint="outcome = $event"/>
-                        </b-form-group>
-                        <b-button v-on:click="outcomes.push({})">Add</b-button>
-                        <div hidden>{{conditionsTrigger}}</div>
-                    </b-card-text>
-                </b-card> -->
                 <b-card
                     title="Compare Outcomes"
                     tag="article"
@@ -43,12 +32,30 @@
                     class="mb-2">
                     <b-card-text>
                         <b-form-group v-for="outcome in outcomes" v-bind:key="outcome.ecl">
-                            <ConceptConstraint :constraint="outcome" v-on:update:constraint="outcome.selected = $event; updateOutcomes()"/>
+                            <ConceptConstraint :constraint="outcome" :eclBinding="'*'" v-on:update:constraint="outcome.selected = $event; updateOutcomes()"/>
                         </b-form-group>
-                        <b-button v-on:click="outcomes.push({})">Add</b-button>
+                        <b-button v-on:click="outcomes.push({})">Add Outcome</b-button>
                         <!-- <div hidden>{{conditionsTrigger}}</div> -->
                     </b-card-text>
                 </b-card>
+                <b-card
+                    title="Patient Groups"
+                    tag="article"
+                    style="max-width: 20rem;"
+                    class="mb-2">
+                    <b-card-text>
+                        <div v-for="group in groups" v-bind:key="group.name" class="patient-group">
+                            Group {{group.name}}
+                            <b-form-group v-for="event in group.events" v-bind:key="event.ecl">
+                                <ConceptConstraint :constraint="event" :eclBinding="'*'" v-on:update:constraint="event.selected = $event"/>
+                            </b-form-group>
+                            <b-button v-on:click="group.events.push({})">Add Requirement</b-button>
+                        </div>
+                        <b-button v-on:click="groups.push({events: []})">Add Group</b-button>
+                        <!-- <div hidden>{{conditionsTrigger}}</div> -->
+                    </b-card-text>
+                </b-card>
+
             </div>
         </b-col>
         <b-col>
@@ -68,7 +75,8 @@ export default {
     },
     mounted() {
         this.updateCohortSize();
-        this.addOutcome();
+        // this.addOutcome();
+
     },
     data() {
         return {
@@ -78,8 +86,24 @@ export default {
             {text: 'Female', value: 'FEMALE'},
             {text: 'Male', value: 'MALE'},
             ],
-            condition: {initial: "69896004"},
-            outcomes: [],
+            condition: {initial: "1240581000000104"},
+            groups: [
+            {
+                    name: "Everyone",
+                    events: []
+                },
+                {
+                    name: "",
+                    events: [
+                    {initial: "73211009"},
+                    {initial: "38341003"},
+                    ]
+                }
+            ],
+            outcomes: [
+            {initial: "882784691000119100", color: "#99C2A2"},
+            {initial: "419099009", color: "#C5EDAC"},
+            ],
             cohortSize: 0,
             numberFormat: new Intl.NumberFormat('en-US'),
 
@@ -101,7 +125,12 @@ export default {
                     enabled: true
                 },
                 xaxis: {
+                    title: {
+                        text: "Correlation Percent"
+                    },
                     categories: [],
+                    min: 0,
+                    max: 100
                 }
             },
         }
@@ -131,24 +160,28 @@ export default {
                 let report = {};
                 report.criteria = this.getPatentCriteria();
 
-                // let patientGroups = [];
-                // patientGroups.push({
-                //     criteria: {
-                //         encounterCriteria: [
-                //             { "conceptECL": this.conditionA.ecl }
-                //         ]
-                //     }
-                // })
-                // patientGroups.push({
-                //     criteria: {
-                //         encounterCriteria: [
-                //             { "conceptECL": this.conditionB.ecl }
-                //         ]
-                //     }
-                // })
+                let patientGroups = [];
+                this.groups.forEach(group => {
+                    let groupCriteria = {};
+                    patientGroups.push(groupCriteria)
+                    groupCriteria.name = group.name;
+                    groupCriteria.criteria = {}
+                    groupCriteria.criteria.encounterCriteria = [];
+                    group.events.forEach(event => {
+                        groupCriteria.criteria.encounterCriteria.push({
+                            "conceptECL": event.selected.ecl
+                        })
+                        if (!groupCriteria.name) {
+                            groupCriteria.name = event.selected.display
+                        }
+                    })
+                })
+
                 let outcomesRequest = [];
+                let colors = [];
                 this.outcomes.forEach(outcome => {
                     if (outcome.selected) {
+                        colors.push(outcome.color)
                         outcomesRequest.push({
                             "name": outcome.selected.display,
                             criteria: {
@@ -161,27 +194,53 @@ export default {
                         })
                     }
                 })
-                report.groups = [outcomesRequest];
+                report.groups = [patientGroups, outcomesRequest];
                 this.hideChart = false
                 axios.post('health-analytics-api/report', report)
                     .then(response => {
                         let data = response.data
                         console.log(data)
-                        let labels = ['Cohort Total'];
-                        let counts = [0];
+                        let labels = [];
+                        let series = [];
+                        if (!data.groups) {
+                            data.groups = [];
+                        }
                         data.groups.forEach(group => {
+                            let i = 0
                             labels.push(group.name)
-                            counts.push(0)
+                            // eslint-disable-next-line
+                            group.groups.forEach(subGroup => {
+                                    if (series.length <= i) {
+                                        series.push({data: []});
+                                    }
+                                    series[i].data.push(0);// bars in with 0 count initially to avoid diagonal animation
+                                    i++
+                                })
                         })
-                        this.$refs.outcomeChart.updateOptions({xaxis: {categories: labels}}, true, true, true);
-                        this.$refs.outcomeChart.updateSeries([{data: counts}], false);
+                        this.$refs.outcomeChart.updateOptions({xaxis: {categories: labels, min: 0, max: 100}, colors}, true, true, true);
+                        this.$refs.outcomeChart.updateSeries(series, false);
                         let context = this
+                        // Update chart again with correct values
                         setTimeout(function() {
-                            let counts = [data.patientCount];
+                            series = [];
+                            
                             data.groups.forEach(group => {
-                                counts.push(group.patientCount)
+                                let i = 0
+                                group.groups.forEach(subGroup => {
+                                    if (series.length <= i) {
+                                        console.log("here")
+                                        series.push({
+                                            name: subGroup.name,
+                                            data: []
+                                        });
+                                    }
+                                    let percent = (subGroup.patientCount / group.patientCount) * 100
+                                    percent = Math.round(percent * 100) / 100
+                                    series[i].data.push(percent)
+                                    i++
+                                })
                             })
-                            context.$refs.outcomeChart.updateSeries([{data: counts}], true);
+                            context.$refs.outcomeChart.updateSeries(series, true);
                         }, 100)
                     })
 
@@ -208,6 +267,11 @@ h3 {
 }
 .displayNone {
     display: none;
+}
+.patient-group {
+    border: 1px solid lightgray;
+    margin: 10px;
+    padding: 5px;
 }
 </style>
 <style>

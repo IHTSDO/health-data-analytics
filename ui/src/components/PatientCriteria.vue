@@ -1,66 +1,54 @@
 <template>
     <div>
-        <b-form-input
-                v-model="searchInput"
-                debounce="500"
-                name="gender-options3"
-                v-b-tooltip.right
-                :title="selected.codeTerm"
-            ></b-form-input>
-        <div class="typeahead">
-            <b-dropdown id="dropdown-1" text="Dropdown Button" ref="searchResults"
-                >
-                <b-dropdown-item v-for="item in searchResults" :key="item.code"
-                    v-on:click="selectResult(item)">
-                    {{item.display}}
-                </b-dropdown-item>
-            </b-dropdown>
-        </div>
+        <b-form-group label="Gender">
+            <b-form-radio-group
+                id="gender-group"
+                v-model="gender"
+                :options="genderOptions"
+                name="gender-options"
+            ></b-form-radio-group>
+        </b-form-group>
+        <b-form-group v-for="eventCriterion in value.eventCriteria" v-bind:key="eventCriterion.ecl" >
+            <ConceptConstraint :constraint="eventCriterion" :display="eventCriterion.display" :eclBinding="eventCriterion.eclBinding" v-on:update:constraint="eventCriterion.selected = $event"/>
+        </b-form-group>
+        <b-dropdown id="dropdown-dropup" text="Add Requirement" variant="primary" class="m-2">
+            <b-dropdown-item v-on:click="addEventCriterion('Clinical Finding', '<404684003')">Clinical Finding</b-dropdown-item>
+            <b-dropdown-item v-on:click="addEventCriterion('Disorder', '<64572001')">Disorder</b-dropdown-item>
+            <b-dropdown-item v-on:click="addEventCriterion('Procedure', '<71388002')">Procedure</b-dropdown-item>
+            <b-dropdown-item v-on:click="addEventCriterion('Observable', '<363787002')">Observable</b-dropdown-item>
+            <b-dropdown-item v-on:click="addEventCriterion('Pharma / biological product', '<373873005')">Pharma / biological product</b-dropdown-item>
+        </b-dropdown>
     </div>
 </template>
 <script>
-import axios from 'axios';
-
+import ConceptConstraint from './ConceptConstraint'
 export default {
     name: 'PatientCriteria',
+    components: {
+        ConceptConstraint
+    },
     props: {
-        constraint: Object
+        value: Object
+    },
+    created() {
+        if (typeof this.value.eventCriteria === 'undefined') {
+            this.$set(this.value, 'eventCriteria', []);
+        }
     },
     data() {
         return {
-            searchInput: '',
-            showResults: true,
-            searchResults: [],
-            itemJustSelected: false,
-            selected: {}
-        }
-    },
-    mounted() {
-        if (this.constraint.initial) {
-            this.FHIRSearch(this.constraint.initial);
-        }
-    },
-    watch: {
-        searchInput: function(input) {
-            if (this.itemJustSelected) {
-                this.itemJustSelected = false;
-            } else if (input.length > 2) {
-                this.FHIRSearch(input);
-            }
+            gender: '',
+            genderOptions: [
+                {text: 'All', value: ''},
+                {text: 'Female', value: 'FEMALE'},
+                {text: 'Male', value: 'MALE'},
+            ],
         }
     },
     methods: {
-        FHIRSearch(input) {
-            console.log('FHIRSearch');
-            axios.get('health-analytics-api/concepts?prefix=' + input + '&ecl=<<404684003&limit=10')
-            .then(response => {
-                if (response.data.length == 1) {
-                    this.selectResult(response.data[0]);
-                } else {
-                    this.searchResults = response.data;
-                    this.$refs.searchResults.show();
-                }
-            })
+        addEventCriterion(display, eclBinding) {
+            // Use update method for object from parent component
+            this.$set(this.value.eventCriteria, this.value.eventCriteria.length, {display, eclBinding})
         },
         selectResult(item) {
             this.itemJustSelected = true;
@@ -74,21 +62,5 @@ export default {
 }
 </script>
 <style>
-    .typeahead {
-        text-align: left;
-        margin-bottom: -26px;
-    }
-    .typeahead .dropdown-toggle {
-        visibility: hidden;
-    }
-    .typeahead .dropdown {
-        margin-top: -36px;
-    }
-    .typeahead .dropdown-toggle {
-        margin-top: -38px;
-    }
-    .typeahead .dropdown-menu {
-        border-top-left-radius: 0;
-        border-top-right-radius: 0;
-    }
+
 </style>

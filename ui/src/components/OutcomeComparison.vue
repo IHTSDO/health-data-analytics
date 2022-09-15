@@ -137,7 +137,7 @@ export default {
     },
     computed: {
         patientCriteriaTrigger() {
-            let selectionHash = this.gender + this.condition;
+            const selectionHash = this.gender + this.condition;
             this.updateCohortSize()
             return selectionHash;
         },
@@ -157,12 +157,12 @@ export default {
         }, 100),
         updateOutcomes: debounce(function() {
                 console.log('updating outcome stats')
-                let report = {};
+                const report = {};
                 report.criteria = this.getPatentCriteria();
 
-                let patientGroups = [];
+                const patientGroups = [];
                 this.groups.forEach(group => {
-                    let groupCriteria = {};
+                    const groupCriteria = {};
                     patientGroups.push(groupCriteria)
                     groupCriteria.name = group.name;
                     groupCriteria.criteria = {}
@@ -177,8 +177,8 @@ export default {
                     })
                 })
 
-                let outcomesRequest = [];
-                let colors = [];
+                const outcomesRequest = [];
+                const colors = [];
                 this.outcomes.forEach(outcome => {
                     if (outcome.selected) {
                         colors.push(outcome.color)
@@ -198,9 +198,9 @@ export default {
                 this.hideChart = false
                 axios.post('health-analytics-api/report', report)
                     .then(response => {
-                        let data = response.data
+                        const data = response.data
                         console.log(data)
-                        let labels = [];
+                        const labels = [];
                         let series = [];
                         if (!data.groups) {
                             data.groups = [];
@@ -219,6 +219,7 @@ export default {
                         })
                         this.$refs.outcomeChart.updateOptions({xaxis: {categories: labels, min: 0, max: 100}, colors}, true, true, true);
                         this.$refs.outcomeChart.updateSeries(series, false);
+                        // eslint-disable-next-line
                         let context = this
                         // Update chart again with correct values
                         setTimeout(function() {
@@ -246,7 +247,7 @@ export default {
 
         }, 1000),
         getPatentCriteria() {
-            let criteria = {};
+            const criteria = {};
             if (this.gender != '') {
                 criteria.gender = this.gender;
             }

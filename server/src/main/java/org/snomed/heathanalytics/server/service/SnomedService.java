@@ -29,7 +29,9 @@ public class SnomedService {
 	private final Map<String, List<Long>> eclResultsCache;
 
 	public SnomedService(@Value("${fhir-terminology-server-url}") String fhirTerminologyServerUrl) {
-		fhirClient = FhirContext.forR4().newRestfulGenericClient(fhirTerminologyServerUrl);
+		FhirContext context = FhirContext.forR4();
+		context.getRestfulClientFactory().setSocketTimeout(30_000);
+		fhirClient = context.newRestfulGenericClient(fhirTerminologyServerUrl);
 		eclResultsCache = new HashMap<>();
 	}
 

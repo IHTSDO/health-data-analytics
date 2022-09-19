@@ -8,6 +8,7 @@ import HomePage from './components/HomePage.vue'
 import TreatmentComparisonPage from './components/TreatmentComparisonPage.vue'
 import OutcomeComparison from './components/OutcomeComparison.vue'
 import LongitudinalPage from './components/LongitudinalPage.vue'
+import 'reflect-metadata';
 
 import 'bootstrap/dist/css/bootstrap.css'
 import 'bootstrap-vue/dist/bootstrap-vue.css'

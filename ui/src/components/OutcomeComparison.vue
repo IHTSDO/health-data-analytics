@@ -8,259 +8,201 @@
                     style="max-width: 20rem;"
                     class="mb-2">
                     <b-card-text>
-
-                        <b-form-group label="Gender">
-                            <b-form-radio-group
-                                id="gender-group"
-                                v-model="gender"
-                                :options="genderOptions"
-                                name="gender-options"
-                            ></b-form-radio-group>
-                        </b-form-group>
-                        <b-form-group label="Condition" >
-                            <ConceptConstraint :constraint="condition" :eclBinding="'*'" v-on:update:constraint="condition = $event"/>
-                        </b-form-group>
-
-                        Cohort Size: {{cohortSize}}
-                        <div hidden>{{patientCriteriaTrigger}}</div>
+                        <PatientCriteria :model="cohortCriteria"></PatientCriteria>
+                        {{cohortCriteria.gender}}
                     </b-card-text>
                 </b-card>
                 <b-card
-                    title="Compare Outcomes"
+                    title="Outcomes to Measure:"
                     tag="article"
                     style="max-width: 20rem;"
                     class="mb-2">
                     <b-card-text>
-                        <b-form-group v-for="outcome in outcomes" v-bind:key="outcome.ecl">
-                            <ConceptConstraint :constraint="outcome" :eclBinding="'*'" v-on:update:constraint="outcome.selected = $event; updateOutcomes()"/>
+                        <b-form-group v-for="outcome in outcomes" v-bind:key="outcome.conceptECL">
+                            <ClinicalEventCriterion :model="outcome"/>
                         </b-form-group>
-                        <b-button v-on:click="outcomes.push({})">Add Outcome</b-button>
-                        <!-- <div hidden>{{conditionsTrigger}}</div> -->
+                        <AddCriteriaDropdown label="Add Outcome" v-on:add-criterion="addOutcome"/>
                     </b-card-text>
                 </b-card>
                 <b-card
-                    title="Patient Groups"
+                    title="For Patient Groups:"
                     tag="article"
                     style="max-width: 20rem;"
                     class="mb-2">
                     <b-card-text>
                         <div v-for="group in groups" v-bind:key="group.name" class="patient-group">
                             Group {{group.name}}
-                            <b-form-group v-for="event in group.events" v-bind:key="event.ecl">
-                                <ConceptConstraint :constraint="event" :eclBinding="'*'" v-on:update:constraint="event.selected = $event"/>
-                            </b-form-group>
-                            <b-button v-on:click="group.events.push({})">Add Requirement</b-button>
+                            <PatientCriteria :model="group.criteria" hide-gender="true"></PatientCriteria>
                         </div>
-                        <b-button v-on:click="groups.push({events: []})">Add Group</b-button>
-                        <!-- <div hidden>{{conditionsTrigger}}</div> -->
+                        <b-button v-on:click="addGroup">Add Group</b-button>
                     </b-card-text>
                 </b-card>
-
             </div>
+            <b-button v-on:click="save">Save</b-button>
+            <b-button v-on:click="load">Load</b-button>
         </b-col>
         <b-col>
-            <apex-chart v-bind:class="{ displayNone: hideChart }" ref="outcomeChart" type="bar" height="450" :options="chartOptions" :series="series"></apex-chart>
+            <div hidden>{{conditionsTrigger}}</div>
+            <ReportChart ref="chart" :series="series" ></ReportChart>
         </b-col>
     </b-row>
 </template>
-<script>
+<script lang="ts">
+import { defineComponent } from 'vue'
 import axios from 'axios'
-import debounce from 'debounce'
-import ConceptConstraint from './ConceptConstraint'
+import debounce from 'lodash.debounce'
+import { plainToInstance } from 'class-transformer';
 
-export default {
+import ClinicalEventCriterion from './ClinicalEventCriterion.vue'
+import { ClinicalEventCriterionModel } from './../model/ClinicalEventCriterionModel'
+import PatientCriteria from './PatientCriteria.vue'
+import { PatientCriteriaModel } from '@/model/PatientCriteriaModel'
+import AddCriteriaDropdown from './AddCriteriaDropdown.vue'
+import ReportChart from './ReportChart.vue';
+
+export default defineComponent({
     name: 'OutcomeComparison',
     components: {
-        ConceptConstraint,
-    },
-    mounted() {
-        this.updateCohortSize();
-        // this.addOutcome();
-
+        ClinicalEventCriterion,
+        PatientCriteria,
+        AddCriteriaDropdown,
+        ReportChart
     },
     data() {
         return {
-            gender: '',
-            genderOptions: [
-            {text: 'All', value: ''},
-            {text: 'Female', value: 'FEMALE'},
-            {text: 'Male', value: 'MALE'},
-            ],
-            condition: {initial: "1240581000000104"},
+            loaded: false,
+            cohortCriteria: new PatientCriteriaModel(),
             groups: [
-            {
+                {
                     name: "Everyone",
-                    events: []
+                    criteria: new PatientCriteriaModel()
                 },
                 {
                     name: "",
-                    events: [
-                    {initial: "73211009"},
-                    {initial: "38341003"},
-                    ]
+                    criteria: new PatientCriteriaModel()
                 }
             ],
-            outcomes: [
-            {initial: "882784691000119100", color: "#99C2A2"},
-            {initial: "419099009", color: "#C5EDAC"},
-            ],
-            cohortSize: 0,
+            outcomes: new Array<ClinicalEventCriterionModel>(),
+            cohortSize: "0",
             numberFormat: new Intl.NumberFormat('en-US'),
 
             // apex
-            hideChart: true,
             series: [{data: []}],
-            chartOptions: {
-                chart: {
-                    type: 'bar',
-                    height: 350
-                },
-                plotOptions: {
-                    bar: {
-                        borderRadius: 4,
-                        horizontal: true,
-                    }
-                },
-                dataLabels: {
-                    enabled: true
-                },
-                xaxis: {
-                    title: {
-                        text: "Correlation Percent"
-                    },
-                    categories: [],
-                    min: 0,
-                    max: 100
-                }
-            },
         }
     },
+    mounted() {
+        this.load()
+    },
     computed: {
+        // Used to monitor changes in selection criteria and trigger API interactions
         patientCriteriaTrigger() {
-            const selectionHash = this.gender + this.condition;
+            const selectionHash: any = this.cohortCriteria.getForAPI()
+            // this.save()
             this.updateCohortSize()
             return selectionHash;
         },
+        conditionsTrigger() {
+            const reportRequest = this.getReportRequest()
+            this.updateOutcomes(reportRequest);
+            return reportRequest;
+        }
     },
     methods: {
-        addOutcome() {
-            this.outcomes.push({
-                id: this.random()
+        load() {
+            axios.get('health-analytics-api/ui-state/groups/dev')
+            .then(response => {
+                // console.log("Load");
+                const model = response.data
+                if (model && model.cohortCriteria) {
+                    this.cohortCriteria.setAll(model.cohortCriteria)
+                    // console.log("getForApi after plainToClass", this.cohortCriteria.getForAPI());
+
+                    this.groups.length = 0
+                    model.groups.forEach((group: any) => {
+                        const gC = new PatientCriteriaModel()
+                        if (group.criteria) {
+                            gC.setAll(group.criteria)
+                        }
+                        this.groups.push({
+                            name: group.name,
+                            criteria: gC
+                        })
+                    })
+
+                    this.outcomes = plainToInstance(ClinicalEventCriterionModel, model.outcomes)
+                    this.loaded = true
+                } else {
+                    this.cohortCriteria.encounterCriteria.push()
+                    this.loaded = true
+                }
             })
         },
-        updateCohortSize: debounce(function() {
-            console.log('updating cohort size')
-            axios.post('health-analytics-api/cohorts/select', this.getPatentCriteria())
-                .then(response => {
-                    this.cohortSize = this.numberFormat.format(response.data.totalElements);
-                })
-        }, 100),
-        updateOutcomes: debounce(function() {
-                console.log('updating outcome stats')
-                const report = {};
-                report.criteria = this.getPatentCriteria();
-
-                const patientGroups = [];
-                this.groups.forEach(group => {
-                    const groupCriteria = {};
-                    patientGroups.push(groupCriteria)
-                    groupCriteria.name = group.name;
-                    groupCriteria.criteria = {}
-                    groupCriteria.criteria.encounterCriteria = [];
-                    group.events.forEach(event => {
-                        groupCriteria.criteria.encounterCriteria.push({
-                            "conceptECL": event.selected.ecl
-                        })
-                        if (!groupCriteria.name) {
-                            groupCriteria.name = event.selected.display
-                        }
-                    })
-                })
-
-                const outcomesRequest = [];
-                const colors = [];
-                this.outcomes.forEach(outcome => {
-                    if (outcome.selected) {
-                        colors.push(outcome.color)
-                        outcomesRequest.push({
-                            "name": outcome.selected.display,
-                            criteria: {
-                                encounterCriteria: [
-                                    {
-                                        "conceptECL": outcome.selected.ecl
-                                    }
-                                ]
-                            }
-                        })
-                    }
-                })
-                report.groups = [patientGroups, outcomesRequest];
-                this.hideChart = false
-                axios.post('health-analytics-api/report', report)
-                    .then(response => {
-                        const data = response.data
-                        console.log(data)
-                        const labels = [];
-                        let series = [];
-                        if (!data.groups) {
-                            data.groups = [];
-                        }
-                        data.groups.forEach(group => {
-                            let i = 0
-                            labels.push(group.name)
-                            // eslint-disable-next-line
-                            group.groups.forEach(subGroup => {
-                                    if (series.length <= i) {
-                                        series.push({data: []});
-                                    }
-                                    series[i].data.push(0);// bars in with 0 count initially to avoid diagonal animation
-                                    i++
-                                })
-                        })
-                        this.$refs.outcomeChart.updateOptions({xaxis: {categories: labels, min: 0, max: 100}, colors}, true, true, true);
-                        this.$refs.outcomeChart.updateSeries(series, false);
-                        // eslint-disable-next-line
-                        let context = this
-                        // Update chart again with correct values
-                        setTimeout(function() {
-                            series = [];
-                            
-                            data.groups.forEach(group => {
-                                let i = 0
-                                group.groups.forEach(subGroup => {
-                                    if (series.length <= i) {
-                                        console.log("here")
-                                        series.push({
-                                            name: subGroup.name,
-                                            data: []
-                                        });
-                                    }
-                                    let percent = (subGroup.patientCount / group.patientCount) * 100
-                                    percent = Math.round(percent * 100) / 100
-                                    series[i].data.push(percent)
-                                    i++
-                                })
-                            })
-                            context.$refs.outcomeChart.updateSeries(series, true);
-                        }, 100)
-                    })
-
-        }, 1000),
-        getPatentCriteria() {
-            const criteria = {};
-            if (this.gender != '') {
-                criteria.gender = this.gender;
+        save() {
+            if (!this.loaded) {
+            // if (10 * 10 == 100 || !this.loaded) {
+                return
             }
-            if (this.condition.ecl) {
-                criteria.encounterCriteria = [{ conceptECL: this.condition.ecl }]
+            const model = {
+                cohortCriteria: this.cohortCriteria,
+                groups: this.groups,
+                outcomes: this.outcomes,
             }
-            return criteria;
+            // console.log(model);
+            axios.post('health-analytics-api/ui-state/groups/dev', model);
+            console.log("saved:", this.cohortCriteria.gender);
         },
-        random: function() {
-            return Math.floor(Math.random() * 100000000);
-        }
+        addOutcome(display: string, eclBinding: string) {
+            this.outcomes.push(new ClinicalEventCriterionModel(display, eclBinding))
+        },
+        addGroup() {
+            this.groups.push({name: "", criteria: new PatientCriteriaModel()})
+        },
+        updateCohortSize: function() {
+            // eslint-disable-next-line
+            const context = this;
+            debounce(function() {
+                console.log('updating cohort size')
+                axios.post('health-analytics-api/cohorts/select', context.cohortCriteria.getForAPI())
+                    .then(response => {
+                        context.cohortSize = context.numberFormat.format(response.data.totalElements);
+                    })
+            }, 100)
+        },
+        updateOutcomes: function(report: any) {
+            if (report.groups && report.groups.length == 2 && report.groups[1].length) {
+                this.$refs.chart.fetchReport(report)
+            }
+        },
+        getReportRequest: function() {
+            const report = {} as any;
+            report.criteria = this.cohortCriteria.getForAPI()
+
+            const patientGroups = new Array<unknown>();
+            this.groups.forEach(group => {
+                const groupCriteria = {} as any;
+                patientGroups.push(groupCriteria)
+                groupCriteria.name = group.name;
+                groupCriteria.criteria = group.criteria.getForAPI()
+            })
+
+            const outcomesRequest = new Array<unknown>();
+            const colors = new Array<string>();
+            this.outcomes.forEach(outcome => {
+                if (outcome.isFilled()) {
+                    colors.push(outcome.color)
+                    outcomesRequest.push({
+                        criteria: {
+                            encounterCriteria: [outcome.getForAPI()]
+                        }
+                    })
+                }
+            })
+            report.groups = [patientGroups, outcomesRequest];
+            report.colors = colors
+            return report;
+        },
     }
-}
+})
 </script>
 <style scoped>
 h3 {

@@ -12,9 +12,11 @@
     "apexcharts": "^3.35.5",
     "axios": "^0.27.2",
     "bootstrap-vue": "^2.22.0",
+    "class-transformer": "^0.5.1",
     "core-js": "^3.8.3",
     "debounce": "^1.2.1",
     "jquery": "^3.6.1",
+    "reflect-metadata": "^0.1.13",
     "vue": "^2.6.14",
     "vue-apexcharts": "^1.6.2",
     "vue-class-component": "^7.2.6",
@@ -24,14 +26,15 @@
   "devDependencies": {
     "@babel/core": "^7.12.16",
     "@babel/eslint-parser": "^7.12.16",
+    "@types/debounce": "^1.2.1",
     "@types/lodash.debounce": "^4.0.7",
     "@typescript-eslint/eslint-plugin": "^5.37.0",
     "@typescript-eslint/parser": "^5.37.0",
     "@vue/cli-plugin-babel": "~5.0.0",
-    "@vue/cli-plugin-eslint": "~5.0.0",
+    "@vue/cli-plugin-eslint": "^5.0.8",
     "@vue/cli-plugin-typescript": "^5.0.8",
     "@vue/cli-service": "~5.0.0",
-    "@vue/eslint-config-typescript": "^11.0.1",
+    "@vue/eslint-config-typescript": "^9.1.0",
     "eslint": "^7.32.0",
     "eslint-plugin-vue": "^8.0.3",
     "typescript": "^4.8.3",
@@ -48,7 +51,7 @@
       "@vue/typescript/recommended"
     ],
     "parserOptions": {
-      "parser": "@babel/eslint-parser"
+      "parser": "@typescript-eslint/parser"
     },
     "rules": {}
   },

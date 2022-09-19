@@ -7,30 +7,29 @@
                 style="max-width: 20rem;"
                 class="mb-2">
                 <b-card-text>
-                    <PatientCriteria v-model="cohortCriteria"></PatientCriteria>
+                    <PatientCriteria :model="cohortCriteria"></PatientCriteria>
                 </b-card-text>
             </b-card>
         </b-col>
         <b-col>
-            {{cohortCriteria}}
-        </b-col>
-        <b-col>
-            {{cohortCriteria.selected}}
+            Page: {{cohortCriteria.getForAPI()}}
         </b-col>
     </b-row>
 </template>
-<script>
-import PatientCriteria from './PatientCriteria'
+<script lang="ts">
+import { defineComponent } from 'vue'
+import PatientCriteria from './PatientCriteria.vue'
+import {PatientCriteriaModel} from '../model/PatientCriteriaModel'
 
-export default {
+export default defineComponent({
     name: 'TreatmentComparisonPage',
     components: {
         PatientCriteria
     },
     data() {
         return {
-            cohortCriteria: {}
+            cohortCriteria: new PatientCriteriaModel()
         }
     }
-}
+})
 </script>

@@ -1,6 +1,6 @@
 <template>
     <div>
-        {{model?.title}}
+        <div style="font-size: 0.85em; text-align: left; font-style: italic;">{{model?.title}}</div>
         <b-form-input
                 v-model="searchInput"
                 debounce="500"

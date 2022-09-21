@@ -1,8 +1,7 @@
 <template>
     <div>
         <b-form-group label="Gender" v-if="!hideGender">
-            <b-form-radio v-model="gender" name="gender" value="">All</b-form-radio>
-            <b-form-radio v-model="gender" name="gender" value="FEMALE">Female</b-form-radio>
+            <b-form-radio v-model="gender" name="gender" value="">All</b-form-radio><b-form-radio v-model="gender" name="gender" value="FEMALE">Female</b-form-radio>
             <b-form-radio v-model="gender" name="gender" value="MALE">Male</b-form-radio>
         </b-form-group>
         <b-form-group v-for="eventCriterion in model?.encounterCriteria" v-bind:key="eventCriterion.conceptECL" >
@@ -100,5 +99,8 @@ export default defineComponent({
 
 </script>
 <style>
-
+.custom-control.custom-radio {
+    display: inline-block;
+    margin-right: 10px
+}
 </style>

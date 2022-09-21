@@ -208,9 +208,7 @@ export default defineComponent({
 h3 {
     margin: 40px 0 0;
 }
-.displayNone {
-    display: none;
-}
+
 .patient-group {
     border: 1px solid lightgray;
     margin: 10px;

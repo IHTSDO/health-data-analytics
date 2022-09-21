@@ -49,10 +49,8 @@ public class SubsetController {
 	}
 
 	@RequestMapping(value = "/subsets/{subsetId}", method = RequestMethod.DELETE, produces = "application/json")
-	@ResponseBody
-	public EmptyPojo deleteSubset(@PathVariable String subsetId) {
+	public void deleteSubset(@PathVariable String subsetId) {
 		subsetRepository.deleteById(subsetId);
-		return new EmptyPojo(); // This is a workaround for the frontend implementation.
 	}
 
 }

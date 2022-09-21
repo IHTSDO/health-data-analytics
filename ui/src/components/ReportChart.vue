@@ -78,7 +78,8 @@ export default defineComponent({
                     })
                     this.$refs.outcomeChart.updateOptions({
                         xaxis: {categories: labels, min: 0, max: 100}, 
-                        // colors: report.colors
+                        colors: ['#25ACB8', '#F8A73D']
+                        // colors: ['#25ACB8', '#F8A73D', '#8072AC']
                     }, true, true, true);
                     this.$refs.outcomeChart.updateSeries(series, false);
                     // eslint-disable-next-line
@@ -111,3 +112,8 @@ export default defineComponent({
     }
 })
 </script>
+<style scoped>
+.displayNone {
+    display: none;
+}
+</style>

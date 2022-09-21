@@ -1,4 +1,8 @@
 <template>
+    <div>
+    <b-row>
+        <p style="margin-top:15px; margin-left: 10px">A SNOMED CT enabled clinical data analytics demonstrator using FHIR terminology services.</p>
+    </b-row>
     <b-row>
         <b-card
             title="Treatment Comparison"
@@ -31,9 +35,11 @@
             <b-button to="/longitudinal-comparison" variant="primary">Start</b-button>
         </b-card>
     </b-row>
+</div>
 </template>
 <style scoped>
     .card {
         margin: 10px;
     }
+
 </style>

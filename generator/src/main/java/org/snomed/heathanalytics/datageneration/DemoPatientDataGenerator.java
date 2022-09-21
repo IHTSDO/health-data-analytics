@@ -96,7 +96,7 @@ public class DemoPatientDataGenerator {
 		}
 
 
-		// AMA scenario can create a couple of years of history but uses it's own date object
+		// AMA scenario can create a couple of years of history but uses its own date object
 		scenarioAMA(patient, age, counters);
 
 		// Start 3 years ago
@@ -121,7 +121,7 @@ public class DemoPatientDataGenerator {
 			scenarioDiabSmokeFootAmp(patient, age, healthRecordDate);
 			scenarioLymphAnthCHF(patient, age, healthRecordDate);
 			// Using Synthea for this
-			// scenarioCOVID19(patient, age, healthRecordDate);
+			scenarioCOVID19(patient, age, healthRecordDate);
 		}
 		return patient;
 	}

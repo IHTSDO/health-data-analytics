@@ -32,7 +32,16 @@
                             
                             <PatientCriteria :model="group.criteria" hide-gender="true"></PatientCriteria>
                         </div>
-                        <b-button v-on:click="addGroup">Add Option</b-button>
+                        <b-row>
+                            <b-col>
+                                <b-button v-on:click="addGroup">Add Option</b-button>
+                            </b-col>
+                        </b-row>
+                        <b-row style="margin-top:15px">
+                            <b-col>
+                                <b-check v-model="includeNoTreatmentOption">Include no treatment option</b-check>
+                            </b-col>
+                        </b-row>
                     </b-card-text>
                 </b-card>
                 <b-card
@@ -88,6 +97,7 @@ export default defineComponent({
                     criteria: new PatientCriteriaModel()
                 },
             ],
+            includeNoTreatmentOption: false,
             outcomes: new Array<ClinicalEventCriterionModel>(),
             cohortSize: "0",
             numberFormat: new Intl.NumberFormat('en-US'),
@@ -134,6 +144,7 @@ export default defineComponent({
                             criteria: gC
                         })
                     })
+                    this.includeNoTreatmentOption = model.includeNoTreatmentOption
 
                     this.outcomes = plainToInstance(ClinicalEventCriterionModel, model.outcomes)
                     this.loaded = true
@@ -151,6 +162,7 @@ export default defineComponent({
             const model = {
                 cohortCriteria: this.cohortCriteria,
                 groups: this.groups,
+                includeNoTreatmentOption: this.includeNoTreatmentOption,
                 outcomes: this.outcomes,
             }
             // console.log(model);
@@ -190,6 +202,18 @@ export default defineComponent({
                 groupCriteria.name = group.name;
                 groupCriteria.criteria = group.criteria.getForAPI()
             })
+            if (this.includeNoTreatmentOption) {
+                const negativeGroupCriteria = {} as any;
+                negativeGroupCriteria.name = "No Treatment";
+                const exclusionCriteria = [] as Array<any>
+                patientGroups.forEach(patientGroup => {
+                    exclusionCriteria.push(patientGroup.criteria)
+                })
+                negativeGroupCriteria.criteria = {
+                    exclusionCriteria: exclusionCriteria
+                }
+                patientGroups.push(negativeGroupCriteria)
+            }
 
             const outcomesRequest = new Array<unknown>();
             const colors = new Array<string>();
@@ -197,6 +221,7 @@ export default defineComponent({
                 if (outcome.isFilled()) {
                     colors.push(outcome.color)
                     outcomesRequest.push({
+                        name: outcome.display,
                         criteria: {
                             encounterCriteria: [outcome.getForAPI()]
                         }

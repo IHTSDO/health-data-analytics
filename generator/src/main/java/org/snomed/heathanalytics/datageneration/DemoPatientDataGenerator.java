@@ -2,6 +2,7 @@ package org.snomed.heathanalytics.datageneration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SequenceWriter;
+import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.model.ClinicalEncounter;
@@ -13,6 +14,7 @@ import org.springframework.data.util.Pair;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -32,6 +34,8 @@ public class DemoPatientDataGenerator {
 	}
 
 	public void createPatients(int patientCount, File outputFile) throws IOException {
+		logger.info("******** Generating data for {} patients ...", new DecimalFormat( "#,###,###" ).format(patientCount));
+
 		long start = new Date().getTime();
 		List<Exception> exceptions = new ArrayList<>();
 		Counters counters = new Counters();
@@ -79,6 +83,79 @@ public class DemoPatientDataGenerator {
 		logger.info("Generating patient data took {} seconds. All data written to NDJSON file {}.", (new Date().getTime() - start) / 1000, outputFile.getPath());
 
 		counters.printAll();
+	}
+
+	public void createLongitudinalPatients(File longitudinalNdJsonFile) throws IOException, ServiceException {
+		long start = new Date().getTime();
+
+		int multiplier = 1_000;
+
+		// Model the stats we want the data to reflect
+		Map<Integer, Map<Long, Integer>> yearConceptCountMap = new HashMap<>();
+		long asthma = 195967001;
+		fillYears(yearConceptCountMap, 2000, asthma, 375, 400, 375, 350, 425, 400, 425, 400, 350, 325, 325, 300, 275, 225, 250, 225, 225, 200, 175, 175, 150);
+		long dementia = 52448006;
+		fillYears(yearConceptCountMap, 2000, dementia, 150, 150, 175, 175, 175, 175, 175, 150, 150, 175, 150, 150, 150, 150, 150, 150, 150, 125, 125, 125, 125);
+		long copd = 13645005;
+		fillYears(yearConceptCountMap, 2000, copd, 275, 250, 250, 250, 250, 225, 225, 225, 225, 200, 225, 200, 175, 175, 150, 150, 150, 125, 100, 100, 50);
+		long osteoporosis = 64859006;
+		fillYears(yearConceptCountMap, 2000, osteoporosis, 175, 200, 225, 225, 250, 275, 250, 275, 275, 325, 300, 325, 300, 300, 275, 275, 250, 250, 225, 250, 225);
+		long diabetesType1 = 46635009;
+		fillYears(yearConceptCountMap, 2000, diabetesType1, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25);
+		long diabetesType2 = 44054006;
+		fillYears(yearConceptCountMap, 2000, diabetesType2, 225, 250, 250, 275, 275, 275, 275, 300, 325, 325, 350, 400, 350, 250, 225, 250, 275, 250, 250, 250, 275);
+
+		logger.info("******** Generating data for longitudinal patients ...");
+
+		try (SequenceWriter patientWriter = objectMapper
+				.writerFor(Patient.class)
+				.withView(View.API.class)
+				.withRootValueSeparator("\n")
+				.writeValues(longitudinalNdJsonFile)) {
+
+			Map<Long, List<Patient>> disorderPatientPools = new HashMap<>();
+			int id = 1;
+			for (Map.Entry<Integer, Map<Long, Integer>> yearConceptCounts : yearConceptCountMap.entrySet()) {
+				Integer year = yearConceptCounts.getKey();
+				Map<Long, Integer> conceptCounts = yearConceptCounts.getValue();
+				for (Map.Entry<Long, Integer> conceptCount : conceptCounts.entrySet()) {
+					Long concept = conceptCount.getKey();
+					int count = conceptCount.getValue() * multiplier;
+					List<Patient> patientsWithDisorder = disorderPatientPools.computeIfAbsent(concept, i -> new ArrayList<>());
+					while (patientsWithDisorder.size() < count) {
+						Patient patient = new Patient(id++ + "");
+						int age = ThreadLocalRandom.current().nextInt(30, 85);
+						patient.setDob(DateUtil.dateOfBirthFromAge(age));
+						patientsWithDisorder.add(patient);
+					}
+					GregorianCalendar gregorianCalendar = new GregorianCalendar(year, 1, 1);
+					for (int i = 0; i < count; i++) {
+						patientsWithDisorder.get(i).addEncounter(new ClinicalEncounter(gregorianCalendar, concepts.selectRandomDescendantOf(concept.toString())));
+					}
+				}
+			}
+			long total = 0;
+			for (List<Patient> list : disorderPatientPools.values()) {
+				total += list.size();
+			}
+			logger.info("Saving {} patients", new DecimalFormat( "#,###,###" ).format(total));
+			for (List<Patient> patientSet : disorderPatientPools.values()) {
+				for (List<Patient> batch : Iterables.partition(patientSet, 10_000)) {
+					patientWriter.writeAll(batch);
+					System.out.print(".");
+				}
+			}
+			patientWriter.flush();
+			System.out.println();
+		}
+		logger.info("Generating longitudinal patient data took {} seconds. All data written to NDJSON file {}.", (new Date().getTime() - start) / 1000, longitudinalNdJsonFile.getPath());
+	}
+
+	private void fillYears(Map<Integer, Map<Long, Integer>> yearConceptCountMap, int year, long concept, int... yearCounts) {
+		for (int yearCount : yearCounts) {
+			yearConceptCountMap.computeIfAbsent(year, i -> new HashMap<>()).put(concept, yearCount);
+			year++;
+		}
 	}
 
 	private Patient generateExamplePatientAndActs(String roleId, Counters counters) throws ServiceException {

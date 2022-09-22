@@ -15,17 +15,15 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.DecimalFormat;
 import java.util.List;
 
 @SpringBootApplication(exclude = {ElasticsearchRepositoriesAutoConfiguration.class, ElasticsearchDataAutoConfiguration.class})
 public class Application implements ApplicationRunner {
 
 	public static final String POPULATION_SIZE = "population-size";
+	public static final String LONGITUDINAL = "longitudinal";
 	public static final String OUTPUT_DIR = "patient-data-for-import";
 	public static final int POPULATION_SIZE_DEFAULT = 1_248_322;
-
-	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public static void main(String[] args) {
 		SpringApplication.run(Application.class, args);
@@ -34,14 +32,16 @@ public class Application implements ApplicationRunner {
 	@Override
 	public void run(ApplicationArguments applicationArguments) throws Exception {
 		int populationSize = POPULATION_SIZE_DEFAULT;
-		if (applicationArguments.containsOption(POPULATION_SIZE)) {
+		if (applicationArguments.containsOption(LONGITUDINAL)) {
+			generateLongitudinalPopulation();
+		} else if (applicationArguments.containsOption(POPULATION_SIZE)) {
 			List<String> values = applicationArguments.getOptionValues(POPULATION_SIZE);
 			if (values == null || values.size() != 1 || !values.get(0).matches("\\d*")) {
 				throw new IllegalArgumentException("Option " + POPULATION_SIZE + " requires one numeric value after the equals character.");
 			}
 			populationSize = Integer.parseInt(values.get(0));
+			generatePopulation(populationSize);
 		}
-		generatePopulation(populationSize);
 		System.exit(0);
 	}
 
@@ -59,11 +59,17 @@ public class Application implements ApplicationRunner {
 	}
 
 	private void generatePopulation(int demoPatientCount) throws IOException {
-		logger.info("******** Generating data for {} patients ...", new DecimalFormat( "#,###,###" ).format(demoPatientCount));
 		File dataGenDir = new File(OUTPUT_DIR);
 		dataGenDir.mkdirs();
 		File patientsNdJsonFile = new File(dataGenDir, "generated-patients.ndjson");
 		exampleDataSource().createPatients(demoPatientCount, patientsNdJsonFile);
+	}
+
+	private void generateLongitudinalPopulation() throws IOException, ServiceException {
+		File dataGenDir = new File(OUTPUT_DIR);
+		dataGenDir.mkdirs();
+		File longitudinalNdJsonFile = new File(dataGenDir, "generated-patients-longitudinal.ndjson");
+		exampleDataSource().createLongitudinalPatients(longitudinalNdJsonFile);
 	}
 
 }

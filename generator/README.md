@@ -9,6 +9,7 @@ java -Xms3g -jar generator/target/generator*.jar
 ``` 
 Command options:
 - `--population-size` Optional. Defaults to 1,248,322.
+- `--longitudinal` Optional. Generates longitudinal data set. This option ignores the population size. 
 
 The generated population will be written in native bulk NDJSON format to a directory named `patient-data-for-import`.
 
@@ -18,6 +19,18 @@ In the "concepts used" section "<<" shows that a concept was picked randomly fro
 ### Demographic:
 - All patients are over the age of 30 and under the age of 85.
 - Male/Female split is 50/50. 
+
+### Longitudinal Data Set
+This data set can be generated using the `--longitudinal` option.
+Data is generated for the years 2000-2020 with patient counts for the following disorders:
+- Asthma
+- Dementia
+- COPD
+- Osteoporosis
+- Diabetes Type 1
+- Diabetes Type 2
+
+If the longitudinal option is not used then all the following scenarios will be used instead.
 
 ### Rheumatoid Arthritis, COPD
 - 12% of patients have COPD

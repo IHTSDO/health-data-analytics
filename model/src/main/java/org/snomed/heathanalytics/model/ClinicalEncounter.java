@@ -76,7 +76,7 @@ public class ClinicalEncounter {
 		this.conceptId = conceptId;
 	}
 
-	@JsonView({View.API.class, View.Elasticsearch.class})
+	@JsonView({View.Elasticsearch.class})
 	public String getConceptDate() {
 		updateConceptDate();
 		return conceptDate;

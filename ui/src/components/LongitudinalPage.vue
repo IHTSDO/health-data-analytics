@@ -35,7 +35,6 @@
                                         right
                                         locale="en-US"
                                         aria-controls="example-input"
-                                        @context="onContext"
                                         ></b-form-datepicker>
                                     </b-input-group-append>
                                 </b-input-group>
@@ -56,7 +55,6 @@
                                         right
                                         locale="en-US"
                                         aria-controls="example-input"
-                                        @context="onContext"
                                         ></b-form-datepicker>
                                     </b-input-group-append>
                                 </b-input-group>
@@ -80,6 +78,7 @@
                             <ClinicalEventCriterion :model="outcome"/>
                         </b-form-group>
                         <AddCriteriaDropdown label="Add Outcome" v-on:add-criterion="addOutcome"/>
+                        <b-check v-model="outcomesIncludeHistory">Include historic concepts</b-check>
                     </b-card-text>
                 </b-card>
             </div>
@@ -131,11 +130,24 @@ export default defineComponent({
                 }
             ],
             outcomes: new Array<ClinicalEventCriterionModel>(),
+            outcomesIncludeHistory: false,
+            eclHistory: " {{ +HISTORY }}",
             cohortSize: "0",
             numberFormat: new Intl.NumberFormat('en-US'),
 
             // apex
             series: [{data: []}],
+        }
+    },
+    watch: {
+        outcomesIncludeHistory() {
+            this.outcomes.forEach(outcome => {
+                var postfix = this.eclHistory
+                if (!this.outcomesIncludeHistory) {
+                    postfix = ""
+                }
+                outcome.conceptECL = outcome.conceptECL.replaceAll(this.eclHistory, "") + postfix
+            })
         }
     },
     mounted() {
@@ -178,6 +190,7 @@ export default defineComponent({
                     })
 
                     this.outcomes = plainToInstance(ClinicalEventCriterionModel, model.outcomes)
+                    this.outcomesIncludeHistory = model.outcomesIncludeHistory
                     this.loaded = true
                 } else {
                     this.cohortCriteria.encounterCriteria.push()
@@ -194,6 +207,7 @@ export default defineComponent({
                 cohortCriteria: this.cohortCriteria,
                 groups: this.groups,
                 outcomes: this.outcomes,
+                outcomesIncludeHistory: this.outcomesIncludeHistory
             }
             // console.log(model);
             axios.post('health-analytics-api/ui-state/longitudinal/dev', model);

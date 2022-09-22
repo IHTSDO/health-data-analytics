@@ -39,7 +39,7 @@
                 </b-row>
                 <b-row style="margin-top: 15px">
                     <b-col v-if="matchingConcepts.length">
-                        <h6 style="text-align: left; margin-top: 15px">Matching Concepts (first few): </h6>
+                        <h6 style="text-align: left; margin-top: 15px">Matching Concepts (first 100): </h6>
                         <b-table striped hover :items="matchingConcepts"></b-table>
                     </b-col>
                     <b-col v-else>

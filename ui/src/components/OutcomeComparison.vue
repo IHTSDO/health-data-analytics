@@ -5,7 +5,7 @@
                 <b-card
                     title="Patient Cohort"
                     tag="article"
-                    style="max-width: 20rem;"
+                    style="max-width: 30rem;"
                     class="mb-2">
                     <b-card-text>
                         <PatientCriteria :model="cohortCriteria"></PatientCriteria>
@@ -15,7 +15,7 @@
                 <b-card
                     title="Outcomes to Measure:"
                     tag="article"
-                    style="max-width: 20rem;"
+                    style="max-width: 30rem;"
                     class="mb-2">
                     <b-card-text>
                         <b-form-group v-for="outcome in outcomes" v-bind:key="outcome.conceptECL">
@@ -27,7 +27,7 @@
                 <b-card
                     title="For Patient Groups:"
                     tag="article"
-                    style="max-width: 20rem;"
+                    style="max-width: 30rem;"
                     class="mb-2">
                     <b-card-text>
                         <div v-for="group in groups" v-bind:key="group.name" class="patient-group">

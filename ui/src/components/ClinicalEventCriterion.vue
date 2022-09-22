@@ -66,6 +66,8 @@ export default defineComponent({
     },
     watch: {
         searchInput: function(input) {
+            console.log("searchInput");
+            
             if (this.itemJustSelected) {
                 this.itemJustSelected = false;
             } else if (input.length > 2) {
@@ -74,14 +76,20 @@ export default defineComponent({
         }
     },
     methods: {
-        FHIRSearch(input: string) {
+        async FHIRSearch(input: string) {
             console.log('FHIRSearch');
+            const matchingSubsets = await (await axios.get('health-analytics-api/subsets?prefix=' + input)).data.content
+            console.log("matchingSubsets");
+            
             axios.get('health-analytics-api/concepts?prefix=' + input + '&ecl=' + this.model?.eclBinding + '&limit=10')
             .then(response => {
-                if (response.data.length == 1) {
+                if (response.data.length == 1 && matchingSubsets.length == 0) {
                     this.selectResult(response.data[0]);
                 } else {
                     this.searchResults = [];
+                    matchingSubsets.forEach((element: { id: string; name: string; ecl: string; }) => {
+                        this.searchResults.push(new DropdownItem(element.id, element.name, element.ecl))
+                    });
                     response.data.forEach((element: { code: string; display: string; }) => {
                         this.searchResults.push(new DropdownItem(element.code, element.display))
                     });
@@ -92,8 +100,8 @@ export default defineComponent({
                 }
             });
         },
-        selectResult(item: {code: string, display: string}) {
-            let selected = new DropdownItem(item.code, item.display)
+        selectResult(item: {code: string, display: string, ecl?: string}) {
+            let selected = new DropdownItem(item.code, item.display, item.ecl)
             if (this.model) {
                 this.$set(this.model, 'display', selected.display)
                 this.$set(this.model, 'conceptECL', selected.getEcl())
@@ -111,20 +119,36 @@ export default defineComponent({
 export class DropdownItem {
     code: string
     display: string
+    ecl?: string
+    subset: boolean
 
-    constructor(code: string, display: string) {
+    constructor(code: string, display: string, ecl?: string) {
         this.code = code;
         this.display = display;
+        this.ecl = ecl;
+        if (ecl) {
+            this.subset = true
+        } else {
+            this.subset = false
+        }
     }
     
     public getCodeTerm() : string {
-        return this.code + ' |' + this.display + '|';
+        if (this.subset) {
+            return "Subset: " + this.display
+        } else {
+            return this.code + ' |' + this.display + '|';
+        }
     }
 
     getEcl() {
-        return "<< " + this.getCodeTerm();
+        if (this.subset) {
+            return this.ecl
+        } else {
+            return "<< " + this.getCodeTerm();
+        }
     }
-    
+
 }
 
 </script>

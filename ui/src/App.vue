@@ -15,7 +15,7 @@
 
               <!-- Right aligned nav items -->
               <b-navbar-nav class="ml-auto">
-                <b-navbar-brand href="#">Snosense (prototype)</b-navbar-brand>
+                <b-navbar-brand href="#">Snosight (prototype)</b-navbar-brand>
               </b-navbar-nav>
             </b-collapse>
           </b-navbar>

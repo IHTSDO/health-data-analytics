@@ -45,7 +45,7 @@
                     </b-card-text>
                 </b-card>
                 <b-card
-                    title="Outcomes:"
+                    title="Subsequent Outcomes:"
                     tag="article"
                     style="max-width: 30rem;"
                     class="mb-2">
@@ -220,6 +220,9 @@ export default defineComponent({
             this.outcomes.forEach(outcome => {
                 if (outcome.isFilled()) {
                     colors.push(outcome.color)
+                    // Ensure outcomes happen after treatments
+                    // -1 here means an unbounded search in the future
+                    outcome.withinDaysAfterPreviouslyMatchedEncounter = -1
                     outcomesRequest.push({
                         name: outcome.display,
                         criteria: {

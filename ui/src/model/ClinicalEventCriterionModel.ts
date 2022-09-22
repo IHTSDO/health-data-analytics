@@ -2,6 +2,7 @@ export class ClinicalEventCriterionModel {
     title!: string
     conceptECL!: string
     display!: string
+    withinDaysAfterPreviouslyMatchedEncounter!: number
 
     eclBinding!: string
     color!: string
@@ -21,7 +22,11 @@ export class ClinicalEventCriterionModel {
     }
 
     getForAPI() {
-        return {conceptECL: this.conceptECL}
+        const apiFormat = { conceptECL: this.conceptECL } as any
+        if (typeof this.withinDaysAfterPreviouslyMatchedEncounter != 'undefined') {
+            apiFormat.withinDaysAfterPreviouslyMatchedEncounter = this.withinDaysAfterPreviouslyMatchedEncounter
+        }
+        return apiFormat
     }
 
     setAll(model: any) {

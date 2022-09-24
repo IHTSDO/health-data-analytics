@@ -23,6 +23,7 @@ import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.List;
 
 import static com.google.common.base.Predicates.not;
@@ -35,6 +36,7 @@ import static springfox.documentation.builders.PathSelectors.regex;
 public class Application extends Config implements ApplicationRunner {
 
 	public static final String IMPORT_POPULATION_NATIVE = "import-population";
+	public static final String IMPORT_DATASET = "import-dataset";
 	public static final String IMPORT_POPULATION_FHIR = "import-population-fhir";
 	public static final String IMPORT_POPULATION_FHIR_SINGLE_RESOURCES = "import-population-fhir-single";
 	public static final String IMPORT_FHIR_VERSION = "import-fhir-version";
@@ -55,7 +57,9 @@ public class Application extends Config implements ApplicationRunner {
 			if (values.size() != 1) {
 				throw new IllegalArgumentException("Option " + IMPORT_POPULATION_NATIVE + " requires one directory name after the equals character.");
 			}
-			importPopulationNativeFormat(new File(values.get(0)));
+			File directory = new File(values.get(0));
+			checkDirectoryExists(directory);
+			importPopulationNativeFormat(directory);
 			System.exit(0);
 		}
 		if (applicationArguments.containsOption(IMPORT_POPULATION_FHIR)) {
@@ -63,7 +67,9 @@ public class Application extends Config implements ApplicationRunner {
 			if (values.size() != 1) {
 				throw new IllegalArgumentException("Option " + IMPORT_POPULATION_FHIR + " requires one directory name after the equals character.");
 			}
-			importPopulationFHIRFormat(new File(values.get(0)));
+			File directory = new File(values.get(0));
+			checkDirectoryExists(directory);
+			importPopulationFHIRFormat(directory);
 			System.exit(0);
 		}
 		if (applicationArguments.containsOption(IMPORT_POPULATION_FHIR_SINGLE_RESOURCES)) {
@@ -75,6 +81,13 @@ public class Application extends Config implements ApplicationRunner {
 			final String fhirVersion = (fhirVersionOption != null && fhirVersionOption.size()==1)?fhirVersionOption.get(0):"R4";
 			importPopulationSingleFhirResources(new File(values.get(0)), fhirVersion);
 			System.exit(0);
+		}
+	}
+
+	private void checkDirectoryExists(File directory) {
+		if (!directory.isDirectory()) {
+			logger.error("Directory not found: " + directory.getAbsolutePath());
+			System.exit(1);
 		}
 	}
 

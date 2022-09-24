@@ -13,7 +13,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.net.URISyntaxException;
 
 @RestController
-@RequestMapping("/snowstorm")
+@RequestMapping("/api/snowstorm")
 public class SnowstormProxy {
 
 	@Autowired
@@ -24,7 +24,7 @@ public class SnowstormProxy {
 			HttpMethod method, HttpServletRequest request, HttpServletResponse response)
 			throws URISyntaxException {
 
-		String requestURI = request.getRequestURI().replace("health-analytics-api/snowstorm/", "");
+		String requestURI = request.getRequestURI().replace("api/snowstorm/", "");
 		service.processProxyRequest(body, method, request, requestURI, response);
 	}
 

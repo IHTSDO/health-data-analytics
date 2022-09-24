@@ -74,7 +74,7 @@ export default defineComponent({
     },
     methods: {
         updateCohortSize(apiRequest: string) {
-            axios.post('health-analytics-api/cohorts/select', apiRequest)
+            axios.post('api/cohorts/select', apiRequest)
                 .then(response => {
                     this.cohortSize = this.numberFormat.format(response.data.totalElements);
                 })

@@ -5,7 +5,7 @@
                 <b-card
                     title="Patient Cohort"
                     tag="article"
-                    style="max-width: 20rem;"
+                    style="max-width: 30rem;"
                     class="mb-2">
                     <b-card-text>
                         <PatientCriteria :model="cohortCriteria"></PatientCriteria>
@@ -15,7 +15,7 @@
                 <b-card
                     title="Time Period:"
                     tag="article"
-                    style="max-width: 20rem;"
+                    style="max-width: 30rem;"
                     class="mb-2">
                     <b-card-text>
                         <div>
@@ -71,7 +71,7 @@
                 <b-card
                     title="Outcomes to Measure:"
                     tag="article"
-                    style="max-width: 20rem;"
+                    style="max-width: 30rem;"
                     class="mb-2">
                     <b-card-text>
                         <b-form-group v-for="outcome in outcomes" v-bind:key="outcome.conceptECL">
@@ -169,7 +169,7 @@ export default defineComponent({
     },
     methods: {
         load() {
-            axios.get('health-analytics-api/ui-state/longitudinal/dev')
+            axios.get('api/ui-state/longitudinal/dev')
             .then(response => {
                 // console.log("Load");
                 const model = response.data
@@ -210,7 +210,7 @@ export default defineComponent({
                 outcomesIncludeHistory: this.outcomesIncludeHistory
             }
             // console.log(model);
-            axios.post('health-analytics-api/ui-state/longitudinal/dev', model);
+            axios.post('api/ui-state/longitudinal/dev', model);
             console.log("saved:", this.cohortCriteria.gender);
         },
         addOutcome(display: string, eclBinding: string) {
@@ -224,7 +224,7 @@ export default defineComponent({
             const context = this;
             debounce(function() {
                 console.log('updating cohort size')
-                axios.post('health-analytics-api/cohorts/select', context.cohortCriteria.getForAPI())
+                axios.post('api/cohorts/select', context.cohortCriteria.getForAPI())
                     .then(response => {
                         context.cohortSize = context.numberFormat.format(response.data.totalElements);
                     })

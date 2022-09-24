@@ -9,6 +9,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 @RestController
+@RequestMapping("/api")
 public class RootController {
 
 	@RequestMapping(path = "/", method = RequestMethod.GET)

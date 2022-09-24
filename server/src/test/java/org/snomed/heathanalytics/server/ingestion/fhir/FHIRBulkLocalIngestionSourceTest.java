@@ -41,13 +41,13 @@ public class FHIRBulkLocalIngestionSourceTest extends AbstractDataTest {
 			System.out.println(patient.toString());
 		}
 
-		assertEquals("Patient{roleId='a850c94e-65d2-872c-1650-e52406d12ee5', gender=FEMALE, dob=1967-09-03, numEncounters=2, encounters=[ClinicalEncounter{conceptId='117015009', dateLong=1474623515000}, ClinicalEncounter{conceptId='410429000', dateLong=404473115000}]}",
+		assertEquals("Patient{roleId='a850c94e-65d2-872c-1650-e52406d12ee5', dataset=null, gender=FEMALE, dob=1967-09-03, numEncounters=2, encounters=[ClinicalEncounter{conceptId='117015009', dateLong=1474623515000}, ClinicalEncounter{conceptId='410429000', dateLong=404473115000}]}",
 				getPatientString("a850c94e-65d2-872c-1650-e52406d12ee5"));
 
-		assertEquals("Patient{roleId='83ae838f-9ab6-ca5c-778c-5b4054d79c57', gender=MALE, dob=1977-04-26, numEncounters=2, encounters=[ClinicalEncounter{conceptId='261352009', dateLong=1582537115000}, ClinicalEncounter{conceptId='430193006', dateLong=1310463515000}]}",
+		assertEquals("Patient{roleId='83ae838f-9ab6-ca5c-778c-5b4054d79c57', dataset=null, gender=MALE, dob=1977-04-26, numEncounters=2, encounters=[ClinicalEncounter{conceptId='261352009', dateLong=1582537115000}, ClinicalEncounter{conceptId='430193006', dateLong=1310463515000}]}",
 				getPatientString("83ae838f-9ab6-ca5c-778c-5b4054d79c57"));
 
-		assertEquals("Patient{roleId='a21e4c80-e45a-57c8-00bf-32788b395837', gender=MALE, dob=1995-04-17, numEncounters=1, encounters=[ClinicalEncounter{conceptId='416897008', dateLong=-366615702000}]}",
+		assertEquals("Patient{roleId='a21e4c80-e45a-57c8-00bf-32788b395837', dataset=null, gender=MALE, dob=1995-04-17, numEncounters=1, encounters=[ClinicalEncounter{conceptId='416897008', dateLong=-366615702000}]}",
 				getPatientString("a21e4c80-e45a-57c8-00bf-32788b395837"));
 	}
 

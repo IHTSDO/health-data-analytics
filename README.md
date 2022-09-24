@@ -1,4 +1,4 @@
-# Health Data Analytics Demonstrator
+# Snolytical - SNOMED CT Data Analytics Demonstrator
 
 ## Capabilities
 - Ability to load Bulk FHIR resources for analysis.
@@ -42,7 +42,7 @@ The following resource types are supported:
 These are all mapped to the simple internal data model taking the start date and first SNOMED CT code to create a Clinical Event. Only confirmed, active resources are loaded. For example if a Condition has a `verificationStatus` using the `http://terminology.hl7.org/CodeSystem/condition-ver-status` system and the value is not `confirmed` then it will be ignored.
 
 ### Web User Interface
-A frontend web application for this API is available: [health-data-analytics-ui](https://github.com/IHTSDO/health-data-analytics-ui).
+A form based web user interface included with this application.
 
 ### Data Model
 The data model is very simple:
@@ -62,7 +62,7 @@ A clinical event could represent an observation, finding, drug prescription or p
 ### Project Setup
 #### Prerequisites
 - Java 11
-- 4G of memory
+- 8G of memory
 - Patient data (can be generated)
 - Access to a FHIR Terminology Server with SNOMED CT
   - Public Snowstorm is default
@@ -131,13 +131,6 @@ To delete existing patient data make an HTTP delete request to the Elasticsearch
 curl -XDELETE localhost:9200/patient
 ```
 
-#### CPT Codes (optional)
-If CPT codes are loaded cost information can be provided for the procedures within the records of a selected cohort of patients.
-Within the application directory create a directory named `cpt-codes` containing the files `cpt-codes.txt` and `snomed-cpt-map.txt`.
-These files will be loaded when the application starts.
-For examples of these files see [dummy-cpt-codes](server/src/test/resources/dummy-cpt-codes).
-Notice: No real CPT codes are included within this application. A few fictitious codes are used for unit testing purposes.
-
 #### Run the Server
 Once the patient data has been loaded run the server without the import argument:
 ```bash
@@ -151,6 +144,16 @@ The following data stores will be created when the server starts.
 
 The server should be stopped before removing this data store.
 
+---
 #### Realtime Patient Data
 Patient data can be loaded in realtime by implementing HealthDataIngestionSource interface. For example a class could be added which receives 
 patient record updates over JMS or polls a directory.
+
+#### CPT Codes (optional)
+_CPT functionality is only available via the API, not the user interface._
+
+If CPT codes are loaded cost information can be provided for the procedures within the records of a selected cohort of patients.
+Within the application directory create a directory named `cpt-codes` containing the files `cpt-codes.txt` and `snomed-cpt-map.txt`.
+These files will be loaded when the application starts.
+For examples of these files see [dummy-cpt-codes](server/src/test/resources/dummy-cpt-codes).
+Notice: No real CPT codes are included within this application. A few fictitious codes are used for unit testing purposes.

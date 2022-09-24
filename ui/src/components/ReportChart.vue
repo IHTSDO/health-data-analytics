@@ -45,7 +45,7 @@ export default defineComponent({
             console.log('updating outcome stats', report)
 
             this.hideChart = false
-            axios.post('health-analytics-api/report', report)
+            axios.post('api/report', report)
                 .then(response => {
                     const data = response.data as {
                             groups: Array<{ 
@@ -78,7 +78,8 @@ export default defineComponent({
                     })
                     this.$refs.outcomeChart.updateOptions({
                         xaxis: {categories: labels, min: 0, max: 100}, 
-                        colors: ['#25ACB8', '#F8A73D']
+                        colors: report.colors
+                        // colors: ['#25ACB8', '#F8A73D']
                         // colors: ['#25ACB8', '#F8A73D', '#8072AC']
                     }, true, true, true);
                     this.$refs.outcomeChart.updateSeries(series, false);

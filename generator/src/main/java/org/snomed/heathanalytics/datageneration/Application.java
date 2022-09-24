@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
@@ -29,25 +30,35 @@ public class Application implements ApplicationRunner {
 		SpringApplication.run(Application.class, args);
 	}
 
+	@Autowired
+	private SnomedConceptService snomedConceptService;
+
 	@Override
 	public void run(ApplicationArguments applicationArguments) throws Exception {
-		int populationSize = POPULATION_SIZE_DEFAULT;
+		testTerminologyServerConnection();
 		if (applicationArguments.containsOption(LONGITUDINAL)) {
 			generateLongitudinalPopulation();
-		} else if (applicationArguments.containsOption(POPULATION_SIZE)) {
-			List<String> values = applicationArguments.getOptionValues(POPULATION_SIZE);
-			if (values == null || values.size() != 1 || !values.get(0).matches("\\d*")) {
-				throw new IllegalArgumentException("Option " + POPULATION_SIZE + " requires one numeric value after the equals character.");
+		} else {
+			int populationSize = POPULATION_SIZE_DEFAULT;
+			if (applicationArguments.containsOption(POPULATION_SIZE)) {
+				List<String> values = applicationArguments.getOptionValues(POPULATION_SIZE);
+				if (values == null || values.size() != 1 || !values.get(0).matches("\\d*")) {
+					throw new IllegalArgumentException("Option " + POPULATION_SIZE + " requires one numeric value after the equals character.");
+				}
+				populationSize = Integer.parseInt(values.get(0));
 			}
-			populationSize = Integer.parseInt(values.get(0));
 			generatePopulation(populationSize);
 		}
 		System.exit(0);
 	}
 
+	private void testTerminologyServerConnection() throws ServiceException {
+		snomedConceptService.selectRandomDescendantOf("195967001");
+	}
+
 	@Bean
 	public DemoPatientDataGenerator exampleDataSource() {
-		return new DemoPatientDataGenerator(new SnomedConceptService("https://snowstorm.ihtsdotools.org/fhir"));
+		return new DemoPatientDataGenerator(snomedConceptService);
 	}
 
 	@Bean
@@ -62,6 +73,9 @@ public class Application implements ApplicationRunner {
 		File dataGenDir = new File(OUTPUT_DIR);
 		dataGenDir.mkdirs();
 		File patientsNdJsonFile = new File(dataGenDir, "generated-patients.ndjson");
+		if (patientsNdJsonFile.isFile()) {
+			patientsNdJsonFile.delete();
+		}
 		exampleDataSource().createPatients(demoPatientCount, patientsNdJsonFile);
 	}
 
@@ -69,6 +83,9 @@ public class Application implements ApplicationRunner {
 		File dataGenDir = new File(OUTPUT_DIR);
 		dataGenDir.mkdirs();
 		File longitudinalNdJsonFile = new File(dataGenDir, "generated-patients-longitudinal.ndjson");
+		if (longitudinalNdJsonFile.isFile()) {
+			longitudinalNdJsonFile.delete();
+		}
 		exampleDataSource().createLongitudinalPatients(longitudinalNdJsonFile);
 	}
 

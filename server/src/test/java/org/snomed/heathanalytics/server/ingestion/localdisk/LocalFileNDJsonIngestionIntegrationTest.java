@@ -1,6 +1,8 @@
 package org.snomed.heathanalytics.server.ingestion.localdisk;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.junit.jupiter.api.Test;
 import org.snomed.heathanalytics.model.ClinicalEncounter;
 import org.snomed.heathanalytics.model.Patient;
@@ -9,10 +11,16 @@ import org.snomed.heathanalytics.server.ingestion.elasticsearch.ElasticOutputStr
 import org.snomed.heathanalytics.server.store.PatientRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.elasticsearch.client.RestClients;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 
 import java.io.File;
 import java.util.*;
 
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.snomed.heathanalytics.model.Gender.MALE;
@@ -27,6 +35,9 @@ public class LocalFileNDJsonIngestionIntegrationTest extends AbstractDataTest {
 
 	@Autowired
 	private PatientRepository patientRepository;
+
+	@Autowired
+	private ElasticsearchOperations elasticsearchOperations;
 
 	@Test
 	public void testPatientIngestion() {
@@ -44,8 +55,13 @@ public class LocalFileNDJsonIngestionIntegrationTest extends AbstractDataTest {
 		assertEquals(getUTCTime(1974, Calendar.MAY, 28, 0, 0, 0), patient.getDob());
 		assertEquals(1, patient.getEncounters().size());
 		ClinicalEncounter encounter = patient.getEncounters().iterator().next();
-		assertEquals(new Long(195957006), encounter.getConceptId());
+		assertEquals(195957006L, encounter.getConceptId());
 		assertEquals(getUTCTime(2017, Calendar.SEPTEMBER, 10, 11, 0, 11), encounter.getDate());
+		String conceptDate = "195957006," + encounter.getDate().getTime();
+		assertEquals(conceptDate, encounter.getConceptDate());
+		SearchHits<Patient> hits = elasticsearchOperations.search(
+				new NativeSearchQueryBuilder().withQuery(termQuery("encounters.conceptDate.keyword", conceptDate)).build(), Patient.class);
+		assertEquals(1, hits.getTotalHits());
 	}
 
 	private Date getUTCTime(int year, int month, int dayOfMonth, int hour, int minute, int second) {

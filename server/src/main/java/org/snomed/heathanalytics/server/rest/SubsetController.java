@@ -4,7 +4,6 @@ import io.swagger.annotations.Api;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.server.model.Subset;
-import org.snomed.heathanalytics.server.pojo.EmptyPojo;
 import org.snomed.heathanalytics.server.service.InputValidationHelper;
 import org.snomed.heathanalytics.server.store.SubsetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,17 +12,17 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @RestController
+@RequestMapping("/api")
 @Api(tags = "Concept Subsets", description = "-")
 public class SubsetController {
 
 	@Autowired
 	private SubsetRepository subsetRepository;
 
-	private Logger logger = LoggerFactory.getLogger(getClass());
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	@RequestMapping(value = "/subsets", method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody

@@ -10,7 +10,7 @@
             style="max-width: 20rem;"
             class="mb-2">
             <b-card-text>
-                Compare treatment options<br/> by measuring the correlation between treatment options and outcomes
+                Compare treatment options<br/> by measuring the correlation between treatments and outcomes
             </b-card-text>
             <b-button to="/treatment-comparison" variant="primary">Start</b-button>
         </b-card>
@@ -20,7 +20,7 @@
             style="max-width: 20rem;"
             class="mb-2">
             <b-card-text>
-                Find vulnerable patient groups<br/> by measuring the correlation of a clinical event between different patient groups
+                Identify vulnerable patient groups<br/> by measuring the correlation between clinical events and patient groups
             </b-card-text>
             <b-button to="/group-comparison" variant="primary">Start</b-button>
         </b-card>
@@ -30,7 +30,7 @@
             style="max-width: 20rem;"
             class="mb-2">
             <b-card-text>
-                Track trends in clinical events or outcomes over time
+                Track trends over time
             </b-card-text>
             <b-button to="/longitudinal-comparison" variant="primary">Start</b-button>
         </b-card>

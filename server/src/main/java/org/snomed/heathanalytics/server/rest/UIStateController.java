@@ -12,7 +12,7 @@ import java.util.List;
 
 @RestController
 @Api(tags = "UI State", description = "-")
-@RequestMapping("/ui-state")
+@RequestMapping("/api/ui-state")
 public class UIStateController {
 
 	@Autowired

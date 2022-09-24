@@ -7,6 +7,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.hl7.fhir.r4.model.Parameters;
 import org.hl7.fhir.r4.model.ValueSet;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 import static java.lang.Long.parseLong;
 import static java.lang.String.format;
 
+@Service
 public class SnomedConceptService {
 
 	private final IGenericClient fhirClient;

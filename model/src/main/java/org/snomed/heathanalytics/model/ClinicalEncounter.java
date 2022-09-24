@@ -40,7 +40,7 @@ public class ClinicalEncounter {
 		updateConceptDate();
 	}
 
-	private void updateConceptDate() {
+	public void updateConceptDate() {
 		conceptDate = conceptId + "," + dateLong;
 	}
 

@@ -29,7 +29,6 @@
                                         style="font-weight: bold; text-align: center; border: 0px"></b-form-input>
                                 </b-col>
                             </b-row>
-                            
                             <PatientCriteria :model="group.criteria" hide-gender="true"></PatientCriteria>
                         </div>
                         <b-row>
@@ -50,8 +49,8 @@
                     style="max-width: 30rem;"
                     class="mb-2">
                     <b-card-text>
-                        <b-form-group v-for="outcome in outcomes" v-bind:key="outcome.conceptECL">
-                            <ClinicalEventCriterion :model="outcome"/>
+                        <b-form-group v-for="(outcome, index) in outcomes" v-bind:key="outcome.conceptECL">
+                            <ClinicalEventCriterion :model="outcome" v-on:remove="outcomes.splice(index, 1)"/>
                         </b-form-group>
                         <AddCriteriaDropdown label="Add Outcome" v-on:add-criterion="addOutcome"/>
                     </b-card-text>
@@ -60,7 +59,7 @@
             <b-button v-on:click="save">Save</b-button>
             <b-button v-on:click="load">Load</b-button>
         </b-col>
-        <b-col>
+        <b-col style="margin-top:300px">
             <div hidden>{{conditionsTrigger}}</div>
             <ReportChart ref="chart" :series="series" ></ReportChart>
         </b-col>
@@ -104,6 +103,7 @@ export default defineComponent({
 
             // apex
             series: [{data: []}],
+            colors: ['#25ACB8', '#F8A73D', '#6DBBA1', '#DE8345', '#8D3057', '#8072AC']
         }
     },
     mounted() {
@@ -125,7 +125,7 @@ export default defineComponent({
     },
     methods: {
         load() {
-            axios.get('health-analytics-api/ui-state/treatments/dev')
+            axios.get('api/ui-state/treatments/dev')
             .then(response => {
                 // console.log("Load");
                 const model = response.data
@@ -166,11 +166,24 @@ export default defineComponent({
                 outcomes: this.outcomes,
             }
             // console.log(model);
-            axios.post('health-analytics-api/ui-state/treatments/dev', model);
+            axios.post('api/ui-state/treatments/dev', model);
             console.log("saved:", this.cohortCriteria.gender);
         },
         addOutcome(display: string, eclBinding: string) {
-            this.outcomes.push(new ClinicalEventCriterionModel(display, eclBinding))
+            let outcome = new ClinicalEventCriterionModel(display, eclBinding)
+            let colorsUsed = new Array<string>()
+            this.outcomes.forEach(outcome => {
+                if (outcome.color) {
+                    colorsUsed.push(outcome.color)
+                }
+            })
+            const colorsLeft = this.colors.filter(c => !colorsUsed.includes(c))
+            console.log("colorsLeft", colorsLeft);
+            
+            if (colorsLeft.length != 0) {
+                outcome.color = colorsLeft[0]
+            }
+            this.outcomes.push(outcome)
         },
         addGroup() {
             this.groups.push({name: "", criteria: new PatientCriteriaModel()})
@@ -180,7 +193,7 @@ export default defineComponent({
             const context = this;
             debounce(function() {
                 console.log('updating cohort size')
-                axios.post('health-analytics-api/cohorts/select', context.cohortCriteria.getForAPI())
+                axios.post('api/cohorts/select', context.cohortCriteria.getForAPI())
                     .then(response => {
                         context.cohortSize = context.numberFormat.format(response.data.totalElements);
                     })
@@ -223,12 +236,12 @@ export default defineComponent({
                     // Ensure outcomes happen after treatments
                     // -1 here means an unbounded search in the future
                     outcome.withinDaysAfterPreviouslyMatchedEncounter = -1
-                    outcomesRequest.push({
-                        name: outcome.display,
-                        criteria: {
-                            encounterCriteria: [outcome.getForAPI()]
-                        }
-                    })
+                    const outcomeCriteria = {} as any;
+                    outcomeCriteria.criteria = {
+                        encounterCriteria: [outcome.getForAPI()]
+                    }
+                    outcomeCriteria.name = outcome.display
+                    outcomesRequest.push(outcomeCriteria)
                 }
             })
             report.groups = [patientGroups, outcomesRequest];

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@RequestMapping("/api")
 @Api(tags = "Concepts", description = "-")
 public class ConceptController {
 

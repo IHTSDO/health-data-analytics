@@ -20,13 +20,13 @@
                 <b-form-input v-model="selectedSubset.name"/>
                 <h6 style="text-align: left; margin-top: 15px">ECL Builder: </h6>
                 <snomed-ecl-builder
-                    apiurl="/health-analytics-api/snowstorm"
+                    apiurl="/api/snowstorm"
                     branch="MAIN/2022-06-30"
                     :eclstring="selectedSubset.ecl"
                     v-on:eclOutput="eclChange"
                     />
                 <h6 style="text-align: left; margin-top: 15px">ECL Output: </h6>
-                <b-textarea disabled v-model="selectedSubset.ecl" rows="5"/>
+                <b-textarea disabled v-model="newEcl" rows="5"/>
                 <b-row style="margin-top: 15px">
                     <b-col>
                     </b-col>
@@ -65,7 +65,8 @@ export default defineComponent({
         return {
             subsets: [] as Array<SubsetModel>,
             selectedSubset: new SubsetModel('', ''),
-            matchingConcepts: []
+            matchingConcepts: [],
+            newEcl: "",
         }
     },
     created() {
@@ -84,12 +85,13 @@ export default defineComponent({
     },
     methods: {
         eclChange(eclChangeEvent: any) {
-            this.selectedSubset.ecl = eclChangeEvent.detail[0]
+            this.newEcl = eclChangeEvent.detail[0]
+            console.log("eclChange", this.newEcl);
             this.matchingConcepts.length = 0
         },
         findConcepts() {
             this.matchingConcepts.length = 0
-            axios.get('/health-analytics-api/snowstorm/MAIN/concepts?ecl=' + encodeURI(this.selectedSubset.ecl))
+            axios.get('/api/snowstorm/MAIN/concepts?ecl=' + encodeURI(this.selectedSubset.ecl))
             .then(repsonse => {
                 repsonse.data.items.forEach(concept => {
                     this.matchingConcepts.push(
@@ -110,7 +112,7 @@ export default defineComponent({
             }
         },
         loadSubsets() {
-            axios.get("/health-analytics-api/subsets")
+            axios.get("/api/subsets")
             .then(response => {
                 console.log("Loaded subsets");
                 const page = response.data
@@ -125,13 +127,13 @@ export default defineComponent({
         addSubset() {
             const newSubset = new SubsetModel(this.uuidv4(), "new")
             newSubset.ecl = "<< 404684003 |Clinical finding (finding)|"
-            axios.put("/health-analytics-api/subsets/" + newSubset.id, newSubset)
+            axios.put("/api/subsets/" + newSubset.id, newSubset)
             .then(response => {
                 this.subsets.push(newSubset)
             })
         },
         loadSubset(id: string) {
-            axios.get("/health-analytics-api/subsets/" + id)
+            axios.get("/api/subsets/" + id)
             .then(response => {
                 console.log("Loaded subset ", id);
                 this.selectedSubset = this.createSubsetFromApi(response.data)
@@ -139,14 +141,17 @@ export default defineComponent({
             })
         },
         saveSubset() {
-            axios.put("/health-analytics-api/subsets/" + this.selectedSubset.id, this.selectedSubset)
+            const toSave = this.selectedSubset.clone();
+            toSave.ecl = this.newEcl
+            axios.put("/api/subsets/" + toSave.id, toSave)
             .then(response => {
                 console.log("saved " + response.data.id);
                 this.loadSubsets()
+                this.loadSubset(toSave.id)
             })
         },
         deleteSubset() {
-            axios.delete("/health-analytics-api/subsets/" + this.selectedSubset.id)
+            axios.delete("/api/subsets/" + this.selectedSubset.id)
             .then(response => {
                 console.log("deleted " + response.data.id);
                 this.loadSubsets()

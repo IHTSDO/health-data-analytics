@@ -78,10 +78,10 @@ export default defineComponent({
     methods: {
         async FHIRSearch(input: string) {
             console.log('FHIRSearch');
-            const matchingSubsets = await (await axios.get('health-analytics-api/subsets?prefix=' + input)).data.content
+            const matchingSubsets = await (await axios.get('api/subsets?prefix=' + input)).data.content
             console.log("matchingSubsets");
             
-            axios.get('health-analytics-api/concepts?prefix=' + input + '&ecl=' + this.model?.eclBinding + '&limit=10')
+            axios.get('api/concepts?prefix=' + input + '&ecl=' + this.model?.eclBinding + '&limit=10')
             .then(response => {
                 if (response.data.length == 1 && matchingSubsets.length == 0) {
                     this.selectResult(response.data[0]);

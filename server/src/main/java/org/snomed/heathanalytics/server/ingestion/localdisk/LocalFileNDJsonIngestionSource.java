@@ -7,6 +7,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.UnmodifiableIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.heathanalytics.model.ClinicalEncounter;
 import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.server.ingestion.HealthDataIngestionSource;
 import org.snomed.heathanalytics.server.ingestion.HealthDataIngestionSourceConfiguration;
@@ -42,6 +43,11 @@ public class LocalFileNDJsonIngestionSource implements HealthDataIngestionSource
 						MappingIterator<Patient> patientIterator = patientReader.readValues(ndJsonFile);
 						for (UnmodifiableIterator<List<Patient>> it = Iterators.partition(patientIterator, ES_WRITE_BATCH_SIZE); it.hasNext(); ) {
 							List<Patient> patients = it.next();
+							for (Patient patient : patients) {
+								for (ClinicalEncounter clinicalEncounter : orEmpty(patient.getEncounters())) {
+									clinicalEncounter.updateConceptDate();
+								}
+							}
 							stream.createPatients(patients);
 							read += patients.size();
 							if (read % 10_000 == 0) {
@@ -55,5 +61,9 @@ public class LocalFileNDJsonIngestionSource implements HealthDataIngestionSource
 				}
 			}
 		}
+	}
+
+	private <T> Iterable<T> orEmpty(Iterable<T> collection) {
+		return collection != null ? collection : Collections.emptySet();
 	}
 }

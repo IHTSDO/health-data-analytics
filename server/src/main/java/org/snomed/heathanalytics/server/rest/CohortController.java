@@ -15,6 +15,7 @@ import java.util.Comparator;
 import java.util.TreeSet;
 
 @RestController
+@RequestMapping("/api")
 @Api(tags = "Patients", description = "-")
 public class CohortController {
 

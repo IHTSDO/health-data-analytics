@@ -12,11 +12,14 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Document(indexName = "patient")
-@JsonPropertyOrder({"roleId", "gender", "dobYear", "dob", "dobFormatted", "numEncounters", "encounters"})
+@JsonPropertyOrder({"roleId", "dataset", "gender", "dobYear", "dob", "dobFormatted", "numEncounters", "encounters"})
 public class Patient {
 
 	@Id
 	private String roleId;
+
+	@Field(type = FieldType.Keyword)
+	private String dataset;
 
 	@Field(type = FieldType.Long)
 	private long dobLong;
@@ -34,6 +37,7 @@ public class Patient {
 
 	public interface Fields {
 		String ROLE_ID = "roleId";
+		String DATASET = "dataset";
 		String DOB_LONG = "dobLong";
 		String DOB_YEAR = "dobYear";
 		String GENDER = "gender";
@@ -60,6 +64,15 @@ public class Patient {
 		}
 		encounters.add(encounter);
 		return this;
+	}
+
+	@JsonView({View.API.class, View.Elasticsearch.class})
+	public String getDataset() {
+		return dataset;
+	}
+
+	public void setDataset(String dataset) {
+		this.dataset = dataset;
 	}
 
 	@JsonView({View.API.class, View.Elasticsearch.class})
@@ -129,6 +142,7 @@ public class Patient {
 	public String toString() {
 		return "Patient{" +
 				"roleId='" + roleId + '\'' +
+				", dataset=" + dataset +
 				", gender=" + gender +
 				", dob=" + new SimpleDateFormat("yyyy-MM-dd").format(new Date(dobLong)) +
 				", numEncounters=" + getNumEncounters() +

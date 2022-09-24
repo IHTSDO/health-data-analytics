@@ -11,6 +11,7 @@
 	<modules>
 		<module>model</module>
 		<module>generator</module>
+		<module>ui</module>
 		<module>server</module>
 	</modules>
 

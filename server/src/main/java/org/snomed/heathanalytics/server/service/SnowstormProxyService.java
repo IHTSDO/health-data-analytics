@@ -20,6 +20,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 
 @Service
@@ -36,11 +38,10 @@ public class SnowstormProxyService {
 		URI uri = new URI(snowstormUrl);
 
 		// replacing context path form uri to match actual gateway URI
-		uri = UriComponentsBuilder.fromUri(uri)
+		String queryString = request.getQueryString();
+		String url = UriComponentsBuilder.fromUri(uri)
 				.path(requestUrl)
-				.query(request.getQueryString())
-				.build(true).toUri();
-		logger.info("Proxy request to {}", uri);
+				.build(true).toUri() + (queryString != null ? ("?" + URLDecoder.decode(queryString, StandardCharsets.UTF_8)) : "");
 
 		HttpHeaders headers = new HttpHeaders();
 		Enumeration<String> headerNames = request.getHeaderNames();
@@ -56,7 +57,7 @@ public class SnowstormProxyService {
 		ClientHttpRequestFactory factory = new BufferingClientHttpRequestFactory(new SimpleClientHttpRequestFactory());
 		RestTemplate restTemplate = new RestTemplate(factory);
 		try {
-			ResponseEntity<String> serverResponse = restTemplate.exchange(uri, method, httpEntity, String.class);
+			ResponseEntity<String> serverResponse = restTemplate.exchange(url, method, httpEntity, String.class);
 			HttpHeaders responseHeaders = new HttpHeaders();
 			responseHeaders.put(HttpHeaders.CONTENT_TYPE, serverResponse.getHeaders().get(HttpHeaders.CONTENT_TYPE));
 			logger.info(serverResponse.getHeaders());

@@ -67,12 +67,12 @@ A clinical event could represent an observation, finding, drug prescription or p
 - Access to a FHIR Terminology Server with SNOMED CT
   - Public Snowstorm is default
 
-Build the project using maven.
+Download the latest release from the [releases page](https://github.com/IHTSDO/health-data-analytics/releases).
+
+Alternatively the software can be built using the source code using Apache Maven:
 ```bash
 mvn clean install
 ```
-
-Extract the SNOMED CT archive to a directory named `release` in the root of the project. Only the Snapshot files will be used so any others can be removed if needed.
 
 ### Synthetic Patient Generation
 If you would like to use synthetic data there are two ways to generate a patient population to load into the analytics API. Synthea Patient Generator to generate FHIR Bulk resources or the built in Patient Generator.

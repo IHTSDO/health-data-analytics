@@ -138,12 +138,6 @@ java -Xms3g -jar server/target/server*.jar
 ```
 Once the server is started the API and documentation will be available here: http://localhost:8080/health-analytics-api/
 
-#### Data Store
-The following data stores will be created when the server starts.
-- `snomed-index` directory contains a Lucene index of the SNOMED CT release to provide semantic information for the server.
-
-The server should be stopped before removing this data store.
-
 ---
 #### Realtime Patient Data
 Patient data can be loaded in realtime by implementing HealthDataIngestionSource interface. For example a class could be added which receives 

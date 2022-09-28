@@ -5,7 +5,7 @@ data
 release
 index
 snomed-index
-patient-data-for-import
+patient-data-for-import*
 *.zip
 *.sh
 cpt-codes

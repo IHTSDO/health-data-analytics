@@ -7,14 +7,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 @Service
 public class ReportService {
 
 	@Autowired
 	private PatientQueryService patientQueryService;
+
+	private final ExecutorService executorService = Executors.newFixedThreadPool(4);
 
 	public Report runReport(ReportDefinition reportDefinition) throws ServiceException {
 		Timer timer = new Timer();
@@ -79,6 +86,7 @@ public class ReportService {
 				withoutTreatmentWithNegativeOutcomeCount);
 	}
 
+
 	private void addReportGroups(Report report, List<List<SubReportDefinition>> groupLists, int listsIndex, CohortCriteria patientCriteria, Timer timer) throws ServiceException {
 		if (groupLists != null && groupLists.size() > listsIndex) {
 			List<SubReportDefinition> groupList = groupLists.get(listsIndex);
@@ -89,18 +97,31 @@ public class ReportService {
 				patientCriteria.getEncounterCriteria().forEach(encounterCriterion -> encounterCriterion.setIncludeCPTAnalysis(false));
 			}
 
+			List<Future<Page<Patient>>> futures = new ArrayList<>();
+			List<CohortCriteria> combinedCriteriaList = new ArrayList<>();
 			for (SubReportDefinition reportDefinition : groupList) {
 				CohortCriteria combinedCriteria = combineCriteria(patientCriteria, reportDefinition.getCriteria());
-				Page<Patient> patientsPage = patientQueryService.fetchCohort(combinedCriteria);
-				timer.split("Fetch for " + reportDefinition.getName());
-				Map<String, CPTTotals> cptTotals = null;
-				if (patientsPage instanceof PatientPageWithCPTTotals) {
-					PatientPageWithCPTTotals pageWithEncounterCounts = (PatientPageWithCPTTotals) patientsPage;
-					cptTotals = pageWithEncounterCounts.getCptTotals();
+				futures.add(executorService.submit(() -> patientQueryService.fetchCohort(combinedCriteria)));
+				combinedCriteriaList.add(combinedCriteria);
+			}
+			try {
+				for (int i = 0; i < futures.size(); i++) {
+					Future<Page<Patient>> future = futures.get(i);
+					SubReportDefinition reportDefinition = groupList.get(i);
+					CohortCriteria combinedCriteria = combinedCriteriaList.get(i);
+					Page<Patient> patientsPage = future.get();
+					Map<String, CPTTotals> cptTotals = null;
+					if (patientsPage instanceof PatientPageWithCPTTotals) {
+						PatientPageWithCPTTotals pageWithEncounterCounts = (PatientPageWithCPTTotals) patientsPage;
+						cptTotals = pageWithEncounterCounts.getCptTotals();
+					}
+					Report reportGroup = new Report(reportDefinition.getName(), (int) patientsPage.getTotalElements(), combinedCriteria, cptTotals);
+					report.addGroup(reportGroup);
+					addReportGroups(reportGroup, groupLists, listsIndex + 1, combinedCriteria, timer);
+
 				}
-				Report reportGroup = new Report(reportDefinition.getName(), (int) patientsPage.getTotalElements(), combinedCriteria, cptTotals);
-				report.addGroup(reportGroup);
-				addReportGroups(reportGroup, groupLists, listsIndex + 1, combinedCriteria, timer);
+			} catch (InterruptedException | ExecutionException e) {
+				throw new ServiceException("Failed to fetch cohort or group.", e);
 			}
 		}
 	}

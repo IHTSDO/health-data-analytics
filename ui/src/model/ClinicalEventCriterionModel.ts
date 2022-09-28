@@ -7,7 +7,7 @@ export class ClinicalEventCriterionModel {
     eclBinding!: string
     color!: string
     initial!: string
-
+    historyECL!: string
 
     constructor(title: string, eclBinding: string, initial?: string) {
         this.title = title
@@ -15,6 +15,7 @@ export class ClinicalEventCriterionModel {
         if (initial) {
             this.initial = initial
         }
+        this.historyECL = ''
     }
 
     isFilled() {
@@ -25,7 +26,7 @@ export class ClinicalEventCriterionModel {
     }
 
     getForAPI(startDate?: Date, endDate?: Date) {
-        const apiFormat = { conceptECL: this.conceptECL } as any
+        const apiFormat = { conceptECL: this.conceptECL + this.historyECL } as any
         if (startDate) {
             apiFormat.minDate = startDate
         }

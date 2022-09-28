@@ -143,10 +143,7 @@ export default defineComponent({
                 if (!this.outcomesIncludeHistory) {
                     postfix = ""
                 }
-                const newValue = outcome.conceptECL.replaceAll(this.eclHistory, "") + postfix
-                console.log("newValue ", newValue);
-                
-                this.$set(this.outcomes[this.outcomes.indexOf(outcome)], 'conceptECL', newValue)
+                this.$set(this.outcomes[this.outcomes.indexOf(outcome)], 'historyECL', postfix)
             })
         }
     },

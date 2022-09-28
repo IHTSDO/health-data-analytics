@@ -9,7 +9,7 @@
                 autocomplete="off"
 
                 v-b-tooltip.right
-                :title="model?.conceptECL"
+                :title="model?.conceptECL + ' ' + model?.historyECL"
             ></b-form-input>
         <b-dropdown class="input-menu">
             <b-dropdown-item v-on:click="$emit('remove')">Remove</b-dropdown-item>

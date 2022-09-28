@@ -8,7 +8,7 @@
                     style="max-width: 30rem;"
                     class="mb-2">
                     <b-card-text>
-                        <PatientCriteria :model="cohortCriteria"></PatientCriteria>
+                        <PatientCriteria :model="cohortCriteria" :hideSize="true"></PatientCriteria>
                     </b-card-text>
                 </b-card>
                 <b-card
@@ -116,8 +116,8 @@ export default defineComponent({
         return {
             loaded: false,
             cohortCriteria: new PatientCriteriaModel(),
-            startDate: "2000-01-01",
-            endDate: "2010-12-31",
+            startDate: "",
+            endDate: "",
             granularity: "YEAR",
             groups: [
                 {
@@ -149,12 +149,12 @@ export default defineComponent({
     },
     mounted() {
         this.load()
-        this.outcomes.push(new ClinicalEventCriterionModel('Clinical Finding', '<404684003', '195967001'))// Asthma
-        this.outcomes.push(new ClinicalEventCriterionModel('Clinical Finding', '<404684003', '52448006'))// dementia
-        this.outcomes.push(new ClinicalEventCriterionModel('Clinical Finding', '<404684003', '13645005'))// copd
-        this.outcomes.push(new ClinicalEventCriterionModel('Clinical Finding', '<404684003', '64859006'))// osteoporosis
-        this.outcomes.push(new ClinicalEventCriterionModel('Clinical Finding', '<404684003', '46635009'))// diabetes 1
-        this.outcomes.push(new ClinicalEventCriterionModel('Clinical Finding', '<404684003', '44054006'))// diabetes 2
+        // this.outcomes.push(new ClinicalEventCriterionModel('Clinical Finding', '<404684003', '195967001'))// Asthma
+        // this.outcomes.push(new ClinicalEventCriterionModel('Clinical Finding', '<404684003', '52448006'))// dementia
+        // this.outcomes.push(new ClinicalEventCriterionModel('Clinical Finding', '<404684003', '13645005'))// copd
+        // this.outcomes.push(new ClinicalEventCriterionModel('Clinical Finding', '<404684003', '64859006'))// osteoporosis
+        // this.outcomes.push(new ClinicalEventCriterionModel('Clinical Finding', '<404684003', '46635009'))// diabetes 1
+        // this.outcomes.push(new ClinicalEventCriterionModel('Clinical Finding', '<404684003', '44054006'))// diabetes 2
     },
     computed: {
         timepoints() {
@@ -242,6 +242,10 @@ export default defineComponent({
             console.log("saved:", this.cohortCriteria.gender);
         },
         addOutcome(display: string, eclBinding: string) {
+            const model = new ClinicalEventCriterionModel(display, eclBinding)
+            if (this.outcomesIncludeHistory) {
+                model.historyECL = this.eclHistory
+            }
             this.outcomes.push(new ClinicalEventCriterionModel(display, eclBinding))
         },
         addGroup() {

@@ -52,8 +52,8 @@
                     </b-card-text>
                 </b-card>
             </div>
-            <b-button v-on:click="save">Save</b-button>
-            <b-button v-on:click="load">Load</b-button>
+            <!-- <b-button v-on:click="save">Save</b-button> -->
+            <!-- <b-button v-on:click="load">Load</b-button> -->
         </b-col>
         <b-col style="margin-top:300px">
             <div hidden>{{conditionsTrigger}}</div>
@@ -87,14 +87,6 @@ export default defineComponent({
             loaded: false,
             cohortCriteria: new PatientCriteriaModel(),
             groups: [
-                {
-                    name: "Everyone",
-                    criteria: new PatientCriteriaModel()
-                },
-                {
-                    name: "",
-                    criteria: new PatientCriteriaModel()
-                }
             ],
             includeGroupNoneOfAbove: false,
             outcomes: new Array<ClinicalEventCriterionModel>(),
@@ -108,7 +100,7 @@ export default defineComponent({
         }
     },
     mounted() {
-        this.load()
+        // this.load()
     },
     computed: {
         // Used to monitor changes in selection criteria and trigger API interactions

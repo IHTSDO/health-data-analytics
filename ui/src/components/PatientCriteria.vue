@@ -1,13 +1,14 @@
 <template>
     <div>
         <b-form-group label="Gender" v-if="!hideGender">
-            <b-form-radio v-model="gender" name="gender" value="">All</b-form-radio><b-form-radio v-model="gender" name="gender" value="FEMALE">Female</b-form-radio>
+            <b-form-radio v-model="gender" name="gender" value="">All</b-form-radio>
+            <b-form-radio v-model="gender" name="gender" value="FEMALE">Female</b-form-radio>
             <b-form-radio v-model="gender" name="gender" value="MALE">Male</b-form-radio>
         </b-form-group>
         <b-form-group v-for="eventCriterion in model?.encounterCriteria" v-bind:key="eventCriterion.conceptECL" >
             <ClinicalEventCriterion :model="eventCriterion" v-on:remove="removeCriterion(eventCriterion)"/>
         </b-form-group>
-        <div v-if="!hideGender">
+        <div v-if="!(hideGender || hideSize)">
             <div hidden>{{cohortSizeTrigger}}</div><!-- This dynamic property triggers the update of cohortSize -->
             <div>Cohort Size: {{cohortSize}}</div>
         </div>
@@ -31,7 +32,8 @@ export default defineComponent({
     },
     props: {
         model: PatientCriteriaModel,
-        hideGender: String
+        hideGender: String,
+        hideSize: String
     },
     mounted() {
         if (!this.model) {
@@ -52,7 +54,7 @@ export default defineComponent({
     },
     data() {
         return {
-            gender: 'ALL',
+            gender: '',
             genderOptions: [
                 {text: 'All', value: ''},
                 {text: 'Female', value: 'FEMALE'},

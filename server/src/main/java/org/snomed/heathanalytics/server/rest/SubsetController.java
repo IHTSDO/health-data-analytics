@@ -35,7 +35,9 @@ public class SubsetController {
 		if (prefix == null || prefix.trim().isEmpty()) {
 			return subsetRepository.findAll(pageable);
 		} else {
-			logger.warn("Searching for subsets with prefix param is only supported on page 0");
+			if (page != 0) {
+				logger.warn("Searching for subsets with prefix param is only supported on page 0");
+			}
 			String[] parts = prefix.toLowerCase().split(" ");
 			List<Subset> matchingSubsets = subsetRepository.findAll(PageRequest.of(page, 1_000))
 					.getContent().stream()

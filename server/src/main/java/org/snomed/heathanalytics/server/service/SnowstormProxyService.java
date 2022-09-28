@@ -60,7 +60,6 @@ public class SnowstormProxyService {
 			ResponseEntity<String> serverResponse = restTemplate.exchange(url, method, httpEntity, String.class);
 			HttpHeaders responseHeaders = new HttpHeaders();
 			responseHeaders.put(HttpHeaders.CONTENT_TYPE, serverResponse.getHeaders().get(HttpHeaders.CONTENT_TYPE));
-			logger.info(serverResponse.getHeaders());
 			response.setStatus(serverResponse.getStatusCodeValue());
 			String responseBody = serverResponse.getBody();
 			if (responseBody != null) {

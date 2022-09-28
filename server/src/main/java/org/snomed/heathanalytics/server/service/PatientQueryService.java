@@ -286,10 +286,26 @@ public class PatientQueryService {
 			String criterionEcl = getGivenOrSubsetEcl(criterion);
 			if (criterionEcl != null) {
 				List<Long> conceptIds = eclToConceptsMap.get(criterionEcl);
+				BoolQueryBuilder encounterQuery = boolQuery();
+				encounterQuery.must(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
+				if (criterion.getMinDate() != null || criterion.getMaxDate() != null) {
+					// Setting this date range is not enough to filter the patient encounters because all encounters and all dates
+					// are stored together in the index of the patient document.
+					// Additional filtering happens in the Painless script.
+					// Setting this range at the index level reduces the number of documents the painless script needs to process.
+					RangeQueryBuilder rangeQuery = rangeQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.DATE_LONG);
+					if (criterion.getMinDate() != null) {
+						rangeQuery.gte(criterion.getMinDate().getTime());
+					}
+					if (criterion.getMaxDate() != null) {
+						rangeQuery.lt(criterion.getMaxDate().getTime());
+					}
+					encounterQuery.must(rangeQuery);
+				}
 				if (criterion.isHas()) {
-					patientFilter.must(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
+					patientFilter.must(encounterQuery);
 				} else {
-					patientFilter.mustNot(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
+					patientFilter.mustNot(encounterQuery);
 				}
 			}
 		}
@@ -302,6 +318,8 @@ public class PatientQueryService {
 				Map<String, Object> criterionMap = new HashMap<>();
 				criterionMap.put("has", criterion.isHas());
 				criterionMap.put("conceptECL", criterion.getConceptECL());
+				criterionMap.put("minDate", criterion.getMinDate() != null ? criterion.getMinDate().getTime() : null);
+				criterionMap.put("maxDate", criterion.getMaxDate() != null ? criterion.getMaxDate().getTime() : null);
 				criterionMap.put("withinDaysAfterPreviouslyMatchedEncounter", criterion.getWithinDaysAfterPreviouslyMatchedEncounter());
 				criterionMap.put("withinDaysBeforePreviouslyMatchedEncounter", criterion.getWithinDaysBeforePreviouslyMatchedEncounter());
 				Frequency frequency = criterion.getFrequency();
@@ -412,7 +430,6 @@ public class PatientQueryService {
 					"}\n" +
 //					"Debug.explain(criterionMapsList);" +
 //					"Debug.explain(doc['encounters.conceptDate.keyword']);" +
-					// doc['encounters.conceptDate.keyword']
 
 					"boolean match = false;" +
 					"long baseEncounterDate = 0;" +
@@ -426,6 +443,16 @@ public class PatientQueryService {
 					"		forceLongList.add(((Long) criterionConceptId).longValue());" +
 					"	}" +
 					"	criterionConceptIds = forceLongList;" +
+					"" +
+					"	long minDate = -1;" +
+					"	long maxDate = -1;" +
+					"	if (criterionMap.get('minDate') != null) {" +
+					"		minDate = criterionMap.get('minDate');" +
+					"	}" +
+					"	if (criterionMap.get('maxDate') != null) {" +
+					"		maxDate = criterionMap.get('maxDate');" +
+					"	}" +
+
 					"" +
 						// If forward/back cut-off days set calculate relative dates
 					"	long minEncounterDate = 0;" +
@@ -450,8 +477,10 @@ public class PatientQueryService {
 					"			long encounterConceptId = Long.parseLong(conceptDateString.substring(0, commaIndex));" +
 					"			long encounterDate = Long.parseLong(conceptDateString.substring(commaIndex + 1));" +
 					"			if (criterionConceptIds.contains(encounterConceptId)) {" +
-					"				if ((minEncounterDate == 0 || encounterDate >= minEncounterDate)" +
-					"						&& (maxEncounterDate == 0 || encounterDate <= maxEncounterDate)) {" +
+					"				if ((minDate == -1 || encounterDate >= minDate)" +
+					"					&& (maxDate == -1 || encounterDate < maxDate)" +
+					"					&& (minEncounterDate == 0 || encounterDate >= minEncounterDate)" +
+					"					&& (maxEncounterDate == 0 || encounterDate <= maxEncounterDate)) {" +
 
 					"					if (!criterionMap.get('has')) {" +
 											// Criterion clauses match but criterion is negated
@@ -476,7 +505,6 @@ public class PatientQueryService {
 					"" +
 					"	if (encounterMatchFound == false && criterionMap.get('has')) {" +
 							// If we got to this point none of the encounters matched the current criterion clauses.
-//					"		Debug.explain('encounterMatchFound: false');"
 					"		return false;" +
 					"	}" +
 					"}" +

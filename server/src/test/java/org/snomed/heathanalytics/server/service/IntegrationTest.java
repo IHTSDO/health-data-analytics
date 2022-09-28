@@ -20,8 +20,7 @@ import java.text.ParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class IntegrationTest extends AbstractDataTest {
 
@@ -215,6 +214,24 @@ public class IntegrationTest extends AbstractDataTest {
 		cohortCriteria.setMinAgeNow(30);
 		cohortCriteria.setMaxAgeNow(38);
 		assertEquals(1, patientQueryService.fetchCohort(cohortCriteria).getTotalElements());
+	}
+
+	@Test
+	public void testTreatmentDateRange() throws ServiceException {
+		EncounterCriterion encounterCriterion = new EncounterCriterion(breastScreeningId);
+		assertEquals(4, patientQueryService.fetchCohortCount(new CohortCriteria(encounterCriterion)));
+
+		encounterCriterion.setMinDate(new GregorianCalendar(2019, Calendar.JANUARY, 1).getTime());
+		assertTrue(encounterCriterion.hasTimeConstraint());
+		assertEquals(3, patientQueryService.fetchCohortCount(new CohortCriteria(encounterCriterion)));
+
+		encounterCriterion.setMaxDate(new GregorianCalendar(2020, Calendar.JANUARY, 1).getTime());
+		assertTrue(encounterCriterion.hasTimeConstraint());
+		assertEquals(3, patientQueryService.fetchCohortCount(new CohortCriteria(encounterCriterion)));
+
+		encounterCriterion.setMaxDate(new GregorianCalendar(2019, Calendar.JANUARY, 1).getTime());
+		assertTrue(encounterCriterion.hasTimeConstraint());
+		assertEquals(0, patientQueryService.fetchCohortCount(new CohortCriteria(encounterCriterion)));
 	}
 
 	@Test

@@ -2,6 +2,7 @@ package org.snomed.heathanalytics.server.model;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import java.util.Date;
 import java.util.Objects;
 
 @JsonPropertyOrder({"has", "conceptECL", "conceptSubsetId", "frequency",
@@ -11,6 +12,9 @@ public class EncounterCriterion {
 	private boolean has;
 	private String conceptECL;
 	private String conceptSubsetId;
+	private Date minDate;
+	private Date maxDate;
+
 	private Frequency frequency;
 
 	// Value of -1 means apply constraint with unbounded value, otherwise use null.
@@ -42,12 +46,17 @@ public class EncounterCriterion {
 		encounterCriterion.has = has;
 		encounterCriterion.conceptECL = conceptECL;
 		encounterCriterion.conceptSubsetId = conceptSubsetId;
+		encounterCriterion.minDate = minDate;
+		encounterCriterion.maxDate = maxDate;
 		encounterCriterion.frequency = frequency;
 		return encounterCriterion;
 	}
 
 	public boolean hasTimeConstraint() {
-		return withinDaysAfterPreviouslyMatchedEncounter != null || withinDaysBeforePreviouslyMatchedEncounter != null;
+		return withinDaysAfterPreviouslyMatchedEncounter != null ||
+				withinDaysBeforePreviouslyMatchedEncounter != null ||
+				minDate != null ||
+				maxDate != null;
 	}
 
 	public boolean hasFrequency() {
@@ -92,6 +101,22 @@ public class EncounterCriterion {
 
 	public void setWithinDaysAfterPreviouslyMatchedEncounter(Integer withinDaysAfterPreviouslyMatchedEncounter) {
 		this.withinDaysAfterPreviouslyMatchedEncounter = withinDaysAfterPreviouslyMatchedEncounter;
+	}
+
+	public Date getMinDate() {
+		return minDate;
+	}
+
+	public void setMinDate(Date minDate) {
+		this.minDate = minDate;
+	}
+
+	public Date getMaxDate() {
+		return maxDate;
+	}
+
+	public void setMaxDate(Date maxDate) {
+		this.maxDate = maxDate;
 	}
 
 	public Frequency getFrequency() {

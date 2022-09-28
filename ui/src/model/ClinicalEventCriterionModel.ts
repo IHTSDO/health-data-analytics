@@ -9,9 +9,12 @@ export class ClinicalEventCriterionModel {
     initial!: string
 
 
-    constructor(title: string, eclBinding: string) {
+    constructor(title: string, eclBinding: string, initial?: string) {
         this.title = title
         this.eclBinding = eclBinding
+        if (initial) {
+            this.initial = initial
+        }
     }
 
     isFilled() {
@@ -21,8 +24,14 @@ export class ClinicalEventCriterionModel {
         return false
     }
 
-    getForAPI() {
+    getForAPI(startDate?: Date, endDate?: Date) {
         const apiFormat = { conceptECL: this.conceptECL } as any
+        if (startDate) {
+            apiFormat.minDate = startDate
+        }
+        if (endDate) {
+            apiFormat.maxDate = endDate
+        }
         if (typeof this.withinDaysAfterPreviouslyMatchedEncounter != 'undefined') {
             apiFormat.withinDaysAfterPreviouslyMatchedEncounter = this.withinDaysAfterPreviouslyMatchedEncounter
         }

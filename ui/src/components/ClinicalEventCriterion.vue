@@ -51,7 +51,7 @@ export default defineComponent({
     computed: {
         style(): string {
             if (this.model && this.model.color) {
-                return "background-color: " + this.model.color;
+                return "background-color: " + this.model.color + "; color: white;";
             }
             return "";
         }
@@ -66,8 +66,6 @@ export default defineComponent({
     },
     watch: {
         searchInput: function(input) {
-            console.log("searchInput");
-            
             if (this.itemJustSelected) {
                 this.itemJustSelected = false;
             } else if (input.length > 2) {
@@ -77,9 +75,7 @@ export default defineComponent({
     },
     methods: {
         async FHIRSearch(input: string) {
-            console.log('FHIRSearch');
             const matchingSubsets = await (await axios.get('api/subsets?prefix=' + input)).data.content
-            console.log("matchingSubsets");
             
             axios.get('api/concepts?prefix=' + input + '&ecl=' + this.model?.eclBinding + '&limit=10')
             .then(response => {
@@ -88,7 +84,7 @@ export default defineComponent({
                 } else {
                     this.searchResults = [];
                     matchingSubsets.forEach((element: { id: string; name: string; ecl: string; }) => {
-                        this.searchResults.push(new DropdownItem(element.id, element.name, element.ecl))
+                        this.searchResults.push(new DropdownItem(element.id, element.name + " (subset)", element.ecl))
                     });
                     response.data.forEach((element: { code: string; display: string; }) => {
                         this.searchResults.push(new DropdownItem(element.code, element.display))
@@ -107,11 +103,6 @@ export default defineComponent({
                 this.$set(this.model, 'conceptECL', selected.getEcl())
             }
             this.showResults = false;
-            // this.itemJustSelected = true;
-            // this.searchInput = "GO";
-            // this.searchInput = item.display;
-            // console.log('this.searchInput = ' + this.searchInput);            
-            // console.log('this.searchInput 2 = ' + this.searchInput);
         }
     }
 });

@@ -1,19 +1,21 @@
 <template>
     <div>
-        <apex-chart v-bind:class="{ displayNone: hideChart }" ref="outcomeChart" type="bar" height="450" :options="chartOptions" :series="series"></apex-chart>
+        <apex-chart v-if="!hideChart" ref="outcomeChart" type="bar" height="450" :options="chartOptions" :series="series"></apex-chart>
     </div>
 </template>
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, nextTick } from 'vue'
 import axios from 'axios'
 
 export default defineComponent({
     name: "ReportChart",
     props: {
-        series: Array
+        
     },
     data() {
         return {
+            myNumbers: new Array<Array<{groupSize: number, subGroupSize: number}>>(),
+            series: [],
             hideChart: true,
             chartOptions: {
                 chart: {
@@ -36,14 +38,22 @@ export default defineComponent({
                     categories: [],
                     min: 0,
                     max: 100
+                },
+                tooltip: {
+                    y: {
+                        formatter: function(value, { series, seriesIndex, dataPointIndex, w }) {
+                            return value + "%"
+                        }
+                    }
                 }
             },
         }
     },
     methods: {
-        fetchReport(report: {colors: any}) {
+        async fetchReport(report: {colors: any}) {
             console.log('updating outcome stats', report)
 
+            this.myNumbers.length = 0
             this.hideChart = false
             axios.post('api/report', report)
                 .then(response => {
@@ -58,7 +68,8 @@ export default defineComponent({
                         }
                     console.log(data)
                     const labels = new Array<string>();
-                    let series = new Array<{name?: string, data: Array<any>}>();
+                    let series = new Array<{name?: string, data: Array<any>, numbers: Array<any>}>();
+                    // let reportStats = new Array<Array<{groupSize: number, subGroupSize: number}>>()
                     if (!data.groups) {
                         data.groups = [];
                     }
@@ -69,13 +80,14 @@ export default defineComponent({
                         if (group.groups) {
                             group.groups.forEach(subGroup => {
                                     if (series.length <= i) {
-                                        series.push({data: []});
+                                        series.push({data: [], numbers: []});
                                     }
                                     series[i].data.push(0);// bars in with 0 count initially to avoid diagonal animation
                                     i++
                                 })
                         }
                     })
+                    // this.reportStats = reportStats
                     this.$refs.outcomeChart.updateOptions({
                         xaxis: {categories: labels, min: 0, max: 100}, 
                         colors: report.colors
@@ -93,15 +105,17 @@ export default defineComponent({
                             let i = 0
                             group.groups.forEach(subGroup => {
                                 if (series.length <= i) {
-                                    console.log("here")
+                                    // console.log("here")
                                     series.push({
                                         name: subGroup.name,
-                                        data: []
+                                        data: [],
+                                        numbers: []
                                     });
                                 }
                                 let percent = (subGroup.patientCount / group.patientCount) * 100
                                 percent = Math.round(percent * 100) / 100
                                 series[i].data.push(percent)
+                                series[i].numbers.push({groupSize: group.patientCount, subGroupSize: subGroup.patientCount})
                                 i++
                             })
                         })

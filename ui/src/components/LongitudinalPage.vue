@@ -9,7 +9,6 @@
                     class="mb-2">
                     <b-card-text>
                         <PatientCriteria :model="cohortCriteria"></PatientCriteria>
-                        {{cohortCriteria.gender}}
                     </b-card-text>
                 </b-card>
                 <b-card
@@ -65,6 +64,7 @@
                                 <b-form-radio v-model="granularity" name="granularity" value="DAY">Day</b-form-radio>
                                 <b-form-radio v-model="granularity" name="granularity" value="HOUR">Hour</b-form-radio>
                             </b-form-group>
+                            <div hidden>{{timepoints}}</div>
                         </div>
                     </b-card-text>
                 </b-card>
@@ -82,12 +82,12 @@
                     </b-card-text>
                 </b-card>
             </div>
-            <b-button v-on:click="save">Save</b-button>
-            <b-button v-on:click="load">Load</b-button>
+            <b-button v-on:click="run">Run</b-button>
+            <!-- <b-button v-on:click="save">Save</b-button> -->
+            <!-- <b-button v-on:click="load">Load</b-button> -->
         </b-col>
         <b-col>
-            <div hidden>{{conditionsTrigger}}</div>
-            <ReportChart ref="chart" :series="series" ></ReportChart>
+            <ReportChartLongitudinal ref="chart" ></ReportChartLongitudinal>
         </b-col>
     </b-row>
 </template>
@@ -102,7 +102,7 @@ import { ClinicalEventCriterionModel } from './../model/ClinicalEventCriterionMo
 import PatientCriteria from './PatientCriteria.vue'
 import { PatientCriteriaModel } from '@/model/PatientCriteriaModel'
 import AddCriteriaDropdown from './AddCriteriaDropdown.vue'
-import ReportChart from './ReportChart.vue';
+import ReportChartLongitudinal from './ReportChartLongitudinal.vue';
 
 export default defineComponent({
     name: 'LongitudinalPage',
@@ -110,22 +110,18 @@ export default defineComponent({
         ClinicalEventCriterion,
         PatientCriteria,
         AddCriteriaDropdown,
-        ReportChart
+        ReportChartLongitudinal
     },
     data() {
         return {
             loaded: false,
             cohortCriteria: new PatientCriteriaModel(),
-            startDate: null,
-            endDate: null,
+            startDate: "2000-01-01",
+            endDate: "2010-12-31",
             granularity: "YEAR",
             groups: [
                 {
                     name: "Everyone",
-                    criteria: new PatientCriteriaModel()
-                },
-                {
-                    name: "",
                     criteria: new PatientCriteriaModel()
                 }
             ],
@@ -135,39 +131,74 @@ export default defineComponent({
             cohortSize: "0",
             numberFormat: new Intl.NumberFormat('en-US'),
 
-            // apex
-            series: [{data: []}],
+            hideChart: false
         }
     },
     watch: {
         outcomesIncludeHistory() {
+            console.log("outcomesIncludeHistory");
+            
             this.outcomes.forEach(outcome => {
                 var postfix = this.eclHistory
                 if (!this.outcomesIncludeHistory) {
                     postfix = ""
                 }
-                outcome.conceptECL = outcome.conceptECL.replaceAll(this.eclHistory, "") + postfix
+                const newValue = outcome.conceptECL.replaceAll(this.eclHistory, "") + postfix
+                console.log("newValue ", newValue);
+                
+                this.$set(this.outcomes[this.outcomes.indexOf(outcome)], 'conceptECL', newValue)
             })
         }
     },
     mounted() {
         this.load()
+        this.outcomes.push(new ClinicalEventCriterionModel('Clinical Finding', '<404684003', '195967001'))// Asthma
+        this.outcomes.push(new ClinicalEventCriterionModel('Clinical Finding', '<404684003', '52448006'))// dementia
+        this.outcomes.push(new ClinicalEventCriterionModel('Clinical Finding', '<404684003', '13645005'))// copd
+        this.outcomes.push(new ClinicalEventCriterionModel('Clinical Finding', '<404684003', '64859006'))// osteoporosis
+        this.outcomes.push(new ClinicalEventCriterionModel('Clinical Finding', '<404684003', '46635009'))// diabetes 1
+        this.outcomes.push(new ClinicalEventCriterionModel('Clinical Finding', '<404684003', '44054006'))// diabetes 2
     },
     computed: {
-        // Used to monitor changes in selection criteria and trigger API interactions
-        patientCriteriaTrigger() {
-            const selectionHash: any = this.cohortCriteria.getForAPI()
-            // this.save()
-            this.updateCohortSize()
-            return selectionHash;
-        },
-        conditionsTrigger() {
-            const reportRequest = this.getReportRequest()
-            this.updateOutcomes(reportRequest);
-            return reportRequest;
+        timepoints() {
+            console.log("building timepoints");
+            
+            const points = [] as Array<Date>
+            // int year
+
+            let current = this.parseDate(this.startDate) as Date
+            let end = this.parseDate(this.endDate) as Date
+            if (current && end) {
+                let i = 0
+                const a = current.getTime()
+                const b = end.getTime()
+                while (current.getTime() <= end.getTime() && i++ < 1000) {
+                    points.push(new Date(current.getTime()))
+                    if (this.granularity == "YEAR") {
+                        current.setUTCFullYear(current.getUTCFullYear() + 1)
+                    } else if (this.granularity == "MONTH") {
+                        current.setUTCMonth(current.getUTCMonth() + 1)
+                    } else if (this.granularity == "DAY") {
+                        current.setUTCDate(current.getUTCDate() + 1)
+                    } else if (this.granularity == "HOUR") {
+                        current.setUTCHours(current.getUTCHours() + 1)
+                    }
+                }
+            }
+            return points
         }
     },
     methods: {
+        parseDate(input: string) {
+            const regex = new RegExp('[0-9]{4}-[0-9]{2}-[0-9]{2}');
+            if (input && regex.test(input)) {
+                const parts = input.split('-')
+                // 2001-01-01T00:00:00.000Z
+                
+                return new Date(parts[0], Number.parseInt(parts[1]) -1, parts[2])
+            }
+            return null
+        },
         load() {
             axios.get('api/ui-state/longitudinal/dev')
             .then(response => {
@@ -223,7 +254,7 @@ export default defineComponent({
             // eslint-disable-next-line
             const context = this;
             debounce(function() {
-                console.log('updating cohort size')
+                // console.log('updating cohort size')
                 axios.post('api/cohorts/select', context.cohortCriteria.getForAPI())
                     .then(response => {
                         context.cohortSize = context.numberFormat.format(response.data.totalElements);
@@ -235,26 +266,39 @@ export default defineComponent({
                 this.$refs.chart.fetchReport(report)
             }
         },
-        getReportRequest: function() {
+        async run() {
+            const reportRequests = [] as Array<any>
+            let startTimepoint: Date
+
+            this.timepoints.forEach(endTimepoint => {
+                if (startTimepoint) {
+                    reportRequests.push(this.getReportRequest(startTimepoint, endTimepoint, startTimepoint.getUTCFullYear() + ""))
+                }
+                startTimepoint = endTimepoint
+            })
+            // console.log("this.timepoints", this.timepoints);
+            // console.log("reportRequests", reportRequests);
+            
+            this.$refs.chart.fetchReports(reportRequests)
+        },
+        getReportRequest: function(startDate: Date, endDate: Date, label: string) {
             const report = {} as any;
+            report.name = label
             report.criteria = this.cohortCriteria.getForAPI()
 
             const patientGroups = new Array<unknown>();
-            this.groups.forEach(group => {
-                const groupCriteria = {} as any;
-                patientGroups.push(groupCriteria)
-                groupCriteria.name = group.name;
-                groupCriteria.criteria = group.criteria.getForAPI()
-            })
+            const groupCriteria = {} as any;
+            patientGroups.push(groupCriteria)
 
             const outcomesRequest = new Array<unknown>();
             const colors = new Array<string>();
             this.outcomes.forEach(outcome => {
                 if (outcome.isFilled()) {
-                    colors.push(outcome.color)
+                    colors.push(outcome.color)                    
                     outcomesRequest.push({
+                        name: outcome.display,
                         criteria: {
-                            encounterCriteria: [outcome.getForAPI()]
+                            encounterCriteria: [outcome.getForAPI(startDate, endDate)]
                         }
                     })
                 }

@@ -61,7 +61,7 @@
         </b-col>
         <b-col style="margin-top:300px">
             <div hidden>{{conditionsTrigger}}</div>
-            <ReportChart ref="chart" :series="series" ></ReportChart>
+            <ReportChart ref="chart" ></ReportChart>
         </b-col>
     </b-row>
 </template>
@@ -155,8 +155,8 @@ export default defineComponent({
             })
         },
         save() {
-            if (!this.loaded) {
             // if (10 * 10 == 100 || !this.loaded) {
+            if (!this.loaded) {
                 return
             }
             const model = {
@@ -186,7 +186,9 @@ export default defineComponent({
             this.outcomes.push(outcome)
         },
         addGroup() {
-            this.groups.push({name: "", criteria: new PatientCriteriaModel()})
+            const model = new PatientCriteriaModel()
+            model.treatment = true
+            this.groups.push({name: "Treatment X", criteria: model})
         },
         updateCohortSize: function() {
             // eslint-disable-next-line

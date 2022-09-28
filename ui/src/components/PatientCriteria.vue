@@ -11,7 +11,7 @@
             <div hidden>{{cohortSizeTrigger}}</div><!-- This dynamic property triggers the update of cohortSize -->
             <div>Cohort Size: {{cohortSize}}</div>
         </div>
-        <AddCriteriaDropdown v-on:add-criterion="addEventCriterion"/>
+        <AddCriteriaDropdown :treatment="model?.treatment" v-on:add-criterion="addEventCriterion"></AddCriteriaDropdown>
     </div>
 </template>
 <script lang="ts">

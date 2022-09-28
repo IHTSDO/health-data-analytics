@@ -9,7 +9,6 @@
                     class="mb-2">
                     <b-card-text>
                         <PatientCriteria :model="cohortCriteria"></PatientCriteria>
-                        {{cohortCriteria.gender}}
                     </b-card-text>
                 </b-card>
                 <b-card

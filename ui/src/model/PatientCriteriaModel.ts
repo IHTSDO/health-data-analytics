@@ -3,6 +3,7 @@ import { ClinicalEventCriterionModel } from "./ClinicalEventCriterionModel"
 export class PatientCriteriaModel {
     gender = ""
     encounterCriteria: Array<ClinicalEventCriterionModel> = []
+    treatment = false
 
     getForAPI() {
         const selection: any = {

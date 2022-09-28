@@ -163,7 +163,7 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 			while (medicationRequestMappingIterator.hasNext()) {
 				FHIRMedicationRequest fhirMedicationRequest = medicationRequestMappingIterator.next();
 				String subjectId = FHIRHelper.getSubjectId(fhirMedicationRequest.getSubject());
-				if (fhirMedicationRequest.isActiveOrder() && subjectId != null) {
+				if (fhirMedicationRequest.isActiveOrCompletedOrder() && subjectId != null) {
 					String conceptId = getSnomedCode(fhirMedicationRequest.getMedicationCodeableConcept());
 					if (conceptId != null && fhirMedicationRequest.getAuthoredOn() != null) {
 						ClinicalEncounter encounter = new ClinicalEncounter(fhirMedicationRequest.getAuthoredOn(), parseLong(conceptId));

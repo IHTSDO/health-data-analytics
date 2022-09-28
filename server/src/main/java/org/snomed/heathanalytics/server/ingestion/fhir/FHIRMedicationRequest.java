@@ -10,8 +10,8 @@ public class FHIRMedicationRequest {
 	private String intent;
 	private Date authoredOn;
 
-	public boolean isActiveOrder() {
-		return "active".equals(status) && intent != null && intent.contains("order");
+	public boolean isActiveOrCompletedOrder() {
+		return ("active".equals(status) || "completed".equals(status)) && intent != null && intent.contains("order");
 	}
 
 	public FHIRReference getSubject() {

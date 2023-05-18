@@ -39,7 +39,7 @@
                 </b-row>
                 <b-row style="margin-top: 15px">
                     <b-col v-if="matchingConcepts.length">
-                        <h6 style="text-align: left; margin-top: 15px">Matching Concepts (first 100): </h6>
+                        <h6 style="text-align: left; margin-top: 15px">{{matchingConceptsCount}} Matching Concepts (first 100 listed): </h6>
                         <b-table striped hover :items="matchingConcepts"></b-table>
                     </b-col>
                     <b-col v-else>
@@ -66,6 +66,7 @@ export default defineComponent({
             subsets: [] as Array<SubsetModel>,
             selectedSubset: new SubsetModel('', ''),
             matchingConcepts: [],
+            matchingConceptsCount: 0,
             newEcl: "",
         }
     },
@@ -91,9 +92,13 @@ export default defineComponent({
         },
         findConcepts() {
             this.matchingConcepts.length = 0
-            axios.get('/api/snowstorm/MAIN/concepts?ecl=' + encodeURI(this.selectedSubset.ecl))
-            .then(repsonse => {
-                repsonse.data.items.forEach(concept => {
+            var ecl = this.selectedSubset.ecl
+            if (this.newEcl) {
+                ecl = this.newEcl
+            }
+            axios.get('/api/snowstorm/MAIN/concepts?ecl=' + encodeURI(ecl))
+            .then(response => {
+                response.data.items.forEach(concept => {
                     this.matchingConcepts.push(
                         {
                             id: concept.conceptId,
@@ -101,6 +106,7 @@ export default defineComponent({
                         }
                     )
                 })
+                this.matchingConceptsCount = response.data.total
             })
         },
         selectUsingUrl() {

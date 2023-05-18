@@ -75,7 +75,7 @@
                     class="mb-2">
                     <b-card-text>
                         <b-form-group v-for="outcome in outcomes" v-bind:key="outcome.conceptECL">
-                            <ClinicalEventCriterion :model="outcome"/>
+                            <ClinicalEventCriterion :model="outcome" v-on:remove="removeOutcome(outcome)"/>
                         </b-form-group>
                         <AddCriteriaDropdown label="Add Outcome" v-on:add-criterion="addOutcome"/>
                         <b-check v-model="outcomesIncludeHistory">Include historic concepts</b-check>
@@ -148,7 +148,7 @@ export default defineComponent({
         }
     },
     mounted() {
-        this.load()
+        // this.load()
         // this.outcomes.push(new ClinicalEventCriterionModel('Clinical Finding', '<404684003', '195967001'))// Asthma
         // this.outcomes.push(new ClinicalEventCriterionModel('Clinical Finding', '<404684003', '52448006'))// dementia
         // this.outcomes.push(new ClinicalEventCriterionModel('Clinical Finding', '<404684003', '13645005'))// copd
@@ -247,6 +247,14 @@ export default defineComponent({
                 model.historyECL = this.eclHistory
             }
             this.outcomes.push(new ClinicalEventCriterionModel(display, eclBinding))
+        },
+        removeOutcome(outcome: ClinicalEventCriterionModel) {
+            if (this.outcomes) {
+                const index = this.outcomes.indexOf(outcome)
+                if (index >= 0) {
+                    this.$delete(this.outcomes, index)
+                }
+            }
         },
         addGroup() {
             this.groups.push({name: "", criteria: new PatientCriteriaModel()})

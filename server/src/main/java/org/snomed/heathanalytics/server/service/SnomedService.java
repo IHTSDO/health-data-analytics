@@ -28,6 +28,9 @@ public class SnomedService {
 
 	private final Map<String, List<Long>> eclResultsCache;
 
+	@Value("${fhir.codesystem.snomed.uri}")
+	private String snomedCodeSystemUri;
+
 	public SnomedService(@Value("${fhir-terminology-server-url}") String fhirTerminologyServerUrl) {
 		FhirContext context = FhirContext.forR4();
 		context.getRestfulClientFactory().setSocketTimeout(30_000);
@@ -76,7 +79,7 @@ public class SnomedService {
 	private void valueSetExpand(String ecl, int offset, int limit, String filter, Consumer<Stream<ValueSet.ValueSetExpansionContainsComponent>> resultConsumer) {
 		ecl = URLEncoder.encode(ecl, StandardCharsets.UTF_8);
 		Parameters requestParameters = new Parameters()
-				.addParameter("url", format("http://snomed.info/sct?fhir_vs=ecl/%s", ecl))
+				.addParameter("url", format("%s?fhir_vs=ecl/%s", snomedCodeSystemUri, ecl))
 				.addParameter("offset", offset + "")
 				.addParameter("count", limit + "");
 		if (filter != null) {

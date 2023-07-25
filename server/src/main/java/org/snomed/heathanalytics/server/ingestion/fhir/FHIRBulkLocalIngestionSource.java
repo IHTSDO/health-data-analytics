@@ -187,8 +187,7 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 	private String getSnomedCode(FHIRCodeableConcept codeableConcept) {
 		if (codeableConcept != null) {
 			List<FHIRCoding> coding = codeableConcept.getCoding();
-			if (!coding.isEmpty()) {
-				FHIRCoding fhirCoding = coding.get(0);
+			for (FHIRCoding fhirCoding : coding) {
 				String system = fhirCoding.getSystem();
 				if (system != null && system.startsWith("http://snomed.info/sct")) {
 					String code = fhirCoding.getCode();

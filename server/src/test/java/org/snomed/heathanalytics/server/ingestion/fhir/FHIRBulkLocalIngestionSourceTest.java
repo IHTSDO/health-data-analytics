@@ -51,6 +51,27 @@ public class FHIRBulkLocalIngestionSourceTest extends AbstractDataTest {
 				getPatientString("a21e4c80-e45a-57c8-00bf-32788b395837"));
 	}
 
+	@Test
+	public void testOpenMRSFHIRImport() {
+		FHIRBulkLocalIngestionSourceConfiguration configuration = new FHIRBulkLocalIngestionSourceConfiguration(
+				new File("src/test/resources/fhir-open_mrs-export/Patient.ndjson"),
+				new File("src/test/resources/fhir-open_mrs-export/Condition.ndjson"),
+				null,
+//				new File("src/test/resources/fhir-open_mrs-export/Procedure.ndjson"),
+				new File("src/test/resources/fhir-open_mrs-export/MedicationRequest.ndjson"));
+
+		new FHIRBulkLocalIngestionSource(objectMapper).stream(configuration, elasticOutputStream);
+
+		List<Patient> patients = patientRepository.findAll(Pageable.unpaged()).getContent();
+		assertEquals(1, patients.size());
+		for (Patient patient : patients) {
+			System.out.println(patient.toString());
+		}
+
+		assertEquals("Patient{roleId='b5201a4b-c8a9-4a2d-9fc3-08e2f6a3d8e0', dataset=null, gender=MALE, dob=2011-08-25, numEncounters=1, encounters=[ClinicalEncounter{conceptId='840539006', dateLong=1690277150000}]}",
+				getPatientString("b5201a4b-c8a9-4a2d-9fc3-08e2f6a3d8e0"));
+	}
+
 	private String getPatientString(String id) {
 		return patientRepository.findById(id).orElseGet(Patient::new).toString();
 	}

@@ -31,7 +31,8 @@ public class FHIRBulkLocalIngestionSourceTest extends AbstractDataTest {
 				new File("src/test/resources/fhir/Patient.ndjson"),
 				new File("src/test/resources/fhir/Condition.ndjson"),
 				new File("src/test/resources/fhir/Procedure.ndjson"),
-				new File("src/test/resources/fhir/MedicationRequest.ndjson"));
+				new File("src/test/resources/fhir/MedicationRequest.ndjson"),
+				null);
 
 		new FHIRBulkLocalIngestionSource(objectMapper).stream(configuration, elasticOutputStream);
 
@@ -57,8 +58,8 @@ public class FHIRBulkLocalIngestionSourceTest extends AbstractDataTest {
 				new File("src/test/resources/fhir-open_mrs-export/Patient.ndjson"),
 				new File("src/test/resources/fhir-open_mrs-export/Condition.ndjson"),
 				null,
-//				new File("src/test/resources/fhir-open_mrs-export/Procedure.ndjson"),
-				new File("src/test/resources/fhir-open_mrs-export/MedicationRequest.ndjson"));
+				new File("src/test/resources/fhir-open_mrs-export/MedicationRequest.ndjson"),
+				new File("src/test/resources/fhir-open_mrs-export/ServiceRequest.ndjson"));
 
 		new FHIRBulkLocalIngestionSource(objectMapper).stream(configuration, elasticOutputStream);
 
@@ -68,7 +69,18 @@ public class FHIRBulkLocalIngestionSourceTest extends AbstractDataTest {
 			System.out.println(patient.toString());
 		}
 
-		assertEquals("Patient{roleId='b5201a4b-c8a9-4a2d-9fc3-08e2f6a3d8e0', dataset=null, gender=MALE, dob=2011-08-25, numEncounters=1, encounters=[ClinicalEncounter{conceptId='840539006', dateLong=1690277150000}]}",
+		assertEquals("Patient{roleId='b5201a4b-c8a9-4a2d-9fc3-08e2f6a3d8e0', dataset=null, gender=MALE, dob=2011-08-25, numEncounters=5, " +
+						"encounters=[" +
+						// 108600003 |Product containing atorvastatin (medicinal product)|
+						"ClinicalEncounter{conceptId='108600003', dateLong=1690265501000}, " +
+						// 708994009 |Removal of orthopedic wire from sternum (procedure)|
+						"ClinicalEncounter{conceptId='708994009', dateLong=1689401501000}, " +
+						// 840539006 |Disease caused by severe acute respiratory syndrome coronavirus 2 (disorder)|
+						"ClinicalEncounter{conceptId='840539006', dateLong=1690277150000}, " +
+						// 265271003 |Insertion of artificial eye (procedure)|
+						"ClinicalEncounter{conceptId='265271003', dateLong=1689401501000}, " +
+						// 19510001 |Diphenhydramine hydrochloride (substance)|
+						"ClinicalEncounter{conceptId='19510001', dateLong=1690263984000}]}",
 				getPatientString("b5201a4b-c8a9-4a2d-9fc3-08e2f6a3d8e0"));
 	}
 

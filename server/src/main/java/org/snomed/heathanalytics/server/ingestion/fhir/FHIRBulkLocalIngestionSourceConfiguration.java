@@ -10,12 +10,15 @@ public class FHIRBulkLocalIngestionSourceConfiguration implements HealthDataInge
 	private final File conditionFile;
 	private final File procedureFile;
 	private final File medicationRequestFile;
+	private final File serviceRequestFile;
 
-	public FHIRBulkLocalIngestionSourceConfiguration(File patientFile, File conditionFile, File procedureFile, File medicationRequestFile) {
+	public FHIRBulkLocalIngestionSourceConfiguration(File patientFile, File conditionFile, File procedureFile, File medicationRequestFile,
+			File serviceRequestFile) {
 		this.patientFile = patientFile;
 		this.conditionFile = conditionFile;
 		this.procedureFile = procedureFile;
 		this.medicationRequestFile = medicationRequestFile;
+		this.serviceRequestFile = serviceRequestFile;
 	}
 
 	public File getPatientFile() {
@@ -32,5 +35,9 @@ public class FHIRBulkLocalIngestionSourceConfiguration implements HealthDataInge
 
 	public File getMedicationRequestFile() {
 		return medicationRequestFile;
+	}
+
+	public File getServiceRequestFile() {
+		return serviceRequestFile;
 	}
 }

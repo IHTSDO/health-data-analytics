@@ -43,6 +43,7 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 			ingestConditions(stream, fhirConfiguration.getConditionFile());
 			ingestProcedures(stream, fhirConfiguration.getProcedureFile());
 			ingestMedicationRequests(stream, fhirConfiguration.getMedicationRequestFile());
+			ingestServiceRequests(stream, fhirConfiguration.getServiceRequestFile());
 		}
 	}
 
@@ -54,9 +55,8 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 		logger.info("Reading Patients from {}.", patientFile.getPath());
 		ObjectReader objectReader = objectMapper.readerFor(FHIRPatient.class);
 		Date start = new Date();
-		try {
+		try (MappingIterator<FHIRPatient> patientIterator = objectReader.readValues(patientFile)) {
 			long read = 0;
-			MappingIterator<FHIRPatient> patientIterator = objectReader.readValues(patientFile);
 			for (UnmodifiableIterator<List<FHIRPatient>> it = Iterators.partition(patientIterator, ES_WRITE_BATCH_SIZE); it.hasNext(); ) {
 				List<FHIRPatient> fhirPatients = it.next();
 				List<Patient> patients = new ArrayList<>();
@@ -84,10 +84,9 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 		logger.info("Reading Conditions from {}.", conditionFile.getPath());
 		ObjectReader objectReader = objectMapper.readerFor(FHIRCondition.class);
 		Date start = new Date();
-		try {
+		try (MappingIterator<FHIRCondition> conditionIterator = objectReader.readValues(conditionFile)) {
 			long active = 0;
 			long all = 0;
-			MappingIterator<FHIRCondition> conditionIterator = objectReader.readValues(conditionFile);
 			while (conditionIterator.hasNext()) {
 				FHIRCondition fhirCondition = conditionIterator.next();
 				String subjectId = FHIRHelper.getSubjectId(fhirCondition.getSubject());
@@ -120,10 +119,9 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 		logger.info("Reading Procedures from {}.", procedureFile.getPath());
 		ObjectReader objectReader = objectMapper.readerFor(FHIRProcedure.class);
 		Date start = new Date();
-		try {
+		try (MappingIterator<FHIRProcedure> procedureIterator = objectReader.readValues(procedureFile)) {
 			long active = 0;
 			long all = 0;
-			MappingIterator<FHIRProcedure> procedureIterator = objectReader.readValues(procedureFile);
 			while (procedureIterator.hasNext()) {
 				FHIRProcedure fhirProcedure = procedureIterator.next();
 				String subjectId = FHIRHelper.getSubjectId(fhirProcedure.getSubject());
@@ -156,10 +154,9 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 		logger.info("Reading MedicationRequests from {}.", medicationRequestFile.getPath());
 		ObjectReader objectReader = objectMapper.readerFor(FHIRMedicationRequest.class);
 		Date start = new Date();
-		try {
+		try (MappingIterator<FHIRMedicationRequest> medicationRequestMappingIterator = objectReader.readValues(medicationRequestFile)) {
 			long active = 0;
 			long all = 0;
-			MappingIterator<FHIRMedicationRequest> medicationRequestMappingIterator = objectReader.readValues(medicationRequestFile);
 			while (medicationRequestMappingIterator.hasNext()) {
 				FHIRMedicationRequest fhirMedicationRequest = medicationRequestMappingIterator.next();
 				String subjectId = FHIRHelper.getSubjectId(fhirMedicationRequest.getSubject());
@@ -181,6 +178,42 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 					NumberFormat.getNumberInstance().format(active), medicationRequestFile.getPath(), (new Date().getTime() - start.getTime()) / 1_000, all - active);
 		} catch (IOException e) {
 			logger.error("Failed to read values from {}.", medicationRequestFile.getAbsolutePath(), e);
+		}
+	}
+
+	private void ingestServiceRequests(HealthDataOutputStream healthDataOutputStream, File serviceRequestFile) {
+		if (serviceRequestFile == null) {
+			logger.info("No ServiceRequests file supplied.");
+			return;
+		}
+		logger.info("Reading ServiceRequests from {}.", serviceRequestFile.getPath());
+		ObjectReader objectReader = objectMapper.readerFor(FHIRServiceRequest.class);
+		Date start = new Date();
+		try (MappingIterator<FHIRServiceRequest> serviceRequestIterator = objectReader.readValues(serviceRequestFile)) {
+			long active = 0;
+			long all = 0;
+			while (serviceRequestIterator.hasNext()) {
+				FHIRServiceRequest fhirServiceRequest = serviceRequestIterator.next();
+				String subjectId = FHIRHelper.getSubjectId(fhirServiceRequest.getSubject());
+				if (fhirServiceRequest.isCompleteOrLikelyComplete() && subjectId != null) {
+					String conceptId = getSnomedCode(fhirServiceRequest.getCode());
+					Date occurrenceDateOrBestGuess = fhirServiceRequest.getOccurrenceDateOrBestGuess();
+					if (conceptId != null && occurrenceDateOrBestGuess != null) {
+						ClinicalEncounter encounter = new ClinicalEncounter(occurrenceDateOrBestGuess, parseLong(conceptId));
+						healthDataOutputStream.addClinicalEncounter(subjectId, encounter);
+						active++;
+						if (active % 1_000 == 0) {
+							logger.info("Consumed {} ServiceRequests into store.", NumberFormat.getNumberInstance().format(active));
+						}
+					}
+				}
+				all++;
+			}
+
+			logger.info("Consumed {} ServiceRequests from {} in {} seconds. {} were inactive, not confirmed or not SNOMED CT codes so were discarded.",
+					NumberFormat.getNumberInstance().format(active), serviceRequestFile.getPath(), (new Date().getTime() - start.getTime()) / 1_000, all - active);
+		} catch (IOException e) {
+			logger.error("Failed to read values from {}.", serviceRequestFile.getAbsolutePath(), e);
 		}
 	}
 

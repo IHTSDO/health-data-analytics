@@ -116,6 +116,7 @@ public class Application extends Config implements ApplicationRunner {
 		File conditionFile = null;
 		File procedureFile = null;
 		File medicationRequestFile = null;
+		File serviceRequestFile = null;
 		for (File file : files) {
 			if (file.getName().startsWith("Patient")) {
 				patientFile = file;
@@ -125,11 +126,13 @@ public class Application extends Config implements ApplicationRunner {
 				procedureFile = file;
 			} else if (file.getName().startsWith("MedicationRequest")) {
 				medicationRequestFile = file;
+			} else if (file.getName().startsWith("ServiceRequest")) {
+				serviceRequestFile = file;
 			}
 		}
 
 		new FHIRBulkLocalIngestionSource(objectMapper()).stream(
-				new FHIRBulkLocalIngestionSourceConfiguration(patientFile, conditionFile, procedureFile, medicationRequestFile),
+				new FHIRBulkLocalIngestionSourceConfiguration(patientFile, conditionFile, procedureFile, medicationRequestFile, serviceRequestFile),
 				elasticOutputStream);
 	}
 

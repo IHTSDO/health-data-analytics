@@ -65,9 +65,9 @@ public class StatisticTestingIntegrationTest extends AbstractDataTest {
 		// 51234001 |Paracetamol|
 		paracetamol = createConcept("51234001", allConcepts);
 
-		Mockito.when(snomedService.getConceptIds("<<38341003")).thenReturn(Collections.singletonList(38341003L));
-		Mockito.when(snomedService.getConceptIds("<<51234001")).thenReturn(Collections.singletonList(51234001L));
-		Mockito.when(snomedService.getConceptIds("<<22298006")).thenReturn(List.of(22298006L, 304914007L));
+		Mockito.when(snomedService.getConceptIds("<<38341003")).thenReturn(Collections.singletonList("38341003"));
+		Mockito.when(snomedService.getConceptIds("<<51234001")).thenReturn(Collections.singletonList("51234001"));
+		Mockito.when(snomedService.getConceptIds("<<22298006")).thenReturn(List.of("22298006", "304914007"));
 
 		//
 		// Set up some data for this test

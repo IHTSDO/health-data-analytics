@@ -55,7 +55,7 @@ public class LocalFileNDJsonIngestionIntegrationTest extends AbstractDataTest {
 		assertEquals(getUTCTime(1974, Calendar.MAY, 28, 0, 0, 0), patient.getDob());
 		assertEquals(1, patient.getEncounters().size());
 		ClinicalEncounter encounter = patient.getEncounters().iterator().next();
-		assertEquals(195957006L, encounter.getConceptId());
+		assertEquals("195957006", encounter.getConceptId());
 		assertEquals(getUTCTime(2017, Calendar.SEPTEMBER, 10, 11, 0, 11), encounter.getDate());
 		String conceptDate = "195957006," + encounter.getDate().getTime();
 		assertEquals(conceptDate, encounter.getConceptDate());

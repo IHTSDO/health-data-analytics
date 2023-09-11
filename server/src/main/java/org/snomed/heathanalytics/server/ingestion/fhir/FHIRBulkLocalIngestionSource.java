@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import static java.lang.Long.parseLong;
-
 public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 
 	private final ObjectMapper objectMapper;
@@ -93,7 +91,7 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 				if (fhirCondition.isConfirmedActive() && subjectId != null) {
 					String conceptId = getSnomedCode(fhirCondition.getCode());
 					if (conceptId != null && fhirCondition.getOnsetDateTime() != null) {
-						ClinicalEncounter encounter = new ClinicalEncounter(fhirCondition.getOnsetDateTime(), parseLong(conceptId));
+						ClinicalEncounter encounter = new ClinicalEncounter(fhirCondition.getOnsetDateTime(), conceptId);
 						healthDataOutputStream.addClinicalEncounter(subjectId, encounter);
 						active++;
 						if (active % 1_000 == 0) {
@@ -128,7 +126,7 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 				if (fhirProcedure.isComplete() && subjectId != null) {
 					String conceptId = getSnomedCode(fhirProcedure.getCode());
 					if (conceptId != null && fhirProcedure.getStartDate() != null) {
-						ClinicalEncounter encounter = new ClinicalEncounter(fhirProcedure.getStartDate(), parseLong(conceptId));
+						ClinicalEncounter encounter = new ClinicalEncounter(fhirProcedure.getStartDate(), conceptId);
 						healthDataOutputStream.addClinicalEncounter(subjectId, encounter);
 						active++;
 						if (active % 1_000 == 0) {
@@ -163,7 +161,7 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 				if (fhirMedicationRequest.isActiveOrCompletedOrder() && subjectId != null) {
 					String conceptId = getSnomedCode(fhirMedicationRequest.getMedicationCodeableConcept());
 					if (conceptId != null && fhirMedicationRequest.getAuthoredOn() != null) {
-						ClinicalEncounter encounter = new ClinicalEncounter(fhirMedicationRequest.getAuthoredOn(), parseLong(conceptId));
+						ClinicalEncounter encounter = new ClinicalEncounter(fhirMedicationRequest.getAuthoredOn(), conceptId);
 						healthDataOutputStream.addClinicalEncounter(subjectId, encounter);
 						active++;
 						if (active % 1_000 == 0) {
@@ -199,7 +197,7 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 					String conceptId = getSnomedCode(fhirServiceRequest.getCode());
 					Date occurrenceDateOrBestGuess = fhirServiceRequest.getOccurrenceDateOrBestGuess();
 					if (conceptId != null && occurrenceDateOrBestGuess != null) {
-						ClinicalEncounter encounter = new ClinicalEncounter(occurrenceDateOrBestGuess, parseLong(conceptId));
+						ClinicalEncounter encounter = new ClinicalEncounter(occurrenceDateOrBestGuess, conceptId);
 						healthDataOutputStream.addClinicalEncounter(subjectId, encounter);
 						active++;
 						if (active % 1_000 == 0) {

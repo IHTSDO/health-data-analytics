@@ -39,6 +39,6 @@ public class PatientRepositoryTest extends AbstractDataTest {
 		ClinicalEncounter encounter = encounters.iterator().next();
 		assertEquals(new GregorianCalendar(2000, Calendar.JULY, 5, 10, 15).getTime().getTime(), encounter.getDateLong());
 		assertEquals(new GregorianCalendar(2000, Calendar.JULY, 5, 10, 15).getTime(), encounter.getDate());
-		assertEquals(123123L, encounter.getConceptId());
+		assertEquals("123123", encounter.getConceptId());
 	}
 }

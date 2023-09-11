@@ -1,6 +1,5 @@
 package org.snomed.heathanalytics.server.service;
 
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.RangeQueryBuilder;
@@ -80,7 +79,7 @@ public class PatientQueryService {
 		List<EncounterCriterion> encounterCriteria = patientCriteria.getEncounterCriteria();
 
 		// Fetch conceptIds of each criterion
-		Map<String, List<Long>> eclToConceptsMap = new HashMap<>();
+		Map<String, List<String>> eclToConceptsMap = new HashMap<>();
 		List<EncounterCriterion> allEncounterCriteria = new ArrayList<>(encounterCriteria);
 		List<CohortCriteria> exclusionCriteria = patientCriteria.getExclusionCriteria();
 		exclusionCriteria.forEach(excludeCohort -> allEncounterCriteria.addAll(excludeCohort.getEncounterCriteria()));
@@ -106,7 +105,7 @@ public class PatientQueryService {
 		}
 		patientQuery.filter(filterBoolBuilder);
 
-		Map<Long, TermHolder> conceptTerms = new Long2ObjectOpenHashMap<>();
+		Map<String, TermHolder> conceptTerms = new HashMap<>();
 		PageRequest pageable = PageRequest.of(page, size);
 		NativeSearchQueryBuilder patientElasticQuery = new NativeSearchQueryBuilder()
 				.withQuery(patientQuery)
@@ -114,9 +113,9 @@ public class PatientQueryService {
 
 		List<EncounterCriterion> encounterCriteriaWithCPTAnalysis = encounterCriteria.stream().filter(EncounterCriterion::isIncludeCPTAnalysis).collect(Collectors.toList());
 		if (!encounterCriteriaWithCPTAnalysis.isEmpty()) {
-			Set<Long> includeConcepts = new HashSet<>();
+			Set<String> includeConcepts = new HashSet<>();
 			for (EncounterCriterion criterion : encounterCriteriaWithCPTAnalysis) {
-				List<Long> concepts = eclToConceptsMap.get(criterion.getConceptECL());
+				List<String> concepts = eclToConceptsMap.get(criterion.getConceptECL());
 				includeConcepts.addAll(concepts);
 			}
 			Map<String, Object> params = new HashMap<>();
@@ -125,18 +124,11 @@ public class PatientQueryService {
 					AggregationBuilders.scriptedMetric("encounterConceptCounts")
 							.initScript(new Script(ScriptType.INLINE, "painless",
 									"state.concepts = new HashMap();" +
-									// Force elements of includeConcepts set to be of type Long.
-									// Elasticsearch converts number params to the smallest number type which we don't want.
-									"Set forceLongSet = new HashSet();" +
-									"for (def includeConcept : params.includeConcepts) {" +
-									"	forceLongSet.add((Long) includeConcept);" +
-									"}" +
-									"state.includeConcepts = forceLongSet;", params))
+									"state.includeConcepts = params.includeConcepts;", params))
 							.mapScript(new Script(
 									"Map concepts = state.concepts;" +
-									"for (Long conceptIdLong : doc['encounters.conceptId']) {" +
-									"	if (state.includeConcepts.contains(conceptIdLong)) {" +
-									"		String conceptId = conceptIdLong.toString();" +
+									"for (String conceptId : doc['encounters.conceptId.keyword']) {" +
+									"	if (state.includeConcepts.contains(conceptId)) {" +
 									"		if (concepts.containsKey(conceptId)) {" +
 									"			long count = concepts.get(conceptId).longValue() + 1L;" +
 									"			concepts.put(conceptId, count);" +
@@ -198,18 +190,6 @@ public class PatientQueryService {
 			patient.getEncounters().forEach(encounter ->
 					encounter.setConceptTerm(conceptTerms.computeIfAbsent(encounter.getConceptId(), conceptId -> new TermHolder())));
 		});
-		if (!conceptTerms.isEmpty()) {
-			for (Long conceptId : conceptTerms.keySet()) {
-				//catch every look up exception, otherwise no concept id will be found after first error
-//				try {
-//					conceptTerms.get(conceptId).setTerm(
-//							snomedService.findConcept(conceptId.toString()).getFsn()
-//					);
-//				} catch (ServiceException e) {
-//				}
-			}
-			timer.split("Fetching concept terms");
-		}
 		logger.info("Times: {}", timer.getTimes());
 		return patients;
 	}
@@ -278,14 +258,14 @@ public class PatientQueryService {
 		return patientQuery;
 	}
 
-	private BoolQueryBuilder getPatientEncounterFilter(List<EncounterCriterion> encounterCriteria, Map<String, List<Long>> eclToConceptsMap) throws ServiceException {
+	private BoolQueryBuilder getPatientEncounterFilter(List<EncounterCriterion> encounterCriteria, Map<String, List<String>> eclToConceptsMap) throws ServiceException {
 		BoolQueryBuilder patientFilter = boolQuery();
 
 		// Fetch conceptIds of each criterion
 		for (EncounterCriterion criterion : encounterCriteria) {
 			String criterionEcl = getGivenOrSubsetEcl(criterion);
 			if (criterionEcl != null) {
-				List<Long> conceptIds = eclToConceptsMap.get(criterionEcl);
+				List<String> conceptIds = eclToConceptsMap.get(criterionEcl);
 				BoolQueryBuilder encounterQuery = boolQuery();
 				encounterQuery.must(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
 				if (criterion.getMinDate() != null || criterion.getMaxDate() != null) {
@@ -375,7 +355,7 @@ public class PatientQueryService {
 					"	List dates = new ArrayList();" +
 					"	for (String conceptDateString : doc['encounters.conceptDate.keyword']) {" +
 					"		int commaIndex = conceptDateString.indexOf(',');" +
-					"		long candidateEncounterConceptId = Long.parseLong(conceptDateString.substring(0, commaIndex));" +
+					"		String candidateEncounterConceptId = conceptDateString.substring(0, commaIndex);" +
 					"		long candidateEncounterDate = Long.parseLong(conceptDateString.substring(commaIndex + 1));" +
 					"		if (criterionConceptIds.contains(candidateEncounterConceptId)) {" +
 					"			dates.add(candidateEncounterDate);" +
@@ -437,12 +417,6 @@ public class PatientQueryService {
 					"for (def criterionMap : criterionMapsList) {" +
 //					"	Debug.explain('criterionMapsList:' + criterionMapsList);" +
 					"	List criterionConceptIds = params.eclToConceptsMap.get(criterionMap.get('conceptECL'));" +
-						// Force elements of criterionConceptIds to be long. Elasticsearch converts number params to the smallest number type which we don't want.
-					"	List forceLongList = new ArrayList();" +
-					"	for (def criterionConceptId : criterionConceptIds) {" +
-					"		forceLongList.add(((Long) criterionConceptId).longValue());" +
-					"	}" +
-					"	criterionConceptIds = forceLongList;" +
 					"" +
 					"	long minDate = -1;" +
 					"	long maxDate = -1;" +
@@ -474,7 +448,7 @@ public class PatientQueryService {
 					"	for (String conceptDateString : doc['encounters.conceptDate.keyword']) {" +
 					"		if (encounterMatchFound == false) {" +
 					"			int commaIndex = conceptDateString.indexOf(',');" +
-					"			long encounterConceptId = Long.parseLong(conceptDateString.substring(0, commaIndex));" +
+					"			String encounterConceptId = conceptDateString.substring(0, commaIndex);" +
 					"			long encounterDate = Long.parseLong(conceptDateString.substring(commaIndex + 1));" +
 					"			if (criterionConceptIds.contains(encounterConceptId)) {" +
 					"				if ((minDate == -1 || encounterDate >= minDate)" +

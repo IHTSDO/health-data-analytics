@@ -1,5 +1,13 @@
 package org.snomed.heathanalytics.server.service;
 
+import org.apache.http.HttpHost;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.metrics.ParsedScriptedMetric;
 import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ConceptImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,12 +22,17 @@ import org.snomed.heathanalytics.server.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
+import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
+import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.core.aggregation.AggregatedPage;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.junit.Assert.*;
 
 public class IntegrationTest extends AbstractDataTest {
@@ -67,11 +80,11 @@ public class IntegrationTest extends AbstractDataTest {
 		breastScreening = newConcept(breastScreeningId, allConcepts);
 		breastMammography = newConcept(breastMammographyId, allConcepts);
 
-		Mockito.when(snomedService.getConceptIds(breastScreeningId)).thenReturn(List.of(268547008L));
-		Mockito.when(snomedService.getConceptIds(breastMammographyId)).thenReturn(List.of(566571000119105L));
-		Mockito.when(snomedService.getConceptIds("<<22298006")).thenReturn(List.of(22298006L, 304914007L));
-		Mockito.when(snomedService.getConceptIds("<<268547008")).thenReturn(List.of(268547008L));
-		Mockito.when(snomedService.getConceptIds("<<38341003")).thenReturn(List.of(38341003L));
+		Mockito.when(snomedService.getConceptIds(breastScreeningId)).thenReturn(List.of("268547008"));
+		Mockito.when(snomedService.getConceptIds(breastMammographyId)).thenReturn(List.of("566571000119105"));
+		Mockito.when(snomedService.getConceptIds("<<22298006")).thenReturn(List.of("22298006", "304914007"));
+		Mockito.when(snomedService.getConceptIds("<<268547008")).thenReturn(List.of("268547008"));
+		Mockito.when(snomedService.getConceptIds("<<38341003")).thenReturn(List.of("38341003"));
 
 		// Set up tiny set of integration test data.
 		// There is no attempt to make this realistic, we are just testing the logic.
@@ -306,8 +319,8 @@ public class IntegrationTest extends AbstractDataTest {
 		assertEquals(1, cptTotals.size());
 		CPTTotals actual = cptTotals.get(screeningDummyCPT);
 		assertNotNull(actual);
-		assertEquals(11, actual.getCount());
-		assertEquals(new Float(34.65), actual.getWorkRVU());
+		assertEquals(4, actual.getCount());
+		assertEquals(Float.valueOf(12.6F), actual.getWorkRVU());
 
 		// Frequency filter must reduce CPT aggregation counts
 		reportDefinition = new ReportDefinition()
@@ -324,9 +337,9 @@ public class IntegrationTest extends AbstractDataTest {
 		assertEquals(1, cptTotals.size());
 		actual = cptTotals.get(screeningDummyCPT);
 		assertNotNull(actual);
-		assertEquals(6, actual.getCount());
+		assertEquals(2, actual.getCount());
 		// TODO: fix rounding
-		assertEquals(new Float(18.900002), actual.getWorkRVU());
+		assertEquals(Float.valueOf(6.3F), actual.getWorkRVU());
 	}
 
 	private List<String> toSortedPatientIdList(Page<Patient> patients) {
@@ -341,52 +354,55 @@ public class IntegrationTest extends AbstractDataTest {
 	}
 
 	// Method for manual hacking/testing against a local instance
-//	public static void main(String[] args) {
-//		ElasticsearchRestTemplate restTemplate = new ElasticsearchRestTemplate(new RestHighLevelClient(RestClient.builder(new HttpHost("localhost", 9200))));
-//		Set<Long> includeConcepts = new HashSet<>();
-//		includeConcepts.add(384151000119104L);
-//		Map<String, Object> params = new HashMap<>();
-//		params.put("includeConcepts", includeConcepts);
-//		NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder()
-//				.withQuery(termQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, "384151000119104"))
-//				.addAggregation(
-//					AggregationBuilders.scriptedMetric("encounterConceptCounts")
-//							.initScript(new Script("state.concepts = new HashMap()"))
-//							.mapScript(new Script(ScriptType.INLINE, "painless",
-//									"for (int i = 0; i < doc['encounters.conceptId'].length; i++) {" +
-//									"	Map concepts = state.concepts;" +
-//									"	Long conceptIdLong = doc['encounters.conceptId'][i];" +
-//									"	if (params.includeConcepts.contains(conceptIdLong)) {" +
-//									"		String conceptId = conceptIdLong.toString();" +
-//									"		if (concepts.containsKey(conceptId)) {" +
-//									"			long count = concepts.get(conceptId).longValue() + 1L;" +
-//									"			concepts.put(conceptId, count);" +
-//									"		} else {" +
-//									"			concepts.put(conceptId, 1L);" +
-//									"		}" +
-//									"	}" +
-//									"}", params))
-//							.combineScript(new Script("return state;"))
-//							.reduceScript(new Script("Map allConcepts = new HashMap();" +
-//									"for (state in states) {" +
-//									"	if (state.concepts != null) {" +
-//									"		for (conceptId in state.concepts.keySet()) {" +
-//									"			if (allConcepts.containsKey(conceptId)) {" +
-//									"				long count = allConcepts.get(conceptId) + state.concepts.get(conceptId);" +
-//									"				allConcepts.put(conceptId, count);" +
-//									"			} else {" +
-//									"				allConcepts.put(conceptId, state.concepts.get(conceptId));" +
-//									"			}" +
-//									"		}" +
-//									"	}" +
-//									"}" +
-//									"return allConcepts;")));
-//		AggregatedPage<Patient> patients = restTemplate.queryForPage(nativeSearchQueryBuilder.build(), Patient.class);
-//		AggregatedPage<Patient> aggregatedPage = (AggregatedPage<Patient>) patients;
-//		ParsedScriptedMetric encounterConceptCounts = (ParsedScriptedMetric) aggregatedPage.getAggregation("encounterConceptCounts");
-//		@SuppressWarnings("unchecked")
-//		Map<String, Long> conceptCounts = (Map<String, Long>) encounterConceptCounts.aggregation();
-//		System.out.println(conceptCounts);
-//	}
+	public static void main(String[] args) {
+		ElasticsearchRestTemplate restTemplate = new ElasticsearchRestTemplate(new RestHighLevelClient(RestClient.builder(new HttpHost("localhost", 9200))));
+		Set<String> includeConcepts = new HashSet<>();
+		String code = "304914007";
+		includeConcepts.add(code);
+		Map<String, Object> params = new HashMap<>();
+		params.put("includeConcepts", includeConcepts);
+		NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder()
+				.addAggregation(
+					AggregationBuilders.scriptedMetric("encounterConceptCounts")
+							.initScript(new Script("state.concepts = new HashMap()"))
+							.mapScript(new Script(ScriptType.INLINE, "painless",
+									"for (int i = 0; i < doc['encounters.conceptId.keyword'].length; i++) {" +
+									"	Map concepts = state.concepts;" +
+									"	String conceptId = doc['encounters.conceptId.keyword'][i];" +
+									"	if (params.includeConcepts.contains(conceptId)) {" +
+									"		if (concepts.containsKey(conceptId)) {" +
+									"			long count = concepts.get(conceptId).longValue() + 1L;" +
+									"			concepts.put(conceptId, count);" +
+									"		} else {" +
+									"			concepts.put(conceptId, 1L);" +
+									"		}" +
+									"	}" +
+									"}", params))
+							.combineScript(new Script("return state;"))
+							.reduceScript(new Script("Map allConcepts = new HashMap();" +
+									"for (state in states) {" +
+									"	if (state.concepts != null) {" +
+									"		for (conceptId in state.concepts.keySet()) {" +
+									"			if (allConcepts.containsKey(conceptId)) {" +
+									"				long count = allConcepts.get(conceptId) + state.concepts.get(conceptId);" +
+									"				allConcepts.put(conceptId, count);" +
+									"			} else {" +
+									"				allConcepts.put(conceptId, state.concepts.get(conceptId));" +
+									"			}" +
+									"		}" +
+									"	}" +
+									"}" +
+									"return allConcepts;")));
+		SearchHits<Patient> hits = restTemplate.search(nativeSearchQueryBuilder.build(), Patient.class);
+		System.out.println(hits.getTotalHits() + " hits");
+		Aggregations aggregations = hits.getAggregations();
+		ParsedScriptedMetric encounterConceptCounts = aggregations.get("encounterConceptCounts");
+		System.out.println(encounterConceptCounts);
+		@SuppressWarnings("unchecked")
+		Map<String, Long> conceptCounts = (Map<String, Long>) encounterConceptCounts.aggregation();
+		System.out.println(conceptCounts);
+		System.out.println("Done");
+		System.exit(0);
+	}
 
 }

@@ -8,16 +8,17 @@ import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Objects;
 
-public class ClinicalEncounter {
+public class ClinicalEncounter implements Comparable<ClinicalEncounter> {
 
 	@Field(type = FieldType.Long)
 	private long dateLong;
 
 	@Field(type = FieldType.Keyword)
-	private Long conceptId;
+	private String conceptId;
 
 	@Field(type = FieldType.Keyword)
 	private String conceptDate;
@@ -25,16 +26,23 @@ public class ClinicalEncounter {
 	@Transient
 	private TermHolder conceptTerm;
 
+	private static final Comparator<ClinicalEncounter> CLINICAL_ENCOUNTER_COMPARATOR =
+			Comparator.comparing(ClinicalEncounter::getDate).thenComparing(ClinicalEncounter::getConceptId);
+
 	public interface Fields {
 		String ROLE_ID = "roleId";
 		String DATE_LONG = "dateLong";
-		String CONCEPT_ID = "conceptId";
+		String CONCEPT_ID = "conceptId.keyword";
 	}
 
 	public ClinicalEncounter() {
 	}
 
 	public ClinicalEncounter(Date date, Long conceptId) {
+		this(date, conceptId.toString());
+	}
+
+	public ClinicalEncounter(Date date, String conceptId) {
 		dateLong = date.getTime();
 		this.conceptId = conceptId;
 		updateConceptDate();
@@ -45,7 +53,7 @@ public class ClinicalEncounter {
 	}
 
 	public ClinicalEncounter(Calendar date, Long conceptId) {
-		this(date.getTime(), conceptId);
+		this(date.getTime(), conceptId.toString());
 	}
 
 	@JsonView(View.Elasticsearch.class)
@@ -68,11 +76,11 @@ public class ClinicalEncounter {
 	}
 
 	@JsonView({View.API.class, View.Elasticsearch.class})
-	public Long getConceptId() {
+	public String getConceptId() {
 		return conceptId;
 	}
 
-	public void setConceptId(Long conceptId) {
+	public void setConceptId(String conceptId) {
 		this.conceptId = conceptId;
 	}
 
@@ -92,6 +100,11 @@ public class ClinicalEncounter {
 
 	public void setConceptTerm(TermHolder conceptTerm) {
 		this.conceptTerm = conceptTerm;
+	}
+
+	@Override
+	public int compareTo(ClinicalEncounter other) {
+		return CLINICAL_ENCOUNTER_COMPARATOR.compare(this, other);
 	}
 
 	@Override

@@ -26,7 +26,7 @@ public class SnomedService {
 
 	private final IGenericClient fhirClient;
 
-	private final Map<String, List<Long>> eclResultsCache;
+	private final Map<String, List<String>> eclResultsCache;
 
 	@Value("${fhir.codesystem.snomed.uri}")
 	private String snomedCodeSystemUri;
@@ -38,23 +38,23 @@ public class SnomedService {
 		eclResultsCache = new HashMap<>();
 	}
 
-	public List<Long> getConceptIds(String ecl) throws ServiceException {
+	public List<String> getConceptIds(String ecl) throws ServiceException {
 		System.out.println("_getConceptIds " + ecl);
 
-		List<Long> results = eclResultsCache.get(ecl);
+		List<String> results = eclResultsCache.get(ecl);
 		if (results != null) {
 			return results;
 		} else {
 			synchronized (eclResultsCache) {
 				try {
 					// Grab all concept codes
-					List<Long> newResults = new LongArrayList();
+					List<String> newResults = new ArrayList<>();
 					valueSetExpand(
 							ecl,
 							0,
 							10_000,// No standardised pagination mechanism, grab first 10K for now
 							null,
-							stream -> stream.map(ValueSet.ValueSetExpansionContainsComponent::getCode).map(Long::parseLong).forEach(newResults::add));
+							stream -> stream.map(ValueSet.ValueSetExpansionContainsComponent::getCode).forEach(newResults::add));
 					eclResultsCache.put(ecl, newResults);
 					return newResults;
 				} catch (BaseServerResponseException exception) {

@@ -1,7 +1,7 @@
 package org.snomed.heathanalytics.model;
 
 public enum Gender {
-	MALE, FEMALE;
+	MALE, FEMALE, UNKNOWN;
 
 	public static Gender from(String g) {
 		for (Gender gender : Gender.values()) {

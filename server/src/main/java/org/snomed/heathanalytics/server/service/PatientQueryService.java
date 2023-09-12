@@ -354,7 +354,7 @@ public class PatientQueryService {
 						// Find all encounters for this patient with a matching conceptId
 					"	List dates = new ArrayList();" +
 					"	for (String conceptDateString : doc['encounters.conceptDate.keyword']) {" +
-					"		int commaIndex = conceptDateString.indexOf(',');" +
+					"		int commaIndex = conceptDateString.lastIndexOf(',');" +
 					"		String candidateEncounterConceptId = conceptDateString.substring(0, commaIndex);" +
 					"		long candidateEncounterDate = Long.parseLong(conceptDateString.substring(commaIndex + 1));" +
 					"		if (criterionConceptIds.contains(candidateEncounterConceptId)) {" +
@@ -447,7 +447,7 @@ public class PatientQueryService {
 					"	boolean encounterMatchFound = false;" +
 					"	for (String conceptDateString : doc['encounters.conceptDate.keyword']) {" +
 					"		if (encounterMatchFound == false) {" +
-					"			int commaIndex = conceptDateString.indexOf(',');" +
+					"			int commaIndex = conceptDateString.lastIndexOf(',');" +
 					"			String encounterConceptId = conceptDateString.substring(0, commaIndex);" +
 					"			long encounterDate = Long.parseLong(conceptDateString.substring(commaIndex + 1));" +
 					"			if (criterionConceptIds.contains(encounterConceptId)) {" +

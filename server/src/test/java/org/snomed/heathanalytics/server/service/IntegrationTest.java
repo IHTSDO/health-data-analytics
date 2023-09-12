@@ -52,11 +52,13 @@ public class IntegrationTest extends AbstractDataTest {
 	@Autowired
 	private CPTService cptService;
 
+	private final String hypertensionCode = "38341003";
 	private ConceptImpl hypertension;
 	private ConceptImpl myocardialInfarction;
 	private ConceptImpl acuteQWaveMyocardialInfarction;
 	private ConceptImpl breastScreening;
 	private ConceptImpl breastMammography;
+	private final String hypertensionDueToCongenitalAdrenalHyperplasiaExpression = hypertensionCode + ":{363713009=35105006,363714003=75367002},{42752001=237751000}";
 	private final String breastScreeningId = "268547008";
 	private final String breastMammographyId = "566571000119105";
 
@@ -66,7 +68,7 @@ public class IntegrationTest extends AbstractDataTest {
 		List<ConceptImpl> allConcepts = new ArrayList<>();
 
 		// 38341003 |Hypertensive disorder, systemic arterial (disorder)|
-		hypertension = newConcept("38341003", allConcepts);
+		hypertension = newConcept(hypertensionCode, allConcepts);
 
 		// 22298006 |Myocardial infarction (disorder)|
 		myocardialInfarction = newConcept("22298006", allConcepts);
@@ -84,7 +86,7 @@ public class IntegrationTest extends AbstractDataTest {
 		Mockito.when(snomedService.getConceptIds(breastMammographyId)).thenReturn(List.of("566571000119105"));
 		Mockito.when(snomedService.getConceptIds("<<22298006")).thenReturn(List.of("22298006", "304914007"));
 		Mockito.when(snomedService.getConceptIds("<<268547008")).thenReturn(List.of("268547008"));
-		Mockito.when(snomedService.getConceptIds("<<38341003")).thenReturn(List.of("38341003"));
+		Mockito.when(snomedService.getConceptIds("<<" + hypertensionCode)).thenReturn(List.of(hypertensionCode, hypertensionDueToCongenitalAdrenalHyperplasiaExpression));
 
 		// Set up tiny set of integration test data.
 		// There is no attempt to make this realistic, we are just testing the logic.
@@ -102,7 +104,7 @@ public class IntegrationTest extends AbstractDataTest {
 		// has hypertension. No other recorded disorders.
 		healthDataStream.createPatient(
 				new Patient("2", TestUtils.getDob(40), Gender.MALE)
-						.addEncounter(new ClinicalEncounter(TestUtils.date(2010, 5, 1), hypertension.getId()))
+						.addEncounter(new ClinicalEncounter(TestUtils.date(2010, 5, 1), hypertensionDueToCongenitalAdrenalHyperplasiaExpression))
 		);
 
 

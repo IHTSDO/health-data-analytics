@@ -2,7 +2,7 @@ package org.snomed.heathanalytics.server.rest;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.snomed.heathanalytics.model.ClinicalEncounter;
+import org.snomed.heathanalytics.model.ClinicalEvent;
 import org.snomed.heathanalytics.server.model.CohortCriteria;
 import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.server.service.PatientQueryService;
@@ -31,9 +31,9 @@ public class CohortController {
 											@RequestParam(required = false, defaultValue = "100") int size) throws ServiceException {
 		Page<Patient> patients = patientQueryService.fetchCohort(cohortCriteria, page, size);
 		for (Patient patient : patients.getContent()) {
-			TreeSet<ClinicalEncounter> encounters = new TreeSet<>(Comparator.comparing(ClinicalEncounter::getDate).thenComparing(ClinicalEncounter::getConceptId));
-			encounters.addAll(patient.getEncounters());
-			patient.setEncounters(encounters);
+			TreeSet<ClinicalEvent> events = new TreeSet<>(Comparator.comparing(ClinicalEvent::getDate).thenComparing(ClinicalEvent::getConceptId));
+			events.addAll(patient.getEvents());
+			patient.setEvents(events);
 		}
 		return patients;
 	}

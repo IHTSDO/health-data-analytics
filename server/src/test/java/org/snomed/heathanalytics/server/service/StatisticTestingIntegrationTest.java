@@ -4,14 +4,14 @@ import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ConceptImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.snomed.heathanalytics.model.ClinicalEncounter;
+import org.snomed.heathanalytics.model.ClinicalEvent;
 import org.snomed.heathanalytics.model.Gender;
 import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.server.AbstractDataTest;
 import org.snomed.heathanalytics.server.TestUtils;
 import org.snomed.heathanalytics.server.ingestion.elasticsearch.ElasticOutputStream;
 import org.snomed.heathanalytics.server.model.CohortCriteria;
-import org.snomed.heathanalytics.server.model.EncounterCriterion;
+import org.snomed.heathanalytics.server.model.EventCriterion;
 import org.snomed.heathanalytics.server.model.StatisticalCorrelationReport;
 import org.snomed.heathanalytics.server.model.StatisticalCorrelationReportDefinition;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,58 +75,58 @@ public class StatisticTestingIntegrationTest extends AbstractDataTest {
 
 		// 1 patient without hypertension and with heart attack
 		Patient patient = createPatient("1");
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2015, 2, 1), acuteQWaveMyocardialInfarction.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2015, 2, 1), acuteQWaveMyocardialInfarction.getId()));
 
 		// 2 patients with hypertension and no Paracetamol and no heart attack
 		patient = createPatient("2");
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2017, 0, 10), hypertension.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2017, 0, 10), hypertension.getId()));
 		patient = createPatient("3");
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2017, 0, 15), hypertension.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2017, 0, 15), hypertension.getId()));
 
 		// 4 patients with hypertension and no Paracetamol and subsequent heart attack
 		patient = createPatient("4");
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2015, 0, 1), hypertension.getId()));
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2017, 0, 1), acuteQWaveMyocardialInfarction.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2015, 0, 1), hypertension.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2017, 0, 1), acuteQWaveMyocardialInfarction.getId()));
 		patient = createPatient("5");
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2016, 0, 1), hypertension.getId()));
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2017, 0, 1), acuteQWaveMyocardialInfarction.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2016, 0, 1), hypertension.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2017, 0, 1), acuteQWaveMyocardialInfarction.getId()));
 		patient = createPatient("6");
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2015, 5, 1), hypertension.getId()));
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2017, 2, 1), acuteQWaveMyocardialInfarction.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2015, 5, 1), hypertension.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2017, 2, 1), acuteQWaveMyocardialInfarction.getId()));
 		patient = createPatient("7");
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2015, 1, 1), hypertension.getId()));
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2017, 1, 1), acuteQWaveMyocardialInfarction.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2015, 1, 1), hypertension.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2017, 1, 1), acuteQWaveMyocardialInfarction.getId()));
 
 		// 3 patients with hypertension and Paracetamol and no heart attack
 		patient = createPatient("8");
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2017, 0, 10), hypertension.getId()));
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2017, 3, 10), paracetamol.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2017, 0, 10), hypertension.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2017, 3, 10), paracetamol.getId()));
 		patient = createPatient("9");
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2017, 0, 15), hypertension.getId()));
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2017, 3, 10), paracetamol.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2017, 0, 15), hypertension.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2017, 3, 10), paracetamol.getId()));
 		patient = createPatient("10");
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2015, 0, 1), hypertension.getId()));
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2017, 3, 10), paracetamol.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2015, 0, 1), hypertension.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2017, 3, 10), paracetamol.getId()));
 
 		// 2 patients with hypertension, diabetes and Paracetamol and subsequent heart attack
 		patient = createPatient("11");
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2016, 0, 1), hypertension.getId()));
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2016, 0, 1), diabetes.getId()));
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2016, 3, 10), paracetamol.getId()));
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2017, 0, 1), acuteQWaveMyocardialInfarction.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2016, 0, 1), hypertension.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2016, 0, 1), diabetes.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2016, 3, 10), paracetamol.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2017, 0, 1), acuteQWaveMyocardialInfarction.getId()));
 		patient = createPatient("12");
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2016, 0, 1), hypertension.getId()));
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2016, 0, 1), diabetes.getId()));
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2016, 3, 10), paracetamol.getId()));
-		healthDataStream.addClinicalEncounter(patient.getRoleId(), new ClinicalEncounter(date(2017, 2, 1), acuteQWaveMyocardialInfarction.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2016, 0, 1), hypertension.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2016, 0, 1), diabetes.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2016, 3, 10), paracetamol.getId()));
+		healthDataStream.addClinicalEvent(patient.getRoleId(), new ClinicalEvent(date(2017, 2, 1), acuteQWaveMyocardialInfarction.getId()));
 		healthDataStream.flush();
 	}
 
 	@Test
 	public void testMultiCohortStatisticalTest() throws ServiceException {
-		// Calculate the statistical chance of patients with hypertension encountering a heart attack
+		// Calculate the statistical chance of patients with hypertension eventing a heart attack
 
-		// Within our data test how administering Paracetamol effects the statistical chance of patients with hypertension encountering a heart attack.
+		// Within our data test how administering Paracetamol effects the statistical chance of patients with hypertension eventing a heart attack.
 		// A. Count patients with hypertension and no Paracetamol
 		// B. Count patients with hypertension and no Paracetamol and subsequent heart attack
 		// Chance of heart attack without Paracetamol = B / A
@@ -136,9 +136,9 @@ public class StatisticTestingIntegrationTest extends AbstractDataTest {
 		//   Note: The Paracetamol prescription should have a date range but we haven't gone into that at this stage.
 		// Chance of heart attack with Paracetamol = D / C
 
-		StatisticalCorrelationReportDefinition statisticalCorrelationReportDefinition = new StatisticalCorrelationReportDefinition(new CohortCriteria(new EncounterCriterion("<<" + hypertension.getId())),
-				new EncounterCriterion("<<" + paracetamol.getId().toString(), 5 * YEAR_IN_DAYS, null),
-				new EncounterCriterion("<<" + myocardialInfarction.getId().toString(), 5 * YEAR_IN_DAYS, null));
+		StatisticalCorrelationReportDefinition statisticalCorrelationReportDefinition = new StatisticalCorrelationReportDefinition(new CohortCriteria(new EventCriterion("<<" + hypertension.getId())),
+				new EventCriterion("<<" + paracetamol.getId().toString(), 5 * YEAR_IN_DAYS, null),
+				new EventCriterion("<<" + myocardialInfarction.getId().toString(), 5 * YEAR_IN_DAYS, null));
 
 		StatisticalCorrelationReport result = reportService.runStatisticalReport(statisticalCorrelationReportDefinition);
 		assertEquals(5, result.getWithTreatmentCount());
@@ -151,14 +151,14 @@ public class StatisticTestingIntegrationTest extends AbstractDataTest {
 
 	@Test
 	public void testMultiCohortStatisticalTestWithRefinement() throws ServiceException {
-		CohortCriteria patientCriteria = new CohortCriteria(new EncounterCriterion("<<" + hypertension.getId()));
+		CohortCriteria patientCriteria = new CohortCriteria(new EventCriterion("<<" + hypertension.getId()));
 
 		// Here is the additional criterion
-		patientCriteria.addEncounterCriterion(new EncounterCriterion("<<" + myocardialInfarction.getId().toString(), -1, null));
+		patientCriteria.addEventCriterion(new EventCriterion("<<" + myocardialInfarction.getId().toString(), -1, null));
 
 		// The additional criterion means that our cohort is reduced to 2 patients, both the the same outcome.
-		EncounterCriterion treatmentCriterion = new EncounterCriterion("<<" + paracetamol.getId().toString(), 5 * YEAR_IN_DAYS, null);
-		EncounterCriterion negativeOutcomeCriterion = new EncounterCriterion("<<" + myocardialInfarction.getId().toString(), 5 * YEAR_IN_DAYS, null);
+		EventCriterion treatmentCriterion = new EventCriterion("<<" + paracetamol.getId().toString(), 5 * YEAR_IN_DAYS, null);
+		EventCriterion negativeOutcomeCriterion = new EventCriterion("<<" + myocardialInfarction.getId().toString(), 5 * YEAR_IN_DAYS, null);
 
 		StatisticalCorrelationReport result = reportService.runStatisticalReport(new StatisticalCorrelationReportDefinition(patientCriteria, treatmentCriterion, negativeOutcomeCriterion));
 

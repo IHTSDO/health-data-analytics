@@ -221,7 +221,7 @@ export default defineComponent({
                     this.outcomesIncludeHistory = model.outcomesIncludeHistory
                     this.loaded = true
                 } else {
-                    this.cohortCriteria.encounterCriteria.push()
+                    this.cohortCriteria.eventCriteria.push()
                     this.loaded = true
                 }
             })
@@ -307,7 +307,7 @@ export default defineComponent({
                     outcomesRequest.push({
                         name: outcome.display,
                         criteria: {
-                            encounterCriteria: [outcome.getForAPI(startDate, endDate)]
+                            eventCriteria: [outcome.getForAPI(startDate, endDate)]
                         }
                     })
                 }

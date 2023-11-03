@@ -4,7 +4,7 @@ import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ConceptImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.snomed.heathanalytics.model.ClinicalEncounter;
+import org.snomed.heathanalytics.model.ClinicalEvent;
 import org.snomed.heathanalytics.model.Gender;
 import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.server.AbstractDataTest;
@@ -81,15 +81,15 @@ public class IntegrationTest extends AbstractDataTest {
 		// has a type of myocardial infarction 10 days after the hypertension was recorded.
 		healthDataStream.createPatient(
 				new Patient("1", TestUtils.getDob(35), Gender.MALE)
-						.addEncounter(new ClinicalEncounter(TestUtils.date(2017, 0, 10), hypertension.getId()))
-						.addEncounter(new ClinicalEncounter(TestUtils.date(2017, 0, 20), acuteQWaveMyocardialInfarction.getId()))
+						.addEvent(new ClinicalEvent(TestUtils.date(2017, 0, 10), hypertension.getId()))
+						.addEvent(new ClinicalEvent(TestUtils.date(2017, 0, 20), acuteQWaveMyocardialInfarction.getId()))
 		);
 
 		// Dave
 		// has hypertension. No other recorded disorders.
 		healthDataStream.createPatient(
 				new Patient("2", TestUtils.getDob(40), Gender.MALE)
-						.addEncounter(new ClinicalEncounter(TestUtils.date(2010, 5, 1), hypertension.getId()))
+						.addEvent(new ClinicalEvent(TestUtils.date(2010, 5, 1), hypertension.getId()))
 		);
 
 
@@ -98,40 +98,40 @@ public class IntegrationTest extends AbstractDataTest {
 		// Ann - screening once a year, regular as clockwork
 		healthDataStream.createPatient(
 				new Patient("100", TestUtils.getDob(50), Gender.FEMALE)
-						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2017, Calendar.JUNE, 1), screeningId))
-						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2018, Calendar.JUNE, 1), screeningId))
-						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2019, Calendar.JUNE, 1), screeningId))
+						.addEvent(new ClinicalEvent(new GregorianCalendar(2017, Calendar.JUNE, 1), screeningId))
+						.addEvent(new ClinicalEvent(new GregorianCalendar(2018, Calendar.JUNE, 1), screeningId))
+						.addEvent(new ClinicalEvent(new GregorianCalendar(2019, Calendar.JUNE, 1), screeningId))
 		);
 
 		// Bella - screening once a year, varies by a month or so. Also one mammography.
 		healthDataStream.createPatient(
 				new Patient("101", TestUtils.getDob(52), Gender.FEMALE)
-						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2017, Calendar.MAY, 5), screeningId))
-						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2018, Calendar.APRIL, 10), screeningId))
-						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2019, Calendar.MAY, 20), screeningId))
-						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2019, Calendar.MAY, 20), breastMammographyId))
+						.addEvent(new ClinicalEvent(new GregorianCalendar(2017, Calendar.MAY, 5), screeningId))
+						.addEvent(new ClinicalEvent(new GregorianCalendar(2018, Calendar.APRIL, 10), screeningId))
+						.addEvent(new ClinicalEvent(new GregorianCalendar(2019, Calendar.MAY, 20), screeningId))
+						.addEvent(new ClinicalEvent(new GregorianCalendar(2019, Calendar.MAY, 20), breastMammographyId))
 		);
 
 		// Claudia - screening once every two years, varies by a couple of weeks.
 		healthDataStream.createPatient(
 				new Patient("102", TestUtils.getDob(52), Gender.FEMALE)
-						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2015, Calendar.JANUARY, 10), screeningId))
-						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2017, Calendar.JANUARY, 5), screeningId))
-						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2019, Calendar.JANUARY, 20), screeningId))
+						.addEvent(new ClinicalEvent(new GregorianCalendar(2015, Calendar.JANUARY, 10), screeningId))
+						.addEvent(new ClinicalEvent(new GregorianCalendar(2017, Calendar.JANUARY, 5), screeningId))
+						.addEvent(new ClinicalEvent(new GregorianCalendar(2019, Calendar.JANUARY, 20), screeningId))
 		);
 
 		// Diane - screens three years apart
 		healthDataStream.createPatient(
 				new Patient("103", TestUtils.getDob(52), Gender.FEMALE)
-						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2015, Calendar.JANUARY, 10), screeningId))
-						.addEncounter(new ClinicalEncounter(new GregorianCalendar(2018, Calendar.JANUARY, 5), screeningId))
+						.addEvent(new ClinicalEvent(new GregorianCalendar(2015, Calendar.JANUARY, 10), screeningId))
+						.addEvent(new ClinicalEvent(new GregorianCalendar(2018, Calendar.JANUARY, 5), screeningId))
 		);
 
 	}
 
 	@Test
 	public void testCohortSelectionWithExposureCriterion() throws ServiceException {
-		EncounterCriterion firstExposureCriterion = new EncounterCriterion("<<" + myocardialInfarction.getId().toString());
+		EventCriterion firstExposureCriterion = new EventCriterion("<<" + myocardialInfarction.getId().toString());
 		CohortCriteria cohortCriteria = new CohortCriteria(firstExposureCriterion);
 
 		Page<Patient> patients = patientQueryService.fetchCohort(cohortCriteria);
@@ -144,7 +144,7 @@ public class IntegrationTest extends AbstractDataTest {
 	@Test
 	public void testCohortSelectionWithMultipleExposureCriteria() throws ServiceException {
 		// Fetch all patients with Hypertension
-		EncounterCriterion hypertensionExposureCriterion = new EncounterCriterion("<<" + hypertension.getId().toString());
+		EventCriterion hypertensionExposureCriterion = new EventCriterion("<<" + hypertension.getId().toString());
 		CohortCriteria patientCriteria = new CohortCriteria(hypertensionExposureCriterion);
 
 		// We get both Bob and Dave
@@ -153,15 +153,15 @@ public class IntegrationTest extends AbstractDataTest {
 
 
 		// Add inclusion criteria with Myocardial Infarction 5 days after primaryExposure
-		EncounterCriterion inclusionCriteria = new EncounterCriterion("<<" + myocardialInfarction.getId().toString(), 5, null);
-		patientCriteria.addEncounterCriterion(inclusionCriteria);
+		EventCriterion inclusionCriteria = new EventCriterion("<<" + myocardialInfarction.getId().toString(), 5, null);
+		patientCriteria.addEventCriterion(inclusionCriteria);
 
 		// No matches because Bob had Myocardial Infarction 10 days after Hypertension is recorded
 		patients = patientQueryService.fetchCohort(patientCriteria);
 		assertEquals("[]", toSortedPatientIdList(patients).toString());
 
 		// Extend search to 12 days after the primaryExposure
-		inclusionCriteria.setWithinDaysAfterPreviouslyMatchedEncounter(12);
+		inclusionCriteria.setWithinDaysAfterPreviouslyMatchedEvent(12);
 
 		// Now Bob is in the cohort
 		patients = patientQueryService.fetchCohort(patientCriteria);
@@ -177,7 +177,7 @@ public class IntegrationTest extends AbstractDataTest {
 
 	@Test
 	public void testGenderSelection() throws ServiceException {
-		CohortCriteria cohortCriteria = new CohortCriteria(new EncounterCriterion("<<" + myocardialInfarction.getId().toString()));
+		CohortCriteria cohortCriteria = new CohortCriteria(new EventCriterion("<<" + myocardialInfarction.getId().toString()));
 
 		// No gender filter
 		Page<Patient> patients = patientQueryService.fetchCohort(cohortCriteria);
@@ -196,7 +196,7 @@ public class IntegrationTest extends AbstractDataTest {
 
 	@Test
 	public void testAgeSelection() throws ServiceException {
-		CohortCriteria cohortCriteria = new CohortCriteria(new EncounterCriterion("<<" + myocardialInfarction.getId().toString()));
+		CohortCriteria cohortCriteria = new CohortCriteria(new EventCriterion("<<" + myocardialInfarction.getId().toString()));
 
 		// No age filter
 		assertEquals(1, patientQueryService.fetchCohort(cohortCriteria).getTotalElements());
@@ -218,52 +218,52 @@ public class IntegrationTest extends AbstractDataTest {
 
 	@Test
 	public void testTreatmentDateRange() throws ServiceException {
-		EncounterCriterion encounterCriterion = new EncounterCriterion(breastScreeningId);
-		assertEquals(4, patientQueryService.fetchCohortCount(new CohortCriteria(encounterCriterion)));
+		EventCriterion eventCriterion = new EventCriterion(breastScreeningId);
+		assertEquals(4, patientQueryService.fetchCohortCount(new CohortCriteria(eventCriterion)));
 
-		encounterCriterion.setMinDate(new GregorianCalendar(2019, Calendar.JANUARY, 1).getTime());
-		assertTrue(encounterCriterion.hasTimeConstraint());
-		assertEquals(3, patientQueryService.fetchCohortCount(new CohortCriteria(encounterCriterion)));
+		eventCriterion.setMinDate(new GregorianCalendar(2019, Calendar.JANUARY, 1).getTime());
+		assertTrue(eventCriterion.hasTimeConstraint());
+		assertEquals(3, patientQueryService.fetchCohortCount(new CohortCriteria(eventCriterion)));
 
-		encounterCriterion.setMaxDate(new GregorianCalendar(2020, Calendar.JANUARY, 1).getTime());
-		assertTrue(encounterCriterion.hasTimeConstraint());
-		assertEquals(3, patientQueryService.fetchCohortCount(new CohortCriteria(encounterCriterion)));
+		eventCriterion.setMaxDate(new GregorianCalendar(2020, Calendar.JANUARY, 1).getTime());
+		assertTrue(eventCriterion.hasTimeConstraint());
+		assertEquals(3, patientQueryService.fetchCohortCount(new CohortCriteria(eventCriterion)));
 
-		encounterCriterion.setMaxDate(new GregorianCalendar(2019, Calendar.JANUARY, 1).getTime());
-		assertTrue(encounterCriterion.hasTimeConstraint());
-		assertEquals(0, patientQueryService.fetchCohortCount(new CohortCriteria(encounterCriterion)));
+		eventCriterion.setMaxDate(new GregorianCalendar(2019, Calendar.JANUARY, 1).getTime());
+		assertTrue(eventCriterion.hasTimeConstraint());
+		assertEquals(0, patientQueryService.fetchCohortCount(new CohortCriteria(eventCriterion)));
 	}
 
 	@Test
 	public void testTreatmentFrequencySelection() throws ServiceException {
 		assertEquals(6, patientQueryService.fetchCohortCount(new CohortCriteria()));
 		assertEquals(4, patientQueryService.fetchCohortCount(new CohortCriteria().setGender(Gender.FEMALE)));
-		assertEquals(4, patientQueryService.fetchCohortCount(new CohortCriteria(new EncounterCriterion(breastScreeningId))));
+		assertEquals(4, patientQueryService.fetchCohortCount(new CohortCriteria(new EventCriterion(breastScreeningId))));
 
 		// At least 2 screens 10-14 months apart
 		assertEquals(2, patientQueryService.fetchCohortCount(new CohortCriteria()
-				.addEncounterCriterion(new EncounterCriterion(breastScreeningId).setFrequency(new Frequency(2, 10, 14, TimeUnit.MONTH)))
+				.addEventCriterion(new EventCriterion(breastScreeningId).setFrequency(new Frequency(2, 10, 14, TimeUnit.MONTH)))
 		));
 
 		// 2 screens and at least one mammography
 		assertEquals(1, patientQueryService.fetchCohortCount(new CohortCriteria()
-				.addEncounterCriterion(new EncounterCriterion(breastScreeningId).setFrequency(new Frequency(2, 10, 14, TimeUnit.MONTH)))
-				.addEncounterCriterion(new EncounterCriterion(breastMammographyId))
+				.addEventCriterion(new EventCriterion(breastScreeningId).setFrequency(new Frequency(2, 10, 14, TimeUnit.MONTH)))
+				.addEventCriterion(new EventCriterion(breastMammographyId))
 		));
 
 		// At least 3 screens 10-14 months apart
-		assertEquals(2, patientQueryService.fetchCohortCount(new CohortCriteria(new EncounterCriterion(breastScreeningId)
+		assertEquals(2, patientQueryService.fetchCohortCount(new CohortCriteria(new EventCriterion(breastScreeningId)
 				.setFrequency(new Frequency(3, 10, 14, TimeUnit.MONTH)))));
 
 		// At least 2 screens 22-26 months apart
-		assertEquals(1, patientQueryService.fetchCohortCount(new CohortCriteria(new EncounterCriterion(breastScreeningId)
+		assertEquals(1, patientQueryService.fetchCohortCount(new CohortCriteria(new EventCriterion(breastScreeningId)
 				.setFrequency(new Frequency(2, 22, 26, TimeUnit.MONTH)))));
 	}
 
 	@Test
 	public void testCohortExclusion() throws ServiceException {
 		// criteria for breast screening
-		CohortCriteria cohortCriteria = new CohortCriteria(new EncounterCriterion("<<" + breastScreening.getId().toString()));
+		CohortCriteria cohortCriteria = new CohortCriteria(new EventCriterion("<<" + breastScreening.getId().toString()));
 
 		// No filter
 		assertEquals(4, patientQueryService.fetchCohort(cohortCriteria).getTotalElements());
@@ -277,7 +277,7 @@ public class IntegrationTest extends AbstractDataTest {
 		assertEquals(3, patientQueryService.fetchCohort(cohortCriteria).getTotalElements());
 
 		// Use ExclusionCriteria to exclude patients with at least 2 screens 22-26 months apart
-		cohortCriteria.getExclusionCriteria().add(new CohortCriteria(new EncounterCriterion(breastScreeningId)
+		cohortCriteria.getExclusionCriteria().add(new CohortCriteria(new EventCriterion(breastScreeningId)
 				.setFrequency(new Frequency(2, 22, 26, TimeUnit.MONTH))));
 
 		assertEquals(2, patientQueryService.fetchCohort(cohortCriteria).getTotalElements());
@@ -292,7 +292,7 @@ public class IntegrationTest extends AbstractDataTest {
 		assertEquals(screeningDummyCPT, dummyCpt.getCptCode());
 
 		ReportDefinition reportDefinition = new ReportDefinition()
-				.addReportToFirstListOfGroups(new SubReportDefinition("Screens", new CohortCriteria(new EncounterCriterion(breastScreeningId)
+				.addReportToFirstListOfGroups(new SubReportDefinition("Screens", new CohortCriteria(new EventCriterion(breastScreeningId)
 						.includeCPTAnalysis())));
 
 		Report report = reportService.runReport(reportDefinition);
@@ -311,7 +311,7 @@ public class IntegrationTest extends AbstractDataTest {
 
 		// Frequency filter must reduce CPT aggregation counts
 		reportDefinition = new ReportDefinition()
-				.addReportToFirstListOfGroups(new SubReportDefinition("Screens", new CohortCriteria(new EncounterCriterion(breastScreeningId)
+				.addReportToFirstListOfGroups(new SubReportDefinition("Screens", new CohortCriteria(new EventCriterion(breastScreeningId)
 						.setFrequency(new Frequency(2, 10, 14, TimeUnit.MONTH))
 						.includeCPTAnalysis())));
 		report = reportService.runReport(reportDefinition);
@@ -348,14 +348,14 @@ public class IntegrationTest extends AbstractDataTest {
 //		Map<String, Object> params = new HashMap<>();
 //		params.put("includeConcepts", includeConcepts);
 //		NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder()
-//				.withQuery(termQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, "384151000119104"))
+//				.withQuery(termQuery(Patient.Fields.events + "." + ClinicalEvent.Fields.CONCEPT_ID, "384151000119104"))
 //				.addAggregation(
-//					AggregationBuilders.scriptedMetric("encounterConceptCounts")
+//					AggregationBuilders.scriptedMetric("eventConceptCounts")
 //							.initScript(new Script("state.concepts = new HashMap()"))
 //							.mapScript(new Script(ScriptType.INLINE, "painless",
-//									"for (int i = 0; i < doc['encounters.conceptId'].length; i++) {" +
+//									"for (int i = 0; i < doc['events.conceptId'].length; i++) {" +
 //									"	Map concepts = state.concepts;" +
-//									"	Long conceptIdLong = doc['encounters.conceptId'][i];" +
+//									"	Long conceptIdLong = doc['events.conceptId'][i];" +
 //									"	if (params.includeConcepts.contains(conceptIdLong)) {" +
 //									"		String conceptId = conceptIdLong.toString();" +
 //									"		if (concepts.containsKey(conceptId)) {" +
@@ -383,9 +383,9 @@ public class IntegrationTest extends AbstractDataTest {
 //									"return allConcepts;")));
 //		AggregatedPage<Patient> patients = restTemplate.queryForPage(nativeSearchQueryBuilder.build(), Patient.class);
 //		AggregatedPage<Patient> aggregatedPage = (AggregatedPage<Patient>) patients;
-//		ParsedScriptedMetric encounterConceptCounts = (ParsedScriptedMetric) aggregatedPage.getAggregation("encounterConceptCounts");
+//		ParsedScriptedMetric eventConceptCounts = (ParsedScriptedMetric) aggregatedPage.getAggregation("eventConceptCounts");
 //		@SuppressWarnings("unchecked")
-//		Map<String, Long> conceptCounts = (Map<String, Long>) encounterConceptCounts.aggregation();
+//		Map<String, Long> conceptCounts = (Map<String, Long>) eventConceptCounts.aggregation();
 //		System.out.println(conceptCounts);
 //	}
 

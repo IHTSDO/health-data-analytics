@@ -1,3 +1,3 @@
-{"roleId":"0","gender":"MALE","dob":"1974-05-28","encounters":[{"conceptId":195957006,"date":"2017-09-10T11:00:11UTC"}]}
+{"roleId":"0","gender":"MALE","dob":"1974-05-28","events":[{"conceptId":195957006,"date":"2017-09-10T11:00:11UTC"}]}
 {"roleId":"1","gender":"FEMALE","dob":"1948-05-28"}
-{"roleId":"2","gender":"FEMALE","dob":"1966-05-28","encounters":[{"conceptId":171176006,"date":"2019-01-24T12:00:11UTC"},{"conceptId":384151000119104,"date":"2018-01-08T12:00:11UTC"}]}
+{"roleId":"2","gender":"FEMALE","dob":"1966-05-28","events":[{"conceptId":171176006,"date":"2019-01-24T12:00:11UTC"},{"conceptId":384151000119104,"date":"2018-01-08T12:00:11UTC"}]}

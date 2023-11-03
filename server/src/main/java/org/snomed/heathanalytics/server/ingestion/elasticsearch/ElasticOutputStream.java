@@ -2,7 +2,7 @@ package org.snomed.heathanalytics.server.ingestion.elasticsearch;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.heathanalytics.model.ClinicalEncounter;
+import org.snomed.heathanalytics.model.ClinicalEvent;
 import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.server.ingestion.HealthDataOutputStream;
 import org.snomed.heathanalytics.server.store.PatientRepository;
@@ -37,7 +37,7 @@ public class ElasticOutputStream implements HealthDataOutputStream {
 	}
 
 	@Override
-	public void addClinicalEncounter(String roleId, ClinicalEncounter encounter) {
+	public void addClinicalEvent(String roleId, ClinicalEvent event) {
 		Patient patient = patientBuffer.get(roleId);
 		if (patient == null) {
 			Optional<Patient> patientOptional = patientRepository.findById(roleId);
@@ -47,12 +47,12 @@ public class ElasticOutputStream implements HealthDataOutputStream {
 			}
 		}
 		if (patient != null) {
-			patient.addEncounter(encounter);
+			patient.addEvent(event);
 			if (patientBuffer.size() == 10_000) {
 				flush();
 			}
 		} else {
-			logger.error("Failed to add clinical encounter {}/{} - patient not found with id {}", encounter.getDate(), encounter.getConceptId(), roleId);
+			logger.error("Failed to add clinical event {}/{} - patient not found with id {}", event.getDate(), event.getConceptId(), roleId);
 		}
 	}
 

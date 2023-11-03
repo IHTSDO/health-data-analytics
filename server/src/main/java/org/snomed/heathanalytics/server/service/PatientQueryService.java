@@ -12,7 +12,7 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.metrics.ParsedScriptedMetric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.heathanalytics.model.ClinicalEncounter;
+import org.snomed.heathanalytics.model.ClinicalEvent;
 import org.snomed.heathanalytics.model.Gender;
 import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.model.pojo.TermHolder;
@@ -77,14 +77,14 @@ public class PatientQueryService {
 		validateCriteria(patientCriteria);
 
 		BoolQueryBuilder patientQuery = getPatientClauses(patientCriteria.getGender(), patientCriteria.getMinAgeNow(), patientCriteria.getMaxAgeNow(), now);
-		List<EncounterCriterion> encounterCriteria = patientCriteria.getEncounterCriteria();
+		List<EventCriterion> eventCriteria = patientCriteria.getEventCriteria();
 
 		// Fetch conceptIds of each criterion
 		Map<String, List<Long>> eclToConceptsMap = new HashMap<>();
-		List<EncounterCriterion> allEncounterCriteria = new ArrayList<>(encounterCriteria);
+		List<EventCriterion> allEventCriteria = new ArrayList<>(eventCriteria);
 		List<CohortCriteria> exclusionCriteria = patientCriteria.getExclusionCriteria();
-		exclusionCriteria.forEach(excludeCohort -> allEncounterCriteria.addAll(excludeCohort.getEncounterCriteria()));
-		for (EncounterCriterion criterion : allEncounterCriteria) {
+		exclusionCriteria.forEach(excludeCohort -> allEventCriteria.addAll(excludeCohort.getEventCriteria()));
+		for (EventCriterion criterion : allEventCriteria) {
 			String criterionEcl = getGivenOrSubsetEcl(criterion);
 			if (criterionEcl != null) {
 				if (!eclToConceptsMap.containsKey(criterionEcl)) {
@@ -95,12 +95,12 @@ public class PatientQueryService {
 		}
 
 		BoolQueryBuilder filterBoolBuilder = boolQuery();
-		filterBoolBuilder.must(getPatientEncounterFilter(encounterCriteria, eclToConceptsMap));
+		filterBoolBuilder.must(getPatientEventFilter(eventCriteria, eclToConceptsMap));
 		for (CohortCriteria exclusionCriterion : exclusionCriteria) {
 			BoolQueryBuilder exclusionBool = boolQuery();
 			exclusionBool.must(getPatientClauses(exclusionCriterion.getGender(), exclusionCriterion.getMinAgeNow(), exclusionCriterion.getMaxAgeNow(), now));
-			if (!exclusionCriterion.getEncounterCriteria().isEmpty()) {
-				exclusionBool.must(getPatientEncounterFilter(exclusionCriterion.getEncounterCriteria(), eclToConceptsMap));
+			if (!exclusionCriterion.getEventCriteria().isEmpty()) {
+				exclusionBool.must(getPatientEventFilter(exclusionCriterion.getEventCriteria(), eclToConceptsMap));
 			}
 			filterBoolBuilder.mustNot(exclusionBool);
 		}
@@ -112,17 +112,17 @@ public class PatientQueryService {
 				.withQuery(patientQuery)
 				.withPageable(pageable);
 
-		List<EncounterCriterion> encounterCriteriaWithCPTAnalysis = encounterCriteria.stream().filter(EncounterCriterion::isIncludeCPTAnalysis).collect(Collectors.toList());
-		if (!encounterCriteriaWithCPTAnalysis.isEmpty()) {
+		List<EventCriterion> eventCriteriaWithCPTAnalysis = eventCriteria.stream().filter(EventCriterion::isIncludeCPTAnalysis).collect(Collectors.toList());
+		if (!eventCriteriaWithCPTAnalysis.isEmpty()) {
 			Set<Long> includeConcepts = new HashSet<>();
-			for (EncounterCriterion criterion : encounterCriteriaWithCPTAnalysis) {
+			for (EventCriterion criterion : eventCriteriaWithCPTAnalysis) {
 				List<Long> concepts = eclToConceptsMap.get(criterion.getConceptECL());
 				includeConcepts.addAll(concepts);
 			}
 			Map<String, Object> params = new HashMap<>();
 			params.put("includeConcepts", includeConcepts);
 			patientElasticQuery.addAggregation(
-					AggregationBuilders.scriptedMetric("encounterConceptCounts")
+					AggregationBuilders.scriptedMetric("eventConceptCounts")
 							.initScript(new Script(ScriptType.INLINE, "painless",
 									"state.concepts = new HashMap();" +
 									// Force elements of includeConcepts set to be of type Long.
@@ -134,7 +134,7 @@ public class PatientQueryService {
 									"state.includeConcepts = forceLongSet;", params))
 							.mapScript(new Script(
 									"Map concepts = state.concepts;" +
-									"for (Long conceptIdLong : doc['encounters.conceptId']) {" +
+									"for (Long conceptIdLong : doc['events.conceptId']) {" +
 									"	if (state.includeConcepts.contains(conceptIdLong)) {" +
 									"		String conceptId = conceptIdLong.toString();" +
 									"		if (concepts.containsKey(conceptId)) {" +
@@ -171,12 +171,12 @@ public class PatientQueryService {
 		Page<Patient> patients = new PageImpl<>(content, query.getPageable(), searchHits.getTotalHits());
 
 		timer.split("Fetching patients");
-		if (!encounterCriteriaWithCPTAnalysis.isEmpty()) {
+		if (!eventCriteriaWithCPTAnalysis.isEmpty()) {
 
 			Aggregations aggregations = searchHits.getAggregations();
 			Map<String, Aggregation> stringAggregationMap = aggregations.asMap();
-			ParsedScriptedMetric encounterConceptCounts = (ParsedScriptedMetric) stringAggregationMap.get("encounterConceptCounts");
-			Object aggregation = encounterConceptCounts.aggregation();
+			ParsedScriptedMetric eventConceptCounts = (ParsedScriptedMetric) stringAggregationMap.get("eventConceptCounts");
+			Object aggregation = eventConceptCounts.aggregation();
 			@SuppressWarnings("unchecked")
 			Map<String, Integer> conceptCounts = (Map<String, Integer>) aggregation;
 			Map<String, CPTCode> snomedToCptMap = cptService.getSnomedToCptMap();
@@ -192,11 +192,11 @@ public class PatientQueryService {
 
 		// Process matching patients for display
 		patients.getContent().forEach(patient -> {
-			if (patient.getEncounters() == null) {
-				patient.setEncounters(Collections.emptySet());
+			if (patient.getEvents() == null) {
+				patient.setEvents(Collections.emptySet());
 			}
-			patient.getEncounters().forEach(encounter ->
-					encounter.setConceptTerm(conceptTerms.computeIfAbsent(encounter.getConceptId(), conceptId -> new TermHolder())));
+			patient.getEvents().forEach(event ->
+					event.setConceptTerm(conceptTerms.computeIfAbsent(event.getConceptId(), conceptId -> new TermHolder())));
 		});
 		if (!conceptTerms.isEmpty()) {
 			for (Long conceptId : conceptTerms.keySet()) {
@@ -226,33 +226,33 @@ public class PatientQueryService {
 	}
 
 	private void doValidateCriteria(String prefix, CohortCriteria patientCriteria) {
-		List<EncounterCriterion> encounterCriteria = patientCriteria.getEncounterCriteria();
-		for (int i = 0; i < encounterCriteria.size(); i++) {
-			EncounterCriterion encounterCriterion = encounterCriteria.get(i);
-			if ((Strings.isNullOrEmpty(encounterCriterion.getConceptECL()) && Strings.isNullOrEmpty(encounterCriterion.getConceptSubsetId()))
-					|| (!Strings.isNullOrEmpty(encounterCriterion.getConceptECL()) && !Strings.isNullOrEmpty(encounterCriterion.getConceptSubsetId()))) {
-				throw new IllegalArgumentException(format("%sEncounterCriterion[%s] must have either conceptECL or conceptSubsetId.", prefix, i));
+		List<EventCriterion> eventCriteria = patientCriteria.getEventCriteria();
+		for (int i = 0; i < eventCriteria.size(); i++) {
+			EventCriterion eventCriterion = eventCriteria.get(i);
+			if ((Strings.isNullOrEmpty(eventCriterion.getConceptECL()) && Strings.isNullOrEmpty(eventCriterion.getConceptSubsetId()))
+					|| (!Strings.isNullOrEmpty(eventCriterion.getConceptECL()) && !Strings.isNullOrEmpty(eventCriterion.getConceptSubsetId()))) {
+				throw new IllegalArgumentException(format("%sEventCriterion[%s] must have either conceptECL or conceptSubsetId.", prefix, i));
 			}
-			Frequency frequency = encounterCriterion.getFrequency();
+			Frequency frequency = eventCriterion.getFrequency();
 			if (frequency != null) {
-				if (!encounterCriterion.isHas()) {
-					throw new IllegalArgumentException(format("%sEncounterCriterion[%s].frequency can only be used when has=true.", prefix, i));
+				if (!eventCriterion.isHas()) {
+					throw new IllegalArgumentException(format("%sEventCriterion[%s].frequency can only be used when has=true.", prefix, i));
 				}
 				if (frequency.getMinRepetitions() == null || frequency.getMinRepetitions() < 1) {
-					throw new IllegalArgumentException(format("%sEncounterCriterion[%s].frequency.minRepetitions must be a positive integer greater than 1.", prefix, i));
+					throw new IllegalArgumentException(format("%sEventCriterion[%s].frequency.minRepetitions must be a positive integer greater than 1.", prefix, i));
 				}
 				if (frequency.getMinTimeBetween() != null && frequency.getMinTimeBetween() < 0) {
-					throw new IllegalArgumentException(format("%sEncounterCriterion[%s].frequency.minTimeBetween must be a positive integer.", prefix, i));
+					throw new IllegalArgumentException(format("%sEventCriterion[%s].frequency.minTimeBetween must be a positive integer.", prefix, i));
 				}
 				if (frequency.getMaxTimeBetween() != null && frequency.getMaxTimeBetween() < 0) {
-					throw new IllegalArgumentException(format("%sEncounterCriterion[%s].frequency.maxTimeBetween must be a positive integer.", prefix, i));
+					throw new IllegalArgumentException(format("%sEventCriterion[%s].frequency.maxTimeBetween must be a positive integer.", prefix, i));
 				}
 				if (frequency.getMinTimeBetween() != null && frequency.getMaxTimeBetween() != null
 						&& frequency.getMinTimeBetween() > frequency.getMaxTimeBetween()) {
-					throw new IllegalArgumentException(format("%sEncounterCriterion[%s].frequency.minTimeBetween must be less than maxTimeBetween.", prefix, i));
+					throw new IllegalArgumentException(format("%sEventCriterion[%s].frequency.minTimeBetween must be less than maxTimeBetween.", prefix, i));
 				}
 				if (frequency.getTimeUnit() == null && (frequency.getMinTimeBetween() != null || frequency.getMaxTimeBetween() != null)) {
-					throw new IllegalArgumentException(format("%sEncounterCriterion[%s].frequency.timeUnit is required when minTimeBetween or maxTimeBetween is set.", prefix, i));
+					throw new IllegalArgumentException(format("%sEventCriterion[%s].frequency.timeUnit is required when minTimeBetween or maxTimeBetween is set.", prefix, i));
 				}
 			}
 		}
@@ -278,50 +278,50 @@ public class PatientQueryService {
 		return patientQuery;
 	}
 
-	private BoolQueryBuilder getPatientEncounterFilter(List<EncounterCriterion> encounterCriteria, Map<String, List<Long>> eclToConceptsMap) throws ServiceException {
+	private BoolQueryBuilder getPatientEventFilter(List<EventCriterion> eventCriteria, Map<String, List<Long>> eclToConceptsMap) throws ServiceException {
 		BoolQueryBuilder patientFilter = boolQuery();
 
 		// Fetch conceptIds of each criterion
-		for (EncounterCriterion criterion : encounterCriteria) {
+		for (EventCriterion criterion : eventCriteria) {
 			String criterionEcl = getGivenOrSubsetEcl(criterion);
 			if (criterionEcl != null) {
 				List<Long> conceptIds = eclToConceptsMap.get(criterionEcl);
-				BoolQueryBuilder encounterQuery = boolQuery();
-				encounterQuery.must(termsQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.CONCEPT_ID, conceptIds));
+				BoolQueryBuilder eventQuery = boolQuery();
+				eventQuery.must(termsQuery(Patient.Fields.events + "." + ClinicalEvent.Fields.CONCEPT_ID, conceptIds));
 				if (criterion.getMinDate() != null || criterion.getMaxDate() != null) {
-					// Setting this date range is not enough to filter the patient encounters because all encounters and all dates
+					// Setting this date range is not enough to filter the patient events because all events and all dates
 					// are stored together in the index of the patient document.
 					// Additional filtering happens in the Painless script.
 					// Setting this range at the index level reduces the number of documents the painless script needs to process.
-					RangeQueryBuilder rangeQuery = rangeQuery(Patient.Fields.encounters + "." + ClinicalEncounter.Fields.DATE_LONG);
+					RangeQueryBuilder rangeQuery = rangeQuery(Patient.Fields.events + "." + ClinicalEvent.Fields.DATE_LONG);
 					if (criterion.getMinDate() != null) {
 						rangeQuery.gte(criterion.getMinDate().getTime());
 					}
 					if (criterion.getMaxDate() != null) {
 						rangeQuery.lt(criterion.getMaxDate().getTime());
 					}
-					encounterQuery.must(rangeQuery);
+					eventQuery.must(rangeQuery);
 				}
 				if (criterion.isHas()) {
-					patientFilter.must(encounterQuery);
+					patientFilter.must(eventQuery);
 				} else {
-					patientFilter.mustNot(encounterQuery);
+					patientFilter.mustNot(eventQuery);
 				}
 			}
 		}
 
-		if (encounterCriteria.stream().anyMatch(EncounterCriterion::hasTimeConstraint)
-				|| encounterCriteria.stream().anyMatch(EncounterCriterion::hasFrequency)) {
+		if (eventCriteria.stream().anyMatch(EventCriterion::hasTimeConstraint)
+				|| eventCriteria.stream().anyMatch(EventCriterion::hasFrequency)) {
 
 			// Convert parameter objects to simple types to be used in Elasticsearch Painless script which executes within a node.
-			List<Map<String, Object>> encounterCriteriaMaps = encounterCriteria.stream().map(criterion -> {
+			List<Map<String, Object>> eventCriteriaMaps = eventCriteria.stream().map(criterion -> {
 				Map<String, Object> criterionMap = new HashMap<>();
 				criterionMap.put("has", criterion.isHas());
 				criterionMap.put("conceptECL", criterion.getConceptECL());
 				criterionMap.put("minDate", criterion.getMinDate() != null ? criterion.getMinDate().getTime() : null);
 				criterionMap.put("maxDate", criterion.getMaxDate() != null ? criterion.getMaxDate().getTime() : null);
-				criterionMap.put("withinDaysAfterPreviouslyMatchedEncounter", criterion.getWithinDaysAfterPreviouslyMatchedEncounter());
-				criterionMap.put("withinDaysBeforePreviouslyMatchedEncounter", criterion.getWithinDaysBeforePreviouslyMatchedEncounter());
+				criterionMap.put("withinDaysAfterPreviouslyMatchedEvent", criterion.getWithinDaysAfterPreviouslyMatchedEvent());
+				criterionMap.put("withinDaysBeforePreviouslyMatchedEvent", criterion.getWithinDaysBeforePreviouslyMatchedEvent());
 				Frequency frequency = criterion.getFrequency();
 				if (frequency != null) {
 					Map<String, Object> frequencyMap = new HashMap<>();
@@ -338,7 +338,7 @@ public class PatientQueryService {
 			int dayInMillis = 1000 * 60 * 60 * 24;
 			Map<String, Object> params = new HashMap<>();
 			params.put("dayInMillis", dayInMillis);
-			params.put("criterionMapsList", encounterCriteriaMaps);
+			params.put("criterionMapsList", eventCriteriaMaps);
 			params.put("eclToConceptsMap", eclToConceptsMap);
 
 			/*
@@ -371,53 +371,53 @@ public class PatientQueryService {
 					"	Integer maxTimeBetween = frequencyMap.get('maxTimeBetween');" +
 					"	long timeUnitMillis = frequencyMap.get('timeUnitMillis');" +
 
-						// Find all encounters for this patient with a matching conceptId
+						// Find all events for this patient with a matching conceptId
 					"	List dates = new ArrayList();" +
-					"	for (String conceptDateString : doc['encounters.conceptDate.keyword']) {" +
+					"	for (String conceptDateString : doc['events.conceptDate.keyword']) {" +
 					"		int commaIndex = conceptDateString.indexOf(',');" +
-					"		long candidateEncounterConceptId = Long.parseLong(conceptDateString.substring(0, commaIndex));" +
-					"		long candidateEncounterDate = Long.parseLong(conceptDateString.substring(commaIndex + 1));" +
-					"		if (criterionConceptIds.contains(candidateEncounterConceptId)) {" +
-					"			dates.add(candidateEncounterDate);" +
+					"		long candidateEventConceptId = Long.parseLong(conceptDateString.substring(0, commaIndex));" +
+					"		long candidateEventDate = Long.parseLong(conceptDateString.substring(commaIndex + 1));" +
+					"		if (criterionConceptIds.contains(candidateEventConceptId)) {" +
+					"			dates.add(candidateEventDate);" +
 					"		}" +
 					"	}" +
 					"" +
 					"	if (dates.size().intValue() < minRepetitions.intValue()) {" +
-							// Not enough matching encounters
+							// Not enough matching events
 					"		return false;" +
 					"	}" +
 					"	if (minTimeBetween == null && maxTimeBetween == null) {" +
-							// Enough matching encounters and no time constraints
+							// Enough matching events and no time constraints
 					"		return true;" +
 					"	}" +
 					"" +
 						// Apply frequency time constraints
 					"	dates.sort(null);" +
-					"	long relativeEncounterTime = dates.remove(0);" +
+					"	long relativeEventTime = dates.remove(0);" +
 					"	int repetitionsFound = 1;" +
-					"	for (long nextEncounterTime : dates) {" +
+					"	for (long nextEventTime : dates) {" +
 					"		if (minTimeBetween != null) {" +
-					"			long minTime = relativeEncounterTime + (minTimeBetween.intValue() * timeUnitMillis);" +
-					"			if (nextEncounterTime < minTime) {" +
-//					"				Debug.explain('nextEncounterTime < minTime, nextEncounterTime:' + nextEncounterTime + ', minTime:' + minTime);" +
+					"			long minTime = relativeEventTime + (minTimeBetween.intValue() * timeUnitMillis);" +
+					"			if (nextEventTime < minTime) {" +
+//					"				Debug.explain('nextEventTime < minTime, nextEventTime:' + nextEventTime + ', minTime:' + minTime);" +
 					"				return false;" +
 					"			}" +
-//					"			Debug.explain('nextEncounterTime >= minTime, relativeEncounterTime:' + relativeEncounterTime + ', nextEncounterTime:' + nextEncounterTime + ', minTime:' + minTime);" +
+//					"			Debug.explain('nextEventTime >= minTime, relativeEventTime:' + relativeEventTime + ', nextEventTime:' + nextEventTime + ', minTime:' + minTime);" +
 					"		}" +
 					"		if (maxTimeBetween != null) {" +
-					"			long maxTime = relativeEncounterTime + (maxTimeBetween.intValue() * timeUnitMillis);" +
-					"			if (nextEncounterTime > maxTime) {" +
-//					"				Debug.explain('nextEncounterTime > maxTime, nextEncounterTime:' + nextEncounterTime + ', maxTime:' + maxTime);" +
+					"			long maxTime = relativeEventTime + (maxTimeBetween.intValue() * timeUnitMillis);" +
+					"			if (nextEventTime > maxTime) {" +
+//					"				Debug.explain('nextEventTime > maxTime, nextEventTime:' + nextEventTime + ', maxTime:' + maxTime);" +
 					"				return false;" +
 					"			}" +
 					"		}" +
-							// The time between relativeEncounterTime and nextEncounterTime is valid
+							// The time between relativeEventTime and nextEventTime is valid
 					"		repetitionsFound = repetitionsFound + 1;" +
 					"		if (minRepetitions != null && repetitionsFound == minRepetitions.intValue()) {" +
 					"			return true;" +
 					"		}" +
-							// Make nextEncounterTime the new relativeEncounterTime and go round again
-					"		relativeEncounterTime = nextEncounterTime;" +
+							// Make nextEventTime the new relativeEventTime and go round again
+					"		relativeEventTime = nextEventTime;" +
 					"	}" +
 //					"	Debug.explain('No frequency match, dates:' + dates + ', criterionConceptIds:' + criterionConceptIds);" +
 					"	return false;" +
@@ -429,11 +429,11 @@ public class PatientQueryService {
 					"	return true;" +
 					"}\n" +
 //					"Debug.explain(criterionMapsList);" +
-//					"Debug.explain(doc['encounters.conceptDate.keyword']);" +
+//					"Debug.explain(doc['events.conceptDate.keyword']);" +
 
 					"boolean match = false;" +
-					"long baseEncounterDate = 0;" +
-					// Iterate each criterion to validate the encounters for this patient document
+					"long baseEventDate = 0;" +
+					// Iterate each criterion to validate the events for this patient document
 					"for (def criterionMap : criterionMapsList) {" +
 //					"	Debug.explain('criterionMapsList:' + criterionMapsList);" +
 					"	List criterionConceptIds = params.eclToConceptsMap.get(criterionMap.get('conceptECL'));" +
@@ -455,40 +455,40 @@ public class PatientQueryService {
 
 					"" +
 						// If forward/back cut-off days set calculate relative dates
-					"	long minEncounterDate = 0;" +
-					"	long maxEncounterDate = 0;" +
-					"	Integer daysBeforePrevious = criterionMap.get('withinDaysBeforePreviouslyMatchedEncounter');" +
-					"	Integer daysAfterPrevious = criterionMap.get('withinDaysAfterPreviouslyMatchedEncounter');" +
+					"	long minEventDate = 0;" +
+					"	long maxEventDate = 0;" +
+					"	Integer daysBeforePrevious = criterionMap.get('withinDaysBeforePreviouslyMatchedEvent');" +
+					"	Integer daysAfterPrevious = criterionMap.get('withinDaysAfterPreviouslyMatchedEvent');" +
 //					"	Debug.explain('daysBeforePrevious:' + daysBeforePrevious + ', daysAfterPrevious:' + daysAfterPrevious);" +
 
-					"	if (baseEncounterDate != 0 && (daysBeforePrevious != null || daysAfterPrevious != null)) {" +
-					"		minEncounterDate = getRelativeDate(baseEncounterDate, daysBeforePrevious, -1, params);" +
-					"		maxEncounterDate = getRelativeDate(baseEncounterDate, daysAfterPrevious, 1, params);" +
-//					"		Debug.explain('baseEncounterDate:' + baseEncounterDate + ', daysBeforePrevious:' + daysBeforePrevious + ', minEncounterDate:' + minEncounterDate + " +
-//					"				', daysAfterPrevious:' + daysAfterPrevious + ', maxEncounterDate:' + maxEncounterDate);" +
+					"	if (baseEventDate != 0 && (daysBeforePrevious != null || daysAfterPrevious != null)) {" +
+					"		minEventDate = getRelativeDate(baseEventDate, daysBeforePrevious, -1, params);" +
+					"		maxEventDate = getRelativeDate(baseEventDate, daysAfterPrevious, 1, params);" +
+//					"		Debug.explain('baseEventDate:' + baseEventDate + ', daysBeforePrevious:' + daysBeforePrevious + ', minEventDate:' + minEventDate + " +
+//					"				', daysAfterPrevious:' + daysAfterPrevious + ', maxEventDate:' + maxEventDate);" +
 					"	}" +
 					"" +
 
-						// Iterate patient's encounters
-					"	boolean encounterMatchFound = false;" +
-					"	for (String conceptDateString : doc['encounters.conceptDate.keyword']) {" +
-					"		if (encounterMatchFound == false) {" +
+						// Iterate patient's events
+					"	boolean eventMatchFound = false;" +
+					"	for (String conceptDateString : doc['events.conceptDate.keyword']) {" +
+					"		if (eventMatchFound == false) {" +
 					"			int commaIndex = conceptDateString.indexOf(',');" +
-					"			long encounterConceptId = Long.parseLong(conceptDateString.substring(0, commaIndex));" +
-					"			long encounterDate = Long.parseLong(conceptDateString.substring(commaIndex + 1));" +
-					"			if (criterionConceptIds.contains(encounterConceptId)) {" +
-					"				if ((minDate == -1 || encounterDate >= minDate)" +
-					"					&& (maxDate == -1 || encounterDate < maxDate)" +
-					"					&& (minEncounterDate == 0 || encounterDate >= minEncounterDate)" +
-					"					&& (maxEncounterDate == 0 || encounterDate <= maxEncounterDate)) {" +
+					"			long eventConceptId = Long.parseLong(conceptDateString.substring(0, commaIndex));" +
+					"			long eventDate = Long.parseLong(conceptDateString.substring(commaIndex + 1));" +
+					"			if (criterionConceptIds.contains(eventConceptId)) {" +
+					"				if ((minDate == -1 || eventDate >= minDate)" +
+					"					&& (maxDate == -1 || eventDate < maxDate)" +
+					"					&& (minEventDate == 0 || eventDate >= minEventDate)" +
+					"					&& (maxEventDate == 0 || eventDate <= maxEventDate)) {" +
 
 					"					if (!criterionMap.get('has')) {" +
 											// Criterion clauses match but criterion is negated
-//					"						Debug.explain('Criterion clauses match but criterion is negated e:' + e + ', baseEncounterDate:' + baseEncounterDate);" +// TODO remove
+//					"						Debug.explain('Criterion clauses match but criterion is negated e:' + e + ', baseEventDate:' + baseEventDate);" +// TODO remove
 					"						return false;" +
 					"					}" +
 					"" +
-										// This encounter matches so far, frequency check next
+										// This event matches so far, frequency check next
 					"					boolean frequencyMatch = frequencyMatch(doc, criterionMap, criterionConceptIds);" +
 					"					if (frequencyMatch == false) {" +
 //					"						Debug.explain('frequencyMatch: false');"
@@ -496,15 +496,15 @@ public class PatientQueryService {
 					"					}" +
 
 										// This criterion positive match
-					"					baseEncounterDate = encounterDate;" +
-					"					encounterMatchFound = true;" +
+					"					baseEventDate = eventDate;" +
+					"					eventMatchFound = true;" +
 					"				}" +
 					"			}" +
 					"		}" +
 					"	}" +
 					"" +
-					"	if (encounterMatchFound == false && criterionMap.get('has')) {" +
-							// If we got to this point none of the encounters matched the current criterion clauses.
+					"	if (eventMatchFound == false && criterionMap.get('has')) {" +
+							// If we got to this point none of the events matched the current criterion clauses.
 					"		return false;" +
 					"	}" +
 					"}" +
@@ -514,7 +514,7 @@ public class PatientQueryService {
 		return patientFilter;
 	}
 
-	private String getGivenOrSubsetEcl(EncounterCriterion criterion) throws ServiceException {
+	private String getGivenOrSubsetEcl(EventCriterion criterion) throws ServiceException {
 		if (criterion != null) {
 			String subsetId = criterion.getConceptSubsetId();
 			if (!Strings.isNullOrEmpty(subsetId)) {

@@ -7,17 +7,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-@JsonPropertyOrder({"gender", "minAgeNow", "maxAgeNow", "encounterCriteria", "exclusionCriteria"})
+@JsonPropertyOrder({"gender", "minAgeNow", "maxAgeNow", "eventCriteria", "exclusionCriteria"})
 public class CohortCriteria {
 
 	private Gender gender;
 	private Integer minAgeNow;
 	private Integer maxAgeNow;
-	private final List<EncounterCriterion> encounterCriteria;
+	private final List<EventCriterion> eventCriteria;
 	private final List<CohortCriteria> exclusionCriteria;
 
 	public CohortCriteria() {
-		encounterCriteria = new ArrayList<>();
+		eventCriteria = new ArrayList<>();
 		exclusionCriteria = new ArrayList<>();
 	}
 
@@ -28,13 +28,13 @@ public class CohortCriteria {
 		this.maxAgeNow = maxAgeNow;
 	}
 
-	public CohortCriteria(EncounterCriterion encounterCriterion) {
+	public CohortCriteria(EventCriterion eventCriterion) {
 		this();
-		addEncounterCriterion(encounterCriterion);
+		addEventCriterion(eventCriterion);
 	}
 
-	public CohortCriteria addEncounterCriterion(EncounterCriterion criterion) {
-		encounterCriteria.add(criterion);
+	public CohortCriteria addEventCriterion(EventCriterion criterion) {
+		eventCriteria.add(criterion);
 		return this;
 	}
 
@@ -48,8 +48,8 @@ public class CohortCriteria {
 		cohortCriteria.gender = gender;
 		cohortCriteria.minAgeNow = minAgeNow;
 		cohortCriteria.maxAgeNow = maxAgeNow;
-		for (EncounterCriterion encounterCriterion : encounterCriteria) {
-			cohortCriteria.addEncounterCriterion(encounterCriterion.clone());
+		for (EventCriterion eventCriterion : eventCriteria) {
+			cohortCriteria.addEventCriterion(eventCriterion.clone());
 		}
 		for (CohortCriteria exclusionCriterion : exclusionCriteria) {
 			cohortCriteria.addExclusionCriterion(exclusionCriterion.clone());
@@ -77,7 +77,7 @@ public class CohortCriteria {
 				(maxAgeNow == null || maxAgeNow > criteriaToCopyFrom.maxAgeNow)) {
 			maxAgeNow = criteriaToCopyFrom.maxAgeNow;
 		}
-		encounterCriteria.addAll(criteriaToCopyFrom.encounterCriteria);
+		eventCriteria.addAll(criteriaToCopyFrom.eventCriteria);
 		exclusionCriteria.addAll(criteriaToCopyFrom.exclusionCriteria);
 	}
 
@@ -108,8 +108,8 @@ public class CohortCriteria {
 		return this;
 	}
 
-	public List<EncounterCriterion> getEncounterCriteria() {
-		return encounterCriteria;
+	public List<EventCriterion> getEventCriteria() {
+		return eventCriteria;
 	}
 
 	public List<CohortCriteria> getExclusionCriteria() {
@@ -124,13 +124,13 @@ public class CohortCriteria {
 		return gender == that.gender &&
 				Objects.equals(minAgeNow, that.minAgeNow) &&
 				Objects.equals(maxAgeNow, that.maxAgeNow) &&
-				Objects.equals(encounterCriteria, that.encounterCriteria) &&
+				Objects.equals(eventCriteria, that.eventCriteria) &&
 				Objects.equals(exclusionCriteria, that.exclusionCriteria);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(gender, minAgeNow, maxAgeNow, encounterCriteria, exclusionCriteria);
+		return Objects.hash(gender, minAgeNow, maxAgeNow, eventCriteria, exclusionCriteria);
 	}
 
 	@Override
@@ -139,7 +139,7 @@ public class CohortCriteria {
 				"gender=" + gender +
 				", minAgeNow=" + minAgeNow +
 				", maxAgeNow=" + maxAgeNow +
-				", encounterCriteria=" + encounterCriteria +
+				", eventCriteria=" + eventCriteria +
 				", exclusionCriteria=" + exclusionCriteria +
 				'}';
 	}

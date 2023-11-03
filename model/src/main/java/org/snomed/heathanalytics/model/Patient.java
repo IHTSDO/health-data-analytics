@@ -12,7 +12,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Document(indexName = "patient")
-@JsonPropertyOrder({"roleId", "dataset", "gender", "dobYear", "dob", "dobFormatted", "numEncounters", "encounters"})
+@JsonPropertyOrder({"roleId", "dataset", "gender", "dobYear", "dob", "dobFormatted", "numEvents", "events"})
 public class Patient {
 
 	@Id
@@ -31,9 +31,9 @@ public class Patient {
 	private Gender gender;
 
 	@Field(type = FieldType.Integer)
-	private int numEncounters;
+	private int numEvents;
 
-	private Set<ClinicalEncounter> encounters;
+	private Set<ClinicalEvent> events;
 
 	public interface Fields {
 		String ROLE_ID = "roleId";
@@ -41,8 +41,8 @@ public class Patient {
 		String DOB_LONG = "dobLong";
 		String DOB_YEAR = "dobYear";
 		String GENDER = "gender";
-		String numEncounters = "numEncounters";
-		String encounters = "encounters";
+		String numEvents = "numEvents";
+		String events = "events";
 	}
 
 	public Patient() {
@@ -58,11 +58,11 @@ public class Patient {
 		this.gender = gender;
 	}
 
-	public Patient addEncounter(ClinicalEncounter encounter) {
-		if (encounters == null) {
-			encounters = new HashSet<>();
+	public Patient addEvent(ClinicalEvent event) {
+		if (events == null) {
+			events = new HashSet<>();
 		}
-		encounters.add(encounter);
+		events.add(event);
 		return this;
 	}
 
@@ -76,13 +76,13 @@ public class Patient {
 	}
 
 	@JsonView({View.API.class, View.Elasticsearch.class})
-	public Set<ClinicalEncounter> getEncounters() {
-		return encounters;
+	public Set<ClinicalEvent> getEvents() {
+		return events;
 	}
 
 	@JsonView({View.API.class, View.Elasticsearch.class})
-	public int getNumEncounters() {
-		return this.encounters!=null?this.encounters.size():0;
+	public int getNumEvents() {
+		return this.events !=null?this.events.size():0;
 	}
 
 	@JsonView({View.API.class, View.Elasticsearch.class})
@@ -134,8 +134,8 @@ public class Patient {
 		this.gender = gender;
 	}
 
-	public void setEncounters(Set<ClinicalEncounter> encounters) {
-		this.encounters = encounters;
+	public void setEvents(Set<ClinicalEvent> events) {
+		this.events = events;
 	}
 
 	@Override
@@ -145,8 +145,8 @@ public class Patient {
 				", dataset=" + dataset +
 				", gender=" + gender +
 				", dob=" + new SimpleDateFormat("yyyy-MM-dd").format(new Date(dobLong)) +
-				", numEncounters=" + getNumEncounters() +
-				", encounters=" + encounters +
+				", numEvents=" + getNumEvents() +
+				", events=" + events +
 				'}';
 	}
 }

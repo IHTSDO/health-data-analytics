@@ -2,8 +2,6 @@ package org.snomed.heathanalytics.datageneration;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -19,7 +17,7 @@ import java.io.IOException;
 import java.util.List;
 
 @SpringBootApplication(exclude = {ElasticsearchRepositoriesAutoConfiguration.class, ElasticsearchDataAutoConfiguration.class})
-public class Application implements ApplicationRunner {
+public class GeneratorApplication implements ApplicationRunner {
 
 	public static final String POPULATION_SIZE = "population-size";
 	public static final String LONGITUDINAL = "longitudinal";
@@ -28,7 +26,7 @@ public class Application implements ApplicationRunner {
 	public static final int POPULATION_SIZE_DEFAULT = 1_248_322;
 
 	public static void main(String[] args) {
-		SpringApplication.run(Application.class, args);
+		SpringApplication.run(GeneratorApplication.class, args);
 	}
 
 	@Autowired

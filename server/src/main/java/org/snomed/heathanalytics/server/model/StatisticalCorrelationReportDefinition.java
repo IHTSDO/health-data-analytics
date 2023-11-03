@@ -3,13 +3,13 @@ package org.snomed.heathanalytics.server.model;
 public class StatisticalCorrelationReportDefinition {
 
 	private CohortCriteria baseCriteria;
-	private EncounterCriterion treatmentCriterion;
-	private EncounterCriterion negativeOutcomeCriterion;
+	private EventCriterion treatmentCriterion;
+	private EventCriterion negativeOutcomeCriterion;
 
 	public StatisticalCorrelationReportDefinition() {
 	}
 
-	public StatisticalCorrelationReportDefinition(CohortCriteria baseCriteria, EncounterCriterion treatmentCriterion, EncounterCriterion negativeOutcomeCriterion) {
+	public StatisticalCorrelationReportDefinition(CohortCriteria baseCriteria, EventCriterion treatmentCriterion, EventCriterion negativeOutcomeCriterion) {
 		this.baseCriteria = baseCriteria;
 		this.treatmentCriterion = treatmentCriterion;
 		this.negativeOutcomeCriterion = negativeOutcomeCriterion;
@@ -19,11 +19,11 @@ public class StatisticalCorrelationReportDefinition {
 		return baseCriteria;
 	}
 
-	public EncounterCriterion getTreatmentCriterion() {
+	public EventCriterion getTreatmentCriterion() {
 		return treatmentCriterion;
 	}
 
-	public EncounterCriterion getNegativeOutcomeCriterion() {
+	public EventCriterion getNegativeOutcomeCriterion() {
 		return negativeOutcomeCriterion;
 	}
 }

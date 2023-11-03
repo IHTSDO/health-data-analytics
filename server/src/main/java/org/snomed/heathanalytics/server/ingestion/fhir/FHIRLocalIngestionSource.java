@@ -5,7 +5,7 @@ import ca.uhn.fhir.parser.IParser;
 import org.elasticsearch.common.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.heathanalytics.model.ClinicalEncounter;
+import org.snomed.heathanalytics.model.ClinicalEvent;
 import org.snomed.heathanalytics.model.Gender;
 import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.server.ingestion.HealthDataIngestionSource;
@@ -58,8 +58,9 @@ public class FHIRLocalIngestionSource implements HealthDataIngestionSource {
 						logger.error("Failed to read values from {}.", jsonFile.getAbsolutePath(), e);
 					}
 				}
-				if (patients.size() > 0)
+				if (!patients.isEmpty()) {
 					stream.createPatients(patients);
+				}
 			}
 		}
 	}
@@ -85,7 +86,7 @@ public class FHIRLocalIngestionSource implements HealthDataIngestionSource {
 					if (isConfirmedActive(condition)) {
 						String conceptId = getSCTCode(condition.getCode());
 						if ((conceptId != null) && (condition.getRecordedDate() != null))
-							finalElPatient.addEncounter(new ClinicalEncounter(condition.getRecordedDate(), parseLong(conceptId)));
+							finalElPatient.addEvent(new ClinicalEvent(condition.getRecordedDate(), parseLong(conceptId)));
 					}
 				}
 				if (bundleEntryComponent.getResource().fhirType().equals("Procedure")) {
@@ -93,13 +94,13 @@ public class FHIRLocalIngestionSource implements HealthDataIngestionSource {
 					String conceptId = getSCTCode(procedure.getCode());
 					Date performedOn = getProcedureDate(procedure);
 					if ((conceptId != null) && (performedOn != null))
-						finalElPatient.addEncounter(new ClinicalEncounter(performedOn, parseLong(conceptId)));
+						finalElPatient.addEvent(new ClinicalEvent(performedOn, parseLong(conceptId)));
 				}
 				if (bundleEntryComponent.getResource().fhirType().equals("MedicationRequest")) {
 					org.hl7.fhir.r4.model.MedicationRequest medicationRequest = (org.hl7.fhir.r4.model.MedicationRequest) bundleEntryComponent.getResource();
 					String conceptId = getSCTCode(medicationRequest.getMedicationCodeableConcept());
 					if ((conceptId != null) && (medicationRequest.getAuthoredOn() != null))
-						finalElPatient.addEncounter(new ClinicalEncounter(medicationRequest.getAuthoredOn(), parseLong(conceptId)));
+						finalElPatient.addEvent(new ClinicalEvent(medicationRequest.getAuthoredOn(), parseLong(conceptId)));
 				}
 			});
 		}
@@ -127,7 +128,7 @@ public class FHIRLocalIngestionSource implements HealthDataIngestionSource {
 					if (isConfirmedActive(condition)) {
 						String conceptId = getSCTCode(condition.getCode());
 						if ((conceptId != null) && (condition.getAssertedDate() != null))
-							finalElPatient.addEncounter(new ClinicalEncounter(condition.getAssertedDate(), parseLong(conceptId)));
+							finalElPatient.addEvent(new ClinicalEvent(condition.getAssertedDate(), parseLong(conceptId)));
 					}
 				}
 				if (bundleEntryComponent.getResource().fhirType().equals("Procedure")) {
@@ -135,7 +136,7 @@ public class FHIRLocalIngestionSource implements HealthDataIngestionSource {
 					String conceptId = getSCTCode(procedure.getCode());
 					Date performedOn = getProcedureDate(procedure);
 					if ((conceptId != null) && (performedOn != null))
-						finalElPatient.addEncounter(new ClinicalEncounter(performedOn, parseLong(conceptId)));
+						finalElPatient.addEvent(new ClinicalEvent(performedOn, parseLong(conceptId)));
 				}
 			});
 		}

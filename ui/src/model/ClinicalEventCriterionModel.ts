@@ -2,7 +2,7 @@ export class ClinicalEventCriterionModel {
     title!: string
     conceptECL!: string
     display!: string
-    withinDaysAfterPreviouslyMatchedEncounter!: number
+    withinDaysAfterPreviouslyMatchedEvent!: number
 
     eclBinding!: string
     color!: string
@@ -33,8 +33,8 @@ export class ClinicalEventCriterionModel {
         if (endDate) {
             apiFormat.maxDate = endDate
         }
-        if (typeof this.withinDaysAfterPreviouslyMatchedEncounter != 'undefined') {
-            apiFormat.withinDaysAfterPreviouslyMatchedEncounter = this.withinDaysAfterPreviouslyMatchedEncounter
+        if (typeof this.withinDaysAfterPreviouslyMatchedEvent != 'undefined') {
+            apiFormat.withinDaysAfterPreviouslyMatchedEvent = this.withinDaysAfterPreviouslyMatchedEvent
         }
         return apiFormat
     }

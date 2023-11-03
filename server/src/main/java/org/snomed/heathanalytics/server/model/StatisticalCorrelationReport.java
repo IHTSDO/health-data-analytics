@@ -1,6 +1,7 @@
 package org.snomed.heathanalytics.server.model;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.NumberFormat;
 
 public class StatisticalCorrelationReport {
@@ -89,13 +90,13 @@ public class StatisticalCorrelationReport {
 		if (withTreatmentWithNegativeOutcomeCount == 0 || withTreatmentCount == 0 ||
 				withoutTreatmentWithNegativeOutcomeCount == 0 || withoutTreatmentCount == 0) return "-";
 
-		return new BigDecimal(((float) withTreatmentWithNegativeOutcomeCount / (float) withTreatmentCount)/
-				((float) withoutTreatmentWithNegativeOutcomeCount / (float) withoutTreatmentCount)).setScale(2, BigDecimal.ROUND_HALF_UP).toString();
+		return BigDecimal.valueOf(((float) withTreatmentWithNegativeOutcomeCount / (float) withTreatmentCount) /
+				((float) withoutTreatmentWithNegativeOutcomeCount / (float) withoutTreatmentCount)).setScale(2,  RoundingMode.HALF_UP).toString();
 	}
 
 	private String getFractionAsPercentage(int a, int b) {
 		if (a == 0 || b == 0) return "-";
-		return new BigDecimal(((float) a / (float) b) * 100f).setScale(1, BigDecimal.ROUND_HALF_UP).toString();
+		return BigDecimal.valueOf(((float) a / (float) b) * 100f).setScale(1,  RoundingMode.HALF_UP).toString();
 	}
 
 	@Override

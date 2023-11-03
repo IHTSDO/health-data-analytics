@@ -1,7 +1,7 @@
 {
     "name": "COVID-19 Comorbidity affects",
     "criteria": {
-        "encounterCriteria": [
+        "eventCriteria": [
             {
                 "conceptECL": "<<840539006|COVID-19|",
                 "has": true
@@ -13,7 +13,7 @@
             {
                 "name": "Obesity",
                 "criteria": {
-                    "encounterCriteria": [
+                    "eventCriteria": [
                         {
                             "conceptECL": "<<414916001|Obesity|"
                         }
@@ -23,7 +23,7 @@
             {
                 "name": "Diabetes",
                 "criteria": {
-                    "encounterCriteria": [
+                    "eventCriteria": [
 						{
 							"conceptECL": "<<73211009|Diabetes|"
 						}
@@ -33,7 +33,7 @@
             {
                 "name": "Hypertensive disorder",
                 "criteria": {
-                    "encounterCriteria": [
+                    "eventCriteria": [
                         {
                             "conceptECL": "<<38341003|Hypertensive disorder|"
                         }
@@ -43,7 +43,7 @@
             {
                 "name": "Control Group",
                 "criteria": {
-                    "encounterCriteria": [
+                    "eventCriteria": [
                         {
                             "has": false,
                             "conceptECL": "<<414916001|Obesity|"
@@ -64,7 +64,7 @@
             {
                 "name": "COVID-19 pneumonia",
                 "criteria": {
-                    "encounterCriteria": [
+                    "eventCriteria": [
                         {
                             "conceptECL": "<<882784691000119100|COVID-19 pneumonia|"
                         }
@@ -74,7 +74,7 @@
             {
                 "name": "Died",
                 "criteria": {
-                    "encounterCriteria": [
+                    "eventCriteria": [
                         {
                             "conceptECL": "<<419099009|Died|"
                         }

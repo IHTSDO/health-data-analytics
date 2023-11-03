@@ -5,7 +5,7 @@
             <b-form-radio v-model="gender" name="gender" value="FEMALE">Female</b-form-radio>
             <b-form-radio v-model="gender" name="gender" value="MALE">Male</b-form-radio>
         </b-form-group>
-        <b-form-group v-for="eventCriterion in model?.encounterCriteria" v-bind:key="eventCriterion.conceptECL" >
+        <b-form-group v-for="eventCriterion in model?.eventCriteria" v-bind:key="eventCriterion.conceptECL" >
             <ClinicalEventCriterion :model="eventCriterion" v-on:remove="removeCriterion(eventCriterion)"/>
         </b-form-group>
         <div v-if="!(hideGender || hideSize)">
@@ -85,14 +85,14 @@ export default defineComponent({
         addEventCriterion(display: string, eclBinding: string) {
             // Use update method for object from parent component
             if (this.model) {
-                this.$set(this.model.encounterCriteria, this.model.encounterCriteria.length, new ClinicalEventCriterionModel(display, eclBinding))
+                this.$set(this.model.eventCriteria, this.model.eventCriteria.length, new ClinicalEventCriterionModel(display, eclBinding))
             }
         },
         removeCriterion(criterion: ClinicalEventCriterionModel) {
             if (this.model) {
-                const index = this.model.encounterCriteria.indexOf(criterion)
+                const index = this.model.eventCriteria.indexOf(criterion)
                 if (index >= 0) {
-                    this.$delete(this.model.encounterCriteria, index)
+                    this.$delete(this.model.eventCriteria, index)
                 }
             }
         }

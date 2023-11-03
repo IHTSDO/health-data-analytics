@@ -141,7 +141,7 @@ export default defineComponent({
                     this.outcomes = plainToInstance(ClinicalEventCriterionModel, model.outcomes)
                     this.loaded = true
                 } else {
-                    this.cohortCriteria.encounterCriteria.push()
+                    this.cohortCriteria.eventCriteria.push()
                     this.loaded = true
                 }
             })
@@ -227,7 +227,7 @@ export default defineComponent({
                     colors.push(outcome.color)
                     const outcomeCriteria = {} as any;
                     outcomeCriteria.criteria = {
-                        encounterCriteria: [outcome.getForAPI()]
+                        eventCriteria: [outcome.getForAPI()]
                     }
                     outcomeCriteria.name = outcome.display
                     outcomesRequest.push(outcomeCriteria)

@@ -7,11 +7,15 @@ import java.util.Stack;
 
 public class CollectionUtils {
 
-	public static <T> Stack<T> createStack(List<T> encounterCriteria) {
-		Stack<T> encounterStack = new Stack<>();
-		ArrayList<T> encounterCriteriaCopy = new ArrayList<>(encounterCriteria);
-		Collections.reverse(encounterCriteriaCopy);
-		encounterStack.addAll(encounterCriteriaCopy);
-		return encounterStack;
+	public static <T> Stack<T> createStack(List<T> eventCriteria) {
+		Stack<T> eventStack = new Stack<>();
+		ArrayList<T> eventCriteriaCopy = new ArrayList<>(eventCriteria);
+		Collections.reverse(eventCriteriaCopy);
+		eventStack.addAll(eventCriteriaCopy);
+		return eventStack;
+	}
+
+	public static <T> Iterable<T> orEmpty(Iterable<T> collection) {
+		return collection != null ? collection : Collections.emptySet();
 	}
 }

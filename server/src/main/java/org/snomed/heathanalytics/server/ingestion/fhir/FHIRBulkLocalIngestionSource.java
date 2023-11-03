@@ -8,7 +8,7 @@ import com.google.common.collect.UnmodifiableIterator;
 import org.elasticsearch.common.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.heathanalytics.model.ClinicalEncounter;
+import org.snomed.heathanalytics.model.ClinicalEvent;
 import org.snomed.heathanalytics.model.Gender;
 import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.server.ingestion.HealthDataIngestionSource;
@@ -93,8 +93,8 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 				if (fhirCondition.isConfirmedActive() && subjectId != null) {
 					String conceptId = getSnomedCode(fhirCondition.getCode());
 					if (conceptId != null && fhirCondition.getOnsetDateTime() != null) {
-						ClinicalEncounter encounter = new ClinicalEncounter(fhirCondition.getOnsetDateTime(), parseLong(conceptId));
-						healthDataOutputStream.addClinicalEncounter(subjectId, encounter);
+						ClinicalEvent event = new ClinicalEvent(fhirCondition.getOnsetDateTime(), parseLong(conceptId));
+						healthDataOutputStream.addClinicalEvent(subjectId, event);
 						active++;
 						if (active % 1_000 == 0) {
 							logger.info("Consumed {} Conditions into store.", NumberFormat.getNumberInstance().format(active));
@@ -128,8 +128,8 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 				if (fhirProcedure.isComplete() && subjectId != null) {
 					String conceptId = getSnomedCode(fhirProcedure.getCode());
 					if (conceptId != null && fhirProcedure.getStartDate() != null) {
-						ClinicalEncounter encounter = new ClinicalEncounter(fhirProcedure.getStartDate(), parseLong(conceptId));
-						healthDataOutputStream.addClinicalEncounter(subjectId, encounter);
+						ClinicalEvent event = new ClinicalEvent(fhirProcedure.getStartDate(), parseLong(conceptId));
+						healthDataOutputStream.addClinicalEvent(subjectId, event);
 						active++;
 						if (active % 1_000 == 0) {
 							logger.info("Consumed {} Procedures into store.", NumberFormat.getNumberInstance().format(active));
@@ -163,8 +163,8 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 				if (fhirMedicationRequest.isActiveOrCompletedOrder() && subjectId != null) {
 					String conceptId = getSnomedCode(fhirMedicationRequest.getMedicationCodeableConcept());
 					if (conceptId != null && fhirMedicationRequest.getAuthoredOn() != null) {
-						ClinicalEncounter encounter = new ClinicalEncounter(fhirMedicationRequest.getAuthoredOn(), parseLong(conceptId));
-						healthDataOutputStream.addClinicalEncounter(subjectId, encounter);
+						ClinicalEvent event = new ClinicalEvent(fhirMedicationRequest.getAuthoredOn(), parseLong(conceptId));
+						healthDataOutputStream.addClinicalEvent(subjectId, event);
 						active++;
 						if (active % 1_000 == 0) {
 							logger.info("Consumed {} Medications into store.", NumberFormat.getNumberInstance().format(active));
@@ -199,8 +199,8 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 					String conceptId = getSnomedCode(fhirServiceRequest.getCode());
 					Date occurrenceDateOrBestGuess = fhirServiceRequest.getOccurrenceDateOrBestGuess();
 					if (conceptId != null && occurrenceDateOrBestGuess != null) {
-						ClinicalEncounter encounter = new ClinicalEncounter(occurrenceDateOrBestGuess, parseLong(conceptId));
-						healthDataOutputStream.addClinicalEncounter(subjectId, encounter);
+						ClinicalEvent event = new ClinicalEvent(occurrenceDateOrBestGuess, parseLong(conceptId));
+						healthDataOutputStream.addClinicalEvent(subjectId, event);
 						active++;
 						if (active % 1_000 == 0) {
 							logger.info("Consumed {} ServiceRequests into store.", NumberFormat.getNumberInstance().format(active));

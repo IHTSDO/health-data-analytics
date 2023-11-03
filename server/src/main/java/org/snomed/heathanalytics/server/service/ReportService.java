@@ -49,30 +49,30 @@ public class ReportService {
 		// Copy base criteria
 		patientCriteria.copyCriteriaWhereMoreSpecific(reportDefinition.getBaseCriteria());
 
-		EncounterCriterion treatmentCriterion = reportDefinition.getTreatmentCriterion();
+		EventCriterion treatmentCriterion = reportDefinition.getTreatmentCriterion();
 		InputValidationHelper.checkInput("treatmentCriterion is required for the statistical test.", treatmentCriterion != null);
-		EncounterCriterion negativeOutcomeCriterion = reportDefinition.getNegativeOutcomeCriterion();
+		EventCriterion negativeOutcomeCriterion = reportDefinition.getNegativeOutcomeCriterion();
 		InputValidationHelper.checkInput("negativeOutcomeCriterion is required for a statistical test.", negativeOutcomeCriterion != null);
 
 		// A. Count patients WITH treatment, WITH negative outcome
-		List<EncounterCriterion> encounterCriteria = patientCriteria.getEncounterCriteria();
-		encounterCriteria.add(treatmentCriterion);
-		encounterCriteria.add(negativeOutcomeCriterion);
+		List<EventCriterion> eventCriteria = patientCriteria.getEventCriteria();
+		eventCriteria.add(treatmentCriterion);
+		eventCriteria.add(negativeOutcomeCriterion);
 		int withTreatmentWithNegativeOutcomeCount = patientQueryService.fetchCohortCount(patientCriteria);
 
 		// B. Count patients WITH treatment
-		removeLast(encounterCriteria);
+		removeLast(eventCriteria);
 		int withTreatmentCount = patientQueryService.fetchCohortCount(patientCriteria);
 
 		// Has test variable chance of outcome = A / B
 
 		// C. Count patients WITHOUT treatment, WITH negative outcome
 		treatmentCriterion.setHas(false);
-		encounterCriteria.add(negativeOutcomeCriterion);
+		eventCriteria.add(negativeOutcomeCriterion);
 		int withoutTreatmentWithNegativeOutcomeCount = patientQueryService.fetchCohortCount(patientCriteria);
 
 		// D. Count patients WITHOUT test variable
-		removeLast(encounterCriteria);
+		removeLast(eventCriteria);
 		int withoutTreatmentCount = patientQueryService.fetchCohortCount(patientCriteria);
 		treatmentCriterion.setHas(true);// reset
 
@@ -94,7 +94,7 @@ public class ReportService {
 			// Clear CPT Analysis flag of inherited criterion to allow a report focused on the most specific criteria
 			if (patientCriteria != null) {
 				patientCriteria = patientCriteria.clone();
-				patientCriteria.getEncounterCriteria().forEach(encounterCriterion -> encounterCriterion.setIncludeCPTAnalysis(false));
+				patientCriteria.getEventCriteria().forEach(eventCriterion -> eventCriterion.setIncludeCPTAnalysis(false));
 			}
 
 			List<Future<Page<Patient>>> futures = new ArrayList<>();
@@ -112,8 +112,8 @@ public class ReportService {
 					Page<Patient> patientsPage = future.get();
 					Map<String, CPTTotals> cptTotals = null;
 					if (patientsPage instanceof PatientPageWithCPTTotals) {
-						PatientPageWithCPTTotals pageWithEncounterCounts = (PatientPageWithCPTTotals) patientsPage;
-						cptTotals = pageWithEncounterCounts.getCptTotals();
+						PatientPageWithCPTTotals pageWithEventCounts = (PatientPageWithCPTTotals) patientsPage;
+						cptTotals = pageWithEventCounts.getCptTotals();
 					}
 					Report reportGroup = new Report(reportDefinition.getName(), (int) patientsPage.getTotalElements(), combinedCriteria, cptTotals);
 					report.addGroup(reportGroup);
@@ -133,7 +133,7 @@ public class ReportService {
 		return combinedCriteria;
 	}
 
-	private void removeLast(List<EncounterCriterion> list) {
+	private void removeLast(List<EventCriterion> list) {
 		list.remove(list.size() - 1);
 	}
 

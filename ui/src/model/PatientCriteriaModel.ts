@@ -2,19 +2,19 @@ import { ClinicalEventCriterionModel } from "./ClinicalEventCriterionModel"
 
 export class PatientCriteriaModel {
     gender = ""
-    encounterCriteria: Array<ClinicalEventCriterionModel> = []
+    eventCriteria: Array<ClinicalEventCriterionModel> = []
     treatment = false
 
     getForAPI() {
         const selection: any = {
-            encounterCriteria: [] as Array<{conceptECL: string}>
+            eventCriteria: [] as Array<{conceptECL: string}>
         };
         if (this.gender) {
             selection.gender = this.gender
         }
-        this.encounterCriteria.forEach(criterion => {
+        this.eventCriteria.forEach(criterion => {
             if (criterion.isFilled()) {
-                selection.encounterCriteria.push(criterion.getForAPI())
+                selection.eventCriteria.push(criterion.getForAPI())
             }
         });
         return selection
@@ -23,12 +23,12 @@ export class PatientCriteriaModel {
     setAll(model: any) {
         this.gender = model.gender
         
-        this.encounterCriteria.length = 0
-        if (model.encounterCriteria) {
-            model.encounterCriteria.forEach((c: any) => {
+        this.eventCriteria.length = 0
+        if (model.eventCriteria) {
+            model.eventCriteria.forEach((c: any) => {
                 const criterion = new ClinicalEventCriterionModel("", "")
                 criterion.setAll(c)
-                this.encounterCriteria.push(criterion)
+                this.eventCriteria.push(criterion)
             })
         }
     }

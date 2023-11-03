@@ -11,7 +11,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Objects;
 
-public class ClinicalEncounter {
+public class ClinicalEvent {
 
 	@Field(type = FieldType.Long)
 	private long dateLong;
@@ -31,10 +31,10 @@ public class ClinicalEncounter {
 		String CONCEPT_ID = "conceptId";
 	}
 
-	public ClinicalEncounter() {
+	public ClinicalEvent() {
 	}
 
-	public ClinicalEncounter(Date date, Long conceptId) {
+	public ClinicalEvent(Date date, Long conceptId) {
 		dateLong = date.getTime();
 		this.conceptId = conceptId;
 		updateConceptDate();
@@ -44,7 +44,7 @@ public class ClinicalEncounter {
 		conceptDate = conceptId + "," + dateLong;
 	}
 
-	public ClinicalEncounter(Calendar date, Long conceptId) {
+	public ClinicalEvent(Calendar date, Long conceptId) {
 		this(date.getTime(), conceptId);
 	}
 
@@ -96,7 +96,7 @@ public class ClinicalEncounter {
 
 	@Override
 	public String toString() {
-		return "ClinicalEncounter{" +
+		return "ClinicalEvent{" +
 				"conceptId='" + conceptId + '\'' +
 				", dateLong=" + dateLong +
 				'}';
@@ -106,9 +106,9 @@ public class ClinicalEncounter {
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
-		ClinicalEncounter encounter = (ClinicalEncounter) o;
-		return dateLong == encounter.dateLong &&
-				Objects.equals(conceptId, encounter.conceptId);
+		ClinicalEvent event = (ClinicalEvent) o;
+		return dateLong == event.dateLong &&
+				Objects.equals(conceptId, event.conceptId);
 	}
 
 	@Override

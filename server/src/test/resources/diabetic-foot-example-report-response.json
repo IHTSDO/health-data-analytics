@@ -2,7 +2,7 @@
 	"name": "Diabetes Type 2",
 	"patientCount": 2154,
 	"criteria": {
-		"encounterCriteria": [
+		"eventCriteria": [
 			{
 				"has": true,
 				"conceptECL": "<<44054006"
@@ -14,7 +14,7 @@
 			"name": "Smoker",
 			"patientCount": 113,
 			"criteria": {
-				"encounterCriteria": [
+				"eventCriteria": [
 					{
 						"has": true,
 						"conceptECL": "<<44054006"
@@ -30,7 +30,7 @@
 					"name": "Amputation of the foot",
 					"patientCount": 1,
 					"criteria": {
-						"encounterCriteria": [
+						"eventCriteria": [
 							{
 								"has": true,
 								"conceptECL": "<<44054006"
@@ -52,7 +52,7 @@
 			"name": "Non Smoker",
 			"patientCount": 2041,
 			"criteria": {
-				"encounterCriteria": [
+				"eventCriteria": [
 					{
 						"has": true,
 						"conceptECL": "<<44054006"
@@ -68,7 +68,7 @@
 					"name": "Amputation of the foot",
 					"patientCount": 8,
 					"criteria": {
-						"encounterCriteria": [
+						"eventCriteria": [
 							{
 								"has": true,
 								"conceptECL": "<<44054006"

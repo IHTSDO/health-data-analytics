@@ -1,5 +1,8 @@
 <template>
     <div>
+        <b-form-group label="Patient Dataset" v-if="!hideGender">
+            <b-form-select v-model="dataset" :options="datasets" size="sm"></b-form-select>
+        </b-form-group>
         <b-form-group label="Gender" v-if="!hideGender">
             <b-form-radio v-model="gender" name="gender" value="">All</b-form-radio>
             <b-form-radio v-model="gender" name="gender" value="FEMALE">Female</b-form-radio>
@@ -33,15 +36,20 @@ export default defineComponent({
     props: {
         model: PatientCriteriaModel,
         hideGender: String,
-        hideSize: String
+        hideSize: Boolean,
     },
     mounted() {
         if (!this.model) {
             console.error("Value not set for this PatientCriteria!");
+        } else {
+            axios.get('api/datasets')
+                .then(response => {
+                    this.datasets = response.data;
+                })
         }
     },
     updated() {
-        if (this.gender != this.model?.gender) {
+        if (this.model && this.gender != this.model?.gender) {
             this.gender = this.model.gender
         }
     },
@@ -51,14 +59,22 @@ export default defineComponent({
                 this.$set(this.model, 'gender', newValue)
             }
         },
+        dataset(newValue) {
+            if (this.model) {
+                this.$set(this.model, 'dataset', newValue)
+            }
+        },
     },
     data() {
         return {
+            dataset: '',
             gender: '',
             genderOptions: [
                 {text: 'All', value: ''},
                 {text: 'Female', value: 'FEMALE'},
                 {text: 'Male', value: 'MALE'},
+            ],
+            datasets: [
             ],
             numberFormat: new Intl.NumberFormat('en-US'),
             cohortSize: ""

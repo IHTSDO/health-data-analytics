@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.TreeSet;
 
 @RestController
@@ -36,6 +37,12 @@ public class CohortController {
 			patient.setEvents(events);
 		}
 		return patients;
+	}
+
+	@RequestMapping(value = "/datasets", method = RequestMethod.GET, produces = "application/json")
+	@ResponseBody
+	public List<String> getDatasets() {
+		return patientQueryService.getDatasets();
 	}
 
 }

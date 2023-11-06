@@ -27,23 +27,34 @@ public class ElasticOutputStream implements HealthDataOutputStream {
 	}
 
 	@Override
-	public void createPatient(Patient patient) {
+	public void createPatient(Patient patient, String dataset) {
+		patient.setRoleId(getCompositeRoleId(dataset, patient.getRoleId()));
+		patient.setDataset(dataset);
 		patientRepository.save(patient);
 	}
 
 	@Override
-	public void createPatients(Collection<Patient> patients) {
+	public void createPatients(Collection<Patient> patients, String dataset) {
+		patients.forEach(patient -> {
+			patient.setRoleId(getCompositeRoleId(dataset, patient.getRoleId()));
+			patient.setDataset(dataset);
+		});
 		patientRepository.saveAll(patients);
 	}
 
+	private static String getCompositeRoleId(String dataset, String roleId) {
+		return dataset + roleId;
+	}
+
 	@Override
-	public void addClinicalEvent(String roleId, ClinicalEvent event) {
-		Patient patient = patientBuffer.get(roleId);
+	public void addClinicalEvent(String roleId, ClinicalEvent event, String dataset) {
+		String compositeRoleId = getCompositeRoleId(roleId, dataset);
+		Patient patient = patientBuffer.get(compositeRoleId);
 		if (patient == null) {
-			Optional<Patient> patientOptional = patientRepository.findById(roleId);
+			Optional<Patient> patientOptional = patientRepository.findById(compositeRoleId);
 			if (patientOptional.isPresent()) {
 				patient = patientOptional.get();
-				patientBuffer.put(roleId, patient);
+				patientBuffer.put(compositeRoleId, patient);
 			}
 		}
 		if (patient != null) {
@@ -52,7 +63,7 @@ public class ElasticOutputStream implements HealthDataOutputStream {
 				flush();
 			}
 		} else {
-			logger.error("Failed to add clinical event {}/{} - patient not found with id {}", event.getDate(), event.getConceptId(), roleId);
+			logger.error("Failed to add clinical event {}/{} - patient not found with id {}", event.getDate(), event.getConceptId(), compositeRoleId);
 		}
 	}
 

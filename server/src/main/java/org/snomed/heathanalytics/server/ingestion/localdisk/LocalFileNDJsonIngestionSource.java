@@ -33,6 +33,7 @@ public class LocalFileNDJsonIngestionSource implements HealthDataIngestionSource
 		try (HealthDataOutputStream stream = healthDataOutputStream) {
 			LocalFileNDJsonIngestionSourceConfiguration config = (LocalFileNDJsonIngestionSourceConfiguration) configuration;
 			File ndJsonDirectory = config.getFileDirectory();
+			String dataset = config.getDataset();
 			File[] files = ndJsonDirectory.listFiles((dir, name) -> name.endsWith(".ndjson"));
 			if (files != null) {
 				ObjectReader patientReader = objectMapper.readerFor(Patient.class);
@@ -49,7 +50,7 @@ public class LocalFileNDJsonIngestionSource implements HealthDataIngestionSource
 									clinicalEvent.updateConceptDate();
 								}
 							}
-							stream.createPatients(patients);
+							stream.createPatients(patients, dataset);
 							read += patients.size();
 							if (read % 10_000 == 0) {
 								logger.info("Consumed {} patients into store.", NumberFormat.getNumberInstance().format(read));

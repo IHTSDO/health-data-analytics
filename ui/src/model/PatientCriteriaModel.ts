@@ -1,6 +1,7 @@
 import { ClinicalEventCriterionModel } from "./ClinicalEventCriterionModel"
 
 export class PatientCriteriaModel {
+    dataset = ""
     gender = ""
     eventCriteria: Array<ClinicalEventCriterionModel> = []
     treatment = false
@@ -9,6 +10,7 @@ export class PatientCriteriaModel {
         const selection: any = {
             eventCriteria: [] as Array<{conceptECL: string}>
         };
+        selection.dataset = this.dataset
         if (this.gender) {
             selection.gender = this.gender
         }

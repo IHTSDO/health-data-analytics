@@ -7,11 +7,11 @@ import java.util.Collection;
 
 public interface HealthDataOutputStream extends AutoCloseable {
 
-	void createPatient(Patient patient);
+	void createPatient(Patient patient, String dataset);
 
-	void createPatients(Collection<Patient> patients);
+	void createPatients(Collection<Patient> patients, String dataset);
 
-	void addClinicalEvent(String roleId, ClinicalEvent event);
+	void addClinicalEvent(String roleId, ClinicalEvent event, String dataset);
 
 	void close();
 }

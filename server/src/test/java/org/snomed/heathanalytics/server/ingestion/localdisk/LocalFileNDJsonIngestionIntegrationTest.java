@@ -38,7 +38,7 @@ public class LocalFileNDJsonIngestionIntegrationTest extends AbstractDataTest {
 	@Test
 	public void testPatientIngestion() {
 		new LocalFileNDJsonIngestionSource(objectMapper).stream(
-				new LocalFileNDJsonIngestionSourceConfiguration(new File("src/test/resources/ingestion-test-population")), elasticOutputStream);
+				new LocalFileNDJsonIngestionSourceConfiguration("A", new File("src/test/resources/ingestion-test-population")), elasticOutputStream);
 
 		// {"roleId":"0","gender":"MALE","dob":"19740528","events":[{"conceptId":195957006,"date":"20170910110011"}]}
 

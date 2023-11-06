@@ -9,6 +9,8 @@ import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.ParsedScriptedMetric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +62,33 @@ public class PatientQueryService {
 		return new Stats(new Date(), patientCount);
 	}
 
+	public List<String> getDatasets() {
+		NativeSearchQuery searchQuery = new NativeSearchQueryBuilder().build();
+		searchQuery.setPageable(PageRequest.of(0, 1));
+		searchQuery.addAggregation(new TermsAggregationBuilder(Patient.Fields.DATASET).field(Patient.Fields.DATASET));
+
+		SearchHits<Patient> hits = elasticsearchTemplate.search(searchQuery, Patient.class);
+		Aggregations aggregations = hits.getAggregations();
+		MultiBucketsAggregation datasetAggregation = aggregations.get(Patient.Fields.DATASET);
+		List<String> datasets = new ArrayList<>();
+		for (MultiBucketsAggregation.Bucket bucket : datasetAggregation.getBuckets()) {
+			datasets.add(bucket.getKeyAsString());
+		}
+
+		List<String> sortedDatasets = new ArrayList<>();
+		List<String> others = new ArrayList<>();
+		for (String dataset : datasets) {
+			if (dataset.startsWith("Main")) {
+				sortedDatasets.add(dataset);
+			} else {
+				others.add(dataset);
+			}
+		}
+		sortedDatasets.addAll(others);
+
+		return sortedDatasets;
+	}
+
 	public int fetchCohortCount(CohortCriteria patientCriteria) throws ServiceException {
 		return (int) fetchCohort(patientCriteria, 0, 1).getTotalElements();
 	}
@@ -76,7 +105,8 @@ public class PatientQueryService {
 
 		validateCriteria(patientCriteria);
 
-		BoolQueryBuilder patientQuery = getPatientClauses(patientCriteria.getGender(), patientCriteria.getMinAgeNow(), patientCriteria.getMaxAgeNow(), now);
+		BoolQueryBuilder patientQuery = getPatientClauses(patientCriteria.getDataset(), patientCriteria.getGender(), patientCriteria.getMinAgeNow(),
+				patientCriteria.getMaxAgeNow(), now);
 		List<EventCriterion> eventCriteria = patientCriteria.getEventCriteria();
 
 		// Fetch conceptIds of each criterion
@@ -98,7 +128,7 @@ public class PatientQueryService {
 		filterBoolBuilder.must(getPatientEventFilter(eventCriteria, eclToConceptsMap));
 		for (CohortCriteria exclusionCriterion : exclusionCriteria) {
 			BoolQueryBuilder exclusionBool = boolQuery();
-			exclusionBool.must(getPatientClauses(exclusionCriterion.getGender(), exclusionCriterion.getMinAgeNow(), exclusionCriterion.getMaxAgeNow(), now));
+			exclusionBool.must(getPatientClauses(null, exclusionCriterion.getGender(), exclusionCriterion.getMinAgeNow(), exclusionCriterion.getMaxAgeNow(), now));
 			if (!exclusionCriterion.getEventCriteria().isEmpty()) {
 				exclusionBool.must(getPatientEventFilter(exclusionCriterion.getEventCriteria(), eclToConceptsMap));
 			}
@@ -258,8 +288,11 @@ public class PatientQueryService {
 		}
 	}
 
-	private BoolQueryBuilder getPatientClauses(Gender gender, Integer minAgeNow, Integer maxAgeNow, GregorianCalendar now) {
+	private BoolQueryBuilder getPatientClauses(String dataset, Gender gender, Integer minAgeNow, Integer maxAgeNow, GregorianCalendar now) {
 		BoolQueryBuilder patientQuery = boolQuery();
+		if (dataset != null) {
+			patientQuery.must(termQuery(Patient.Fields.DATASET, dataset));
+		}
 		if (gender != null) {
 			patientQuery.must(termQuery(Patient.Fields.GENDER, gender));
 		}
@@ -530,5 +563,4 @@ public class PatientQueryService {
 		}
 		return null;
 	}
-
 }

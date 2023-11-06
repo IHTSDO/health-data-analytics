@@ -100,14 +100,14 @@ Once Elasticsearch is running patient data can be imported into the server from 
 
 - Import FHIR Bulk resources from a directory containing the `.ndjson` files:
 ```bash
-java -Xms3g -jar server/target/server*.jar --import-population-fhir='my-documents/fhir-resources'
+java -Xms3g -jar server/target/server*.jar --data-set="Hospital-A" --import-population-fhir='my-documents/fhir-resources'
 ```
 
 Or
 
 - Import native bulk resources:
 ```bash
-java -Xms3g -jar server/target/server*.jar --import-population='patient-data-for-import'
+java -Xms3g -jar server/target/server*.jar --data-set="Hospital-B" --import-population='patient-data-for-import'
 ```
 
 Or
@@ -115,9 +115,11 @@ Or
 - Import single file FHIR resources:
 
 ```bash
-java -Xms3g -jar server/target/server*.jar --import-population-fhir-single='patient-data-for-import'
+java -Xms3g -jar server/target/server*.jar --data-set="Hospital-C" --import-population-fhir-single='patient-data-for-import'
 ```
-The optional parameter "--import-fhir-version" specifies the FHIR version. Currently, version 3 ("dstu3") and
+The `--data-set` parameter is required to give a label to the set of data being imported. The user interface and API support switching between data sets. 
+
+The optional parameter `"--import-fhir-version"` specifies the FHIR version. Currently, version 3 ("dstu3") and
 4 ("r4") are supported. The default is "r4". 
 Each file has to contain a "Bundle" or "Collection" resource.
 Import of 10,000 patients (roughly 25GB data) from https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/QDXLWR

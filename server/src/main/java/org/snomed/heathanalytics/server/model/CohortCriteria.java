@@ -10,6 +10,7 @@ import java.util.Objects;
 @JsonPropertyOrder({"gender", "minAgeNow", "maxAgeNow", "eventCriteria", "exclusionCriteria"})
 public class CohortCriteria {
 
+	private String dataset;
 	private Gender gender;
 	private Integer minAgeNow;
 	private Integer maxAgeNow;
@@ -28,8 +29,9 @@ public class CohortCriteria {
 		this.maxAgeNow = maxAgeNow;
 	}
 
-	public CohortCriteria(EventCriterion eventCriterion) {
+	public CohortCriteria(String dataset, EventCriterion eventCriterion) {
 		this();
+		this.dataset = dataset;
 		addEventCriterion(eventCriterion);
 	}
 
@@ -45,6 +47,7 @@ public class CohortCriteria {
 
 	public CohortCriteria clone() {
 		CohortCriteria cohortCriteria = new CohortCriteria();
+		cohortCriteria.dataset = dataset;
 		cohortCriteria.gender = gender;
 		cohortCriteria.minAgeNow = minAgeNow;
 		cohortCriteria.maxAgeNow = maxAgeNow;
@@ -66,6 +69,9 @@ public class CohortCriteria {
 		if (criteriaToCopyFrom == null) {
 			return;
 		}
+		if (dataset == null) {
+			dataset = criteriaToCopyFrom.dataset;
+		}
 		if (gender == null) {
 			gender = criteriaToCopyFrom.gender;
 		}
@@ -79,6 +85,14 @@ public class CohortCriteria {
 		}
 		eventCriteria.addAll(criteriaToCopyFrom.eventCriteria);
 		exclusionCriteria.addAll(criteriaToCopyFrom.exclusionCriteria);
+	}
+
+	public String getDataset() {
+		return dataset;
+	}
+
+	public void setDataset(String dataset) {
+		this.dataset = dataset;
 	}
 
 	public Gender getGender() {
@@ -122,6 +136,7 @@ public class CohortCriteria {
 		if (o == null || getClass() != o.getClass()) return false;
 		CohortCriteria that = (CohortCriteria) o;
 		return gender == that.gender &&
+				Objects.equals(dataset, that.dataset) &&
 				Objects.equals(minAgeNow, that.minAgeNow) &&
 				Objects.equals(maxAgeNow, that.maxAgeNow) &&
 				Objects.equals(eventCriteria, that.eventCriteria) &&
@@ -130,12 +145,13 @@ public class CohortCriteria {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(gender, minAgeNow, maxAgeNow, eventCriteria, exclusionCriteria);
+		return Objects.hash(dataset, gender, minAgeNow, maxAgeNow, eventCriteria, exclusionCriteria);
 	}
 
 	@Override
 	public String toString() {
 		return "CohortCriteria{" +
+				"dataset=" + dataset +
 				"gender=" + gender +
 				", minAgeNow=" + minAgeNow +
 				", maxAgeNow=" + maxAgeNow +

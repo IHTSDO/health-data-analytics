@@ -1,18 +1,20 @@
 package org.snomed.heathanalytics.server.ingestion.fhir;
 
-import org.snomed.heathanalytics.model.Gender;
 import org.snomed.heathanalytics.server.ingestion.HealthDataIngestionSourceConfiguration;
 
 import java.io.File;
 
 public class FHIRLocalIngestionSourceConfiguration implements HealthDataIngestionSourceConfiguration {
 
+	private final String dataset;
+
 	public enum FHIR_VERSION {dstu3, r4};
 
 	private final File fileDirectory;
 	private FHIR_VERSION fhirVersion = FHIR_VERSION.r4;
 
-	public FHIRLocalIngestionSourceConfiguration(File fileDirectory, String fhirVersion) {
+	public FHIRLocalIngestionSourceConfiguration(String dataset, File fileDirectory, String fhirVersion) {
+		this.dataset = dataset;
 		this.fileDirectory = fileDirectory;
 		for (FHIR_VERSION fhir_version : FHIR_VERSION.values()) {
 			if (fhir_version.name().equalsIgnoreCase(fhirVersion)) {
@@ -20,6 +22,11 @@ public class FHIRLocalIngestionSourceConfiguration implements HealthDataIngestio
 				break;
 			}
 		}
+	}
+
+	@Override
+	public String getDataset() {
+		return dataset;
 	}
 
 	public File getFileDirectory() {

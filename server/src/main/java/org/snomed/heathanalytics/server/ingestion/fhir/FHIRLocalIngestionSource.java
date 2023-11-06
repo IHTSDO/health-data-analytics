@@ -29,9 +29,10 @@ public class FHIRLocalIngestionSource implements HealthDataIngestionSource {
 		try (HealthDataOutputStream stream = healthDataOutputStream) {
 			FHIRLocalIngestionSourceConfiguration config = (FHIRLocalIngestionSourceConfiguration) configuration;
 			File jsonDirectory = config.getFileDirectory();
+			String dataset = config.getDataset();
 			File[] files = jsonDirectory.listFiles((dir, name) -> name.endsWith(".json"));
 			if (files != null) {
-				FhirContext ctx = null;
+				FhirContext ctx;
 				logger.info("Setting FHIR context to {}", config.getFhirVersion());
 				switch (config.getFhirVersion()) {
 					case dstu3: ctx = FhirContext.forDstu3();break;
@@ -43,7 +44,7 @@ public class FHIRLocalIngestionSource implements HealthDataIngestionSource {
 					Date start = new Date();
 					logger.info("Reading Patient from {}.", jsonFile.getPath());
 					try {
-						org.snomed.heathanalytics.model.Patient elPatient = null;
+						org.snomed.heathanalytics.model.Patient elPatient;
 						switch (config.getFhirVersion()) {
 							case dstu3: elPatient = parse_dstu3(jsonFile, parser);break;
 							default   : elPatient = parse_r4(jsonFile, parser);
@@ -51,7 +52,7 @@ public class FHIRLocalIngestionSource implements HealthDataIngestionSource {
 						if (elPatient != null)
 							patients.add(elPatient);
 						if (patients.size() == 1000) {
-							stream.createPatients(patients);
+							stream.createPatients(patients, dataset);
 							patients.clear();
 						}
 					} catch (Exception e) {
@@ -59,7 +60,7 @@ public class FHIRLocalIngestionSource implements HealthDataIngestionSource {
 					}
 				}
 				if (!patients.isEmpty()) {
-					stream.createPatients(patients);
+					stream.createPatients(patients, dataset);
 				}
 			}
 		}

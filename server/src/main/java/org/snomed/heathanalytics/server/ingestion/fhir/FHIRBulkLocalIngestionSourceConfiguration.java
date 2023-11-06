@@ -6,19 +6,26 @@ import java.io.File;
 
 public class FHIRBulkLocalIngestionSourceConfiguration implements HealthDataIngestionSourceConfiguration {
 
+	private final String dataset;
 	private final File patientFile;
 	private final File conditionFile;
 	private final File procedureFile;
 	private final File medicationRequestFile;
 	private final File serviceRequestFile;
 
-	public FHIRBulkLocalIngestionSourceConfiguration(File patientFile, File conditionFile, File procedureFile, File medicationRequestFile,
+	public FHIRBulkLocalIngestionSourceConfiguration(String dataset, File patientFile, File conditionFile, File procedureFile, File medicationRequestFile,
 			File serviceRequestFile) {
+		this.dataset = dataset;
 		this.patientFile = patientFile;
 		this.conditionFile = conditionFile;
 		this.procedureFile = procedureFile;
 		this.medicationRequestFile = medicationRequestFile;
 		this.serviceRequestFile = serviceRequestFile;
+	}
+
+	@Override
+	public String getDataset() {
+		return dataset;
 	}
 
 	public File getPatientFile() {

@@ -2,15 +2,22 @@ package org.snomed.heathanalytics.server.config;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.oas.models.ExternalDocumentation;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
@@ -32,8 +39,6 @@ import java.util.List;
 		})
 public abstract class Config {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
-
 	@Bean(name = { "elasticsearchOperations", "elasticsearchTemplate"})
 	public ElasticsearchRestTemplate elasticsearchTemplate() {
 		return new ElasticsearchRestTemplate(elasticsearchRestClient());
@@ -41,6 +46,11 @@ public abstract class Config {
 
 	@Value("${spring.data.elasticsearch.cluster-nodes}")
 	private String nodes;
+
+	@Autowired(required = false)
+	private BuildProperties buildProperties;
+
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Bean
 	public RestHighLevelClient elasticsearchRestClient() {
@@ -67,6 +77,18 @@ public abstract class Config {
 				.json()
 				.serializationInclusion(JsonInclude.Include.NON_NULL)
 				.build();
+	}
+
+	@Bean
+	public OpenAPI apiInfo() {
+		final String version = buildProperties != null ? buildProperties.getVersion() : "DEV";
+		return new OpenAPI()
+				.info(new Info().title("Snolytical")
+						.description("Healthcare Analytics Demonstrator using SNOMED CT")
+						.version(version)
+						.contact(new Contact().name("SNOMED International").url("https://www.snomed.org"))
+						.license(new License().name("Apache 2.0").url("http://www.apache.org/licenses/LICENSE-2.0")))
+				.externalDocs(new ExternalDocumentation().description("See more about Snolytical in GitHub").url("https://github.com/IHTSDO/health-data-analytics"));
 	}
 
 }

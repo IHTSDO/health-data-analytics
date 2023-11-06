@@ -1,6 +1,6 @@
 package org.snomed.heathanalytics.server.rest;
 
-import io.swagger.annotations.Api;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.server.service.UIStateService;
@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.util.List;
 
 @RestController
-@Api(tags = "UI State", description = "-")
+@Tag(name = "UI State", description = "-")
 @RequestMapping("/api/ui-state")
 public class UIStateController {
 

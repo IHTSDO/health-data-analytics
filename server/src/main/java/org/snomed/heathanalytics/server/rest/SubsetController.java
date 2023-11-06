@@ -1,6 +1,6 @@
 package org.snomed.heathanalytics.server.rest;
 
-import io.swagger.annotations.Api;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.server.model.Subset;
@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
-@Api(tags = "Concept Subsets", description = "-")
+@Tag(name = "Concept Subsets", description = "-")
 public class SubsetController {
 
 	@Autowired

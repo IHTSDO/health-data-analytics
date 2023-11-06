@@ -17,16 +17,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
-import org.springframework.context.annotation.Bean;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spring.web.plugins.Docket;
+import org.springframework.context.annotation.Lazy;
 
 import java.io.File;
 import java.util.List;
-
-import static com.google.common.base.Predicates.not;
-import static springfox.documentation.builders.PathSelectors.regex;
 
 @SpringBootApplication(exclude = {
 		ElasticsearchDataAutoConfiguration.class,
@@ -41,6 +35,7 @@ public class ServerApplication extends Config implements ApplicationRunner {
 	public static final String IMPORT_FHIR_VERSION = "import-fhir-version";
 
 	@Autowired
+	@Lazy
 	private ElasticOutputStream elasticOutputStream;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -152,12 +147,4 @@ public class ServerApplication extends Config implements ApplicationRunner {
 				elasticOutputStream);
 	}
 
-	@Bean
-	public Docket api() {
-		return new Docket(DocumentationType.SWAGGER_2)
-				.select()
-				.apis(RequestHandlerSelectors.any())
-				.paths(not(regex("/error")))
-				.build();
-	}
 }

@@ -1,10 +1,10 @@
 package org.snomed.heathanalytics.server.rest;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.snomed.heathanalytics.model.ClinicalEvent;
-import org.snomed.heathanalytics.server.model.CohortCriteria;
 import org.snomed.heathanalytics.model.Patient;
+import org.snomed.heathanalytics.server.model.CohortCriteria;
 import org.snomed.heathanalytics.server.service.PatientQueryService;
 import org.snomed.heathanalytics.server.service.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,13 +17,14 @@ import java.util.TreeSet;
 
 @RestController
 @RequestMapping("/api")
-@Api(tags = "Patients", description = "-")
+@Tag(name = "Patients", description = "-")
 public class CohortController {
 
 	@Autowired
 	private PatientQueryService patientQueryService;
 
-	@ApiOperation("Retrieve patients which match the given cohort criteria. " +
+	@Operation(summary = "Retrieve patients using cohort criteria",
+			description = "Retrieve patients which match the given cohort criteria. " +
 			"Within additionalCriteria a days value of '-1' can be used as an unbounded value.")
 	@RequestMapping(value = "/cohorts/select", method = RequestMethod.POST, produces = "application/json")
 	@ResponseBody

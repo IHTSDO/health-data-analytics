@@ -6,6 +6,7 @@ import org.snomed.heathanalytics.model.ClinicalEvent;
 import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.server.ingestion.HealthDataOutputStream;
 import org.snomed.heathanalytics.server.store.PatientRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
@@ -24,7 +25,7 @@ public class ElasticOutputStream implements HealthDataOutputStream {
 
 	private final Map<String, Patient> patientBuffer = new HashMap<>();
 
-	public ElasticOutputStream(PatientRepository patientRepository) {
+	public ElasticOutputStream(@Autowired PatientRepository patientRepository) {
 		this.patientRepository = patientRepository;
 	}
 

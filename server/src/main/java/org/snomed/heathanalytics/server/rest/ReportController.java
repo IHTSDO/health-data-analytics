@@ -1,7 +1,7 @@
 package org.snomed.heathanalytics.server.rest;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.snomed.heathanalytics.server.model.Report;
 import org.snomed.heathanalytics.server.model.ReportDefinition;
 import org.snomed.heathanalytics.server.model.StatisticalCorrelationReport;
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api")
-@Api(tags = "Reports", description = "-")
+@Tag(name = "Reports", description = "-")
 public class ReportController {
 
 	@Autowired
@@ -24,15 +24,15 @@ public class ReportController {
 	@Autowired
 	private PatientQueryService patientQueryService;
 
-	@ApiOperation(value = "Service statistics.", notes = "Just reports the server date and number of patients in the store.")
+	@Operation(summary = "Service statistics.", description = "Just reports the server date and number of patients in the store.")
 	@RequestMapping(value = "/stats", method = RequestMethod.GET, produces = "application/json")
 	@ResponseBody
 	public Stats getStats() {
 		return patientQueryService.getStats();
 	}
 
-	@ApiOperation(value = "Create a report of patient counts using groups.",
-			notes = "Create a report of patient counts using groups.\n" +
+	@Operation(summary = "Create a report of patient counts using groups.",
+			description = "Create a report of patient counts using groups.\n" +
 					"\n" +
 					"A top level criteria can be defined for the overall cohort.  \n" +
 					"Groups with more specific criteria can also be defined if required.  \n" +
@@ -57,8 +57,8 @@ public class ReportController {
 		return reportService.runReport(reportDefinition);
 	}
 
-	@ApiOperation(value = "Statistical event correlation report.",
-			notes = "Within eventCriteria days value of '-1' can be used as an unbounded value.")
+	@Operation(summary = "Statistical event correlation report.",
+			description = "Within eventCriteria days value of '-1' can be used as an unbounded value.")
 	@RequestMapping(value = "/statistical-correlation-report", method = RequestMethod.POST, produces = "application/json")
 	@ResponseBody
 	public StatisticalCorrelationReport runReportSta(@RequestBody StatisticalCorrelationReportDefinition reportDefinition) throws ServiceException {

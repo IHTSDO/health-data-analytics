@@ -1,6 +1,6 @@
 package org.snomed.heathanalytics.server.rest;
 
-import io.swagger.annotations.Api;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.snomed.heathanalytics.server.pojo.ConceptResult;
 import org.snomed.heathanalytics.server.service.ServiceException;
 import org.snomed.heathanalytics.server.service.SnomedService;
@@ -11,7 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api")
-@Api(tags = "Concepts", description = "-")
+@Tag(name = "Concepts", description = "-")
 public class ConceptController {
 
 	@Autowired

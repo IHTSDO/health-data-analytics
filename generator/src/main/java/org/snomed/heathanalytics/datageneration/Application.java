@@ -24,6 +24,7 @@ public class Application implements ApplicationRunner {
 	public static final String POPULATION_SIZE = "population-size";
 	public static final String LONGITUDINAL = "longitudinal";
 	public static final String OUTPUT_DIR = "patient-data-for-import";
+	public static final String LONGITUDINAL_OUTPUT_DIR = "patient-data-for-import-longitudinal";
 	public static final int POPULATION_SIZE_DEFAULT = 1_248_322;
 
 	public static void main(String[] args) {
@@ -80,7 +81,7 @@ public class Application implements ApplicationRunner {
 	}
 
 	private void generateLongitudinalPopulation() throws IOException, ServiceException {
-		File dataGenDir = new File(OUTPUT_DIR);
+		File dataGenDir = new File(LONGITUDINAL_OUTPUT_DIR);
 		dataGenDir.mkdirs();
 		File longitudinalNdJsonFile = new File(dataGenDir, "generated-patients-longitudinal.ndjson");
 		if (longitudinalNdJsonFile.isFile()) {

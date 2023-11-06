@@ -13,6 +13,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import static java.lang.String.format;
+
 @Service
 public class ElasticOutputStream implements HealthDataOutputStream {
 
@@ -28,7 +30,7 @@ public class ElasticOutputStream implements HealthDataOutputStream {
 
 	@Override
 	public void createPatient(Patient patient, String dataset) {
-		patient.setRoleId(getCompositeRoleId(dataset, patient.getRoleId()));
+		patient.setCompositeRoleId(getCompositeRoleId(dataset, patient.getRoleId()));
 		patient.setDataset(dataset);
 		patientRepository.save(patient);
 	}
@@ -36,19 +38,19 @@ public class ElasticOutputStream implements HealthDataOutputStream {
 	@Override
 	public void createPatients(Collection<Patient> patients, String dataset) {
 		patients.forEach(patient -> {
-			patient.setRoleId(getCompositeRoleId(dataset, patient.getRoleId()));
+			patient.setCompositeRoleId(getCompositeRoleId(dataset, patient.getRoleId()));
 			patient.setDataset(dataset);
 		});
 		patientRepository.saveAll(patients);
 	}
 
 	private static String getCompositeRoleId(String dataset, String roleId) {
-		return dataset + roleId;
+		return format("%s|%s", dataset, roleId);
 	}
 
 	@Override
 	public void addClinicalEvent(String roleId, ClinicalEvent event, String dataset) {
-		String compositeRoleId = getCompositeRoleId(roleId, dataset);
+		String compositeRoleId = getCompositeRoleId(dataset, roleId);
 		Patient patient = patientBuffer.get(compositeRoleId);
 		if (patient == null) {
 			Optional<Patient> patientOptional = patientRepository.findById(compositeRoleId);

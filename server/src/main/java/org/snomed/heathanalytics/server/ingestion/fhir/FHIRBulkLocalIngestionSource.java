@@ -47,7 +47,7 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 		}
 	}
 
-	private void ingestPatients(HealthDataOutputStream healthDataOutputStream, File patientFile, String datasetLabel) {
+	private void ingestPatients(HealthDataOutputStream healthDataOutputStream, File patientFile, String dataset) {
 		if (patientFile == null) {
 			logger.info("No Patients file supplied.");
 			return;
@@ -64,7 +64,7 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 					patients.add(new Patient(fhirPatient.getId(), fhirPatient.getBirthDate(), Gender.from(fhirPatient.getGender())));
 				}
 
-				healthDataOutputStream.createPatients(patients, datasetLabel);
+				healthDataOutputStream.createPatients(patients, dataset);
 				read += patients.size();
 				if (read % 10_000 == 0) {
 					logger.info("Consumed {} patients into store.", NumberFormat.getNumberInstance().format(read));
@@ -76,7 +76,7 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 		}
 	}
 
-	private void ingestConditions(HealthDataOutputStream healthDataOutputStream, File conditionFile, String datasetLabel) {
+	private void ingestConditions(HealthDataOutputStream healthDataOutputStream, File conditionFile, String dataset) {
 		if (conditionFile == null) {
 			logger.info("No Conditions file supplied.");
 			return;
@@ -94,7 +94,7 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 					String conceptId = getSnomedCode(fhirCondition.getCode());
 					if (conceptId != null && fhirCondition.getOnsetDateTime() != null) {
 						ClinicalEvent event = new ClinicalEvent(fhirCondition.getOnsetDateTime(), parseLong(conceptId));
-						healthDataOutputStream.addClinicalEvent(subjectId, event, "A");
+						healthDataOutputStream.addClinicalEvent(subjectId, event, dataset);
 						active++;
 						if (active % 1_000 == 0) {
 							logger.info("Consumed {} Conditions into store.", NumberFormat.getNumberInstance().format(active));
@@ -111,7 +111,7 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 		}
 	}
 
-	private void ingestProcedures(HealthDataOutputStream healthDataOutputStream, File procedureFile, String datasetLabel) {
+	private void ingestProcedures(HealthDataOutputStream healthDataOutputStream, File procedureFile, String dataset) {
 		if (procedureFile == null) {
 			logger.info("No Procedures file supplied.");
 			return;
@@ -129,7 +129,7 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 					String conceptId = getSnomedCode(fhirProcedure.getCode());
 					if (conceptId != null && fhirProcedure.getStartDate() != null) {
 						ClinicalEvent event = new ClinicalEvent(fhirProcedure.getStartDate(), parseLong(conceptId));
-						healthDataOutputStream.addClinicalEvent(subjectId, event, "A");
+						healthDataOutputStream.addClinicalEvent(subjectId, event, dataset);
 						active++;
 						if (active % 1_000 == 0) {
 							logger.info("Consumed {} Procedures into store.", NumberFormat.getNumberInstance().format(active));
@@ -146,7 +146,7 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 		}
 	}
 
-	private void ingestMedicationRequests(HealthDataOutputStream healthDataOutputStream, File medicationRequestFile, String datasetLabel) {
+	private void ingestMedicationRequests(HealthDataOutputStream healthDataOutputStream, File medicationRequestFile, String dataset) {
 		if (medicationRequestFile == null) {
 			logger.info("No MedicationRequests file supplied.");
 			return;
@@ -164,7 +164,7 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 					String conceptId = getSnomedCode(fhirMedicationRequest.getMedicationCodeableConcept());
 					if (conceptId != null && fhirMedicationRequest.getAuthoredOn() != null) {
 						ClinicalEvent event = new ClinicalEvent(fhirMedicationRequest.getAuthoredOn(), parseLong(conceptId));
-						healthDataOutputStream.addClinicalEvent(subjectId, event, "A");
+						healthDataOutputStream.addClinicalEvent(subjectId, event, dataset);
 						active++;
 						if (active % 1_000 == 0) {
 							logger.info("Consumed {} Medications into store.", NumberFormat.getNumberInstance().format(active));
@@ -200,7 +200,7 @@ public class FHIRBulkLocalIngestionSource implements HealthDataIngestionSource {
 					Date occurrenceDateOrBestGuess = fhirServiceRequest.getOccurrenceDateOrBestGuess();
 					if (conceptId != null && occurrenceDateOrBestGuess != null) {
 						ClinicalEvent event = new ClinicalEvent(occurrenceDateOrBestGuess, parseLong(conceptId));
-						healthDataOutputStream.addClinicalEvent(subjectId, event, "A");
+						healthDataOutputStream.addClinicalEvent(subjectId, event, dataset);
 						active++;
 						if (active % 1_000 == 0) {
 							logger.info("Consumed {} ServiceRequests into store.", NumberFormat.getNumberInstance().format(active));

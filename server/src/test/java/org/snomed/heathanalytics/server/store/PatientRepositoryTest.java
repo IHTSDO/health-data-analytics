@@ -24,10 +24,12 @@ public class PatientRepositoryTest extends AbstractDataTest {
 	@Test
 	// Test that all fields, particularly date fields, are working as expected.
 	public void testMappings() {
-		patientRepository.save(new Patient("123", new GregorianCalendar(1980, Calendar.APRIL, 10).getTime(), Gender.FEMALE)
-				.addEvent(new ClinicalEvent(new GregorianCalendar(2000, Calendar.JULY, 5, 10, 15).getTime(), 123123L)));
+		Patient patientBeforeSave = new Patient("123", new GregorianCalendar(1980, Calendar.APRIL, 10).getTime(), Gender.FEMALE)
+				.setCompositeRoleId("A|123")
+				.addEvent(new ClinicalEvent(new GregorianCalendar(2000, Calendar.JULY, 5, 10, 15).getTime(), 123123L));
+		patientRepository.save(patientBeforeSave);
 
-		Optional<Patient> patientOptional = patientRepository.findById("123");
+		Optional<Patient> patientOptional = patientRepository.findById("A|123");
 
 		assertTrue(patientOptional.isPresent());
 		Patient patient = patientOptional.get();

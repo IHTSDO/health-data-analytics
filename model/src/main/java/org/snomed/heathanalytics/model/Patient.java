@@ -16,6 +16,9 @@ import java.util.*;
 public class Patient {
 
 	@Id
+	private String compositeRoleId;
+
+	@Field(type = FieldType.Keyword)
 	private String roleId;
 
 	@Field(type = FieldType.Keyword)
@@ -63,6 +66,16 @@ public class Patient {
 			events = new HashSet<>();
 		}
 		events.add(event);
+		return this;
+	}
+
+	@JsonView({View.Elasticsearch.class})
+	public String getCompositeRoleId() {
+		return compositeRoleId;
+	}
+
+	public Patient setCompositeRoleId(String compositeRoleId) {
+		this.compositeRoleId = compositeRoleId;
 		return this;
 	}
 

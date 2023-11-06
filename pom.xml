@@ -36,17 +36,12 @@
 		</developer>
 	</developers>
 	<parent>
-		<groupId>org.springframework.boot</groupId>
-		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.3.3.RELEASE</version>
+		<groupId>org.snomed</groupId>
+		<artifactId>snomed-parent-bom</artifactId>
+		<version>2.0.0</version>
 	</parent>
 	<properties>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<java.version>11</java.version>
-		<!-- Elasticsearch client version comes from spring-boot-starter-data-elasticsearch > spring-data-elasticsearch -->
-		<elasticsearch.version>7.10.2</elasticsearch.version>
-		<hapi-fhir.version>5.1.0</hapi-fhir.version>
+		<tomcat-embed.version>9.0.82</tomcat-embed.version><!-- Force version newer than BOM for CVE fix -->
 	</properties>
 	<dependencies>
 		<!-- Spring Dependencies -->
@@ -57,11 +52,31 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
+			<version>2.7.17</version><!-- Force version newer than BOM for CVE fix -->
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-elasticsearch</artifactId>
+			<artifactId>spring-boot-starter-tomcat</artifactId>
+			<version>2.7.17</version><!-- Force version newer than BOM for CVE fix -->
 		</dependency>
+
+		<!-- Elasticsearch -->
+		<dependency>
+			<groupId>org.snomed.otf</groupId>
+			<artifactId>spring-data-elasticsearch</artifactId>
+			<version>4.1.16</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.elasticsearch</groupId>
+					<artifactId>jna</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.elasticsearch.plugin</groupId>
+					<artifactId>transport-netty4-client</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
 		<!-- HAPI FHIR -->
 		<dependency>
 			<groupId>ca.uhn.hapi.fhir</groupId>
@@ -83,11 +98,6 @@
 			<artifactId>hapi-fhir-structures-dstu3</artifactId>
 			<version>${hapi-fhir.version}</version>
 		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
 	</dependencies>
 	<repositories>
 		<repository>
@@ -103,16 +113,4 @@
 			<url>https://nexus3.ihtsdotools.org/repository/maven-snapshots/</url>
 		</repository>
 	</repositories>
-	<distributionManagement>
-		<repository>
-			<id>ihtsdo-public-nexus</id>
-			<name>IHTSDO Public Nexus Releases</name>
-			<url>https://maven.ihtsdotools.org/content/repositories/releases/</url>
-		</repository>
-		<snapshotRepository>
-			<id>ihtsdo-public-nexus</id>
-			<name>IHTSDO Public Nexus Snapshots</name>
-			<url>https://maven.ihtsdotools.org/content/repositories/snapshots/</url>
-		</snapshotRepository>
-	</distributionManagement>
 </project>

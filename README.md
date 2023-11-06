@@ -61,7 +61,7 @@ A clinical event could represent an observation, finding, drug prescription or p
 
 ### Project Setup
 #### Prerequisites
-- Java 11
+- Java 17
 - 8G of memory
 - Patient data (can be generated)
 - Access to a FHIR Terminology Server with SNOMED CT

@@ -136,6 +136,11 @@ public class IntegrationTest extends AbstractDataTest {
 	}
 
 	@Test
+	public void testGetDatasets() {
+		assertEquals("[A]", patientQueryService.getDatasets().toString());
+	}
+
+	@Test
 	public void testCohortSelectionWithExposureCriterion() throws ServiceException {
 		EventCriterion firstExposureCriterion = new EventCriterion("<<" + myocardialInfarction.getId().toString());
 		CohortCriteria cohortCriteria = new CohortCriteria("A", firstExposureCriterion);

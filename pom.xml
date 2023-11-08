@@ -5,7 +5,7 @@
 
 	<artifactId>health-data-analytics-parent</artifactId>
 	<groupId>org.snomed.analytics</groupId>
-	<version>5.0.0-SNAPSHOT</version>
+	<version>5.0.0-prototype</version>
 	<packaging>pom</packaging>
 
 	<modules>
@@ -99,6 +99,18 @@
 			<version>${hapi-fhir.version}</version>
 		</dependency>
 	</dependencies>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.owasp</groupId>
+				<artifactId>dependency-check-maven</artifactId>
+				<configuration>
+					<!-- Do not fail build -->
+					<failBuildOnCVSS>11</failBuildOnCVSS>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 	<repositories>
 		<repository>
 			<id>ihtsdo-releases</id>

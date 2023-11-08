@@ -82,7 +82,7 @@
                     </b-card-text>
                 </b-card>
             </div>
-            <b-button v-on:click="run">Run</b-button>
+            <b-button style="margin-top: 15px; margin-bottom:100px" v-on:click="run">Run Report</b-button>
             <!-- <b-button v-on:click="save">Save</b-button> -->
             <!-- <b-button v-on:click="load">Load</b-button> -->
         </b-col>

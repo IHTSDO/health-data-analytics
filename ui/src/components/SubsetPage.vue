@@ -21,7 +21,7 @@
                 <h6 style="text-align: left; margin-top: 15px">ECL Builder: </h6>
                 <snomed-ecl-builder
                     apiurl="/api/snowstorm"
-                    branch="MAIN/2022-06-30"
+                    branch="MAIN"
                     :eclstring="selectedSubset.ecl"
                     v-on:eclOutput="eclChange"
                     />

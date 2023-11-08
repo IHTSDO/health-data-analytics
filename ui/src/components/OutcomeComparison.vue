@@ -46,12 +46,13 @@
                         <b-button v-on:click="addGroup">Add Group</b-button>
                         <b-row style="margin-top:15px">
                             <b-col>
-                                <b-check v-model="includeGroupNoneOfAbove">Include group for everyone else</b-check>
+                                <b-check v-model="includeGroupNoneOfAbove">Include group for all other patients</b-check>
                             </b-col>
                         </b-row>
                     </b-card-text>
                 </b-card>
             </div>
+            <b-button style="margin-top: 15px; margin-bottom:100px" v-on:click="runReport">Run Report</b-button>
             <!-- <b-button v-on:click="save">Save</b-button> -->
             <!-- <b-button v-on:click="load">Load</b-button> -->
         </b-col>
@@ -109,11 +110,6 @@ export default defineComponent({
             // this.save()
             this.updateCohortSize()
             return selectionHash;
-        },
-        conditionsTrigger() {
-            const reportRequest = this.getReportRequest()
-            this.updateOutcomes(reportRequest);
-            return reportRequest;
         }
     },
     methods: {
@@ -191,6 +187,11 @@ export default defineComponent({
                     })
             }, 100)
         },
+        runReport: function() {
+            const reportRequest = this.getReportRequest()
+            this.updateOutcomes(reportRequest);
+            return reportRequest;
+        },
         updateOutcomes: function(report: any) {
             if (report.groups && report.groups.length == 2 && report.groups[1].length) {
                 this.$refs.chart.fetchReport(report)
@@ -209,7 +210,7 @@ export default defineComponent({
             })
             if (this.includeGroupNoneOfAbove) {
                 const negativeGroupCriteria = {} as any;
-                negativeGroupCriteria.name = "Everyone else";
+                negativeGroupCriteria.name = "All other patients";
                 const exclusionCriteria = [] as Array<any>
                 patientGroups.forEach(patientGroup => {
                     exclusionCriteria.push(patientGroup.criteria)

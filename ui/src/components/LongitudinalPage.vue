@@ -303,7 +303,7 @@ export default defineComponent({
             const colors = new Array<string>();
             this.outcomes.forEach(outcome => {
                 if (outcome.isFilled()) {
-                    colors.push(outcome.color)                    
+                    colors.push(outcome.color)
                     outcomesRequest.push({
                         name: outcome.display,
                         criteria: {

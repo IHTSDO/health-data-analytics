@@ -28,7 +28,7 @@ export default defineComponent({
                 dataLabels: {
                     enabled: false
                 },
-                colors: ['#99C2A2', '#C5EDAC', '#66C7F4'],
+                colors: ['#FA8989','#FF924C','#FFCA3A','#C5CA30','#8AC926','#52A675','#1982C4','#4267AC','#6A4C93'],
                 markers: {
                     size: 4,
                 },

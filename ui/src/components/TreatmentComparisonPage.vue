@@ -101,7 +101,7 @@ export default defineComponent({
 
             // apex
             series: [{data: []}],
-            colors: ['#25ACB8', '#F8A73D', '#6DBBA1', '#DE8345', '#8D3057', '#8072AC']
+            colors: ['#FA8989','#FF924C','#FFCA3A','#C5CA30','#8AC926','#52A675','#1982C4','#4267AC','#6A4C93']
         }
     },
     mounted() {

@@ -92,8 +92,8 @@ The Data Analytics API is a Java application using Spring Boot with Swagger API 
 
 #### Elasticsearch
 The server requires a standalone Elasticsearch deployment. Elasticsearch can be run locally. There are also hosted solutions available from AWS and Elastic.co.
-The Elasticsearch server _must_ be version 7.10, version 8 or later will not work.  
-We recommend the latest 7.10.x patch release, available [here](https://www.elastic.co/downloads/past-releases#elasticsearch-oss).
+The Elasticsearch server _must_ be version 8.11.x.  
+We recommend the latest 8.11.x patch release, available [here](https://www.elastic.co/downloads/past-releases#elasticsearch).
 
 #### Patient Data Import
 Once Elasticsearch is running patient data can be imported into the server from either FHIR or native format.

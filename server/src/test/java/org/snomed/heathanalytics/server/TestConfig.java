@@ -65,16 +65,6 @@ public class TestConfig extends ElasticsearchConfig {
 		return elasticsearchContainer;
 	}
 
-//	@Override
-//	public ClientConfiguration clientConfiguration() {
-//		String httpHostAddress = useLocalElasticsearch ? "localhost:9200" : elasticsearchContainer.getHttpHostAddress();
-//		System.out.println("Connecting to " + httpHostAddress);
-//		return ClientConfiguration.builder()
-//				.connectedTo(httpHostAddress)
-//				.withSocketTimeout(Duration.of(20, ChronoUnit.SECONDS))
-//				.build();
-//	}
-
 	@Override
 	public @NotNull ClientConfiguration clientConfiguration() {
 		if (!useLocalElasticsearch) {

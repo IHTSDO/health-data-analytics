@@ -16,6 +16,8 @@ import org.snomed.heathanalytics.server.config.elasticsearch.LongToDateConverter
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.elasticsearch.client.ClientConfiguration;
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchClients;
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchConfiguration;
@@ -27,9 +29,8 @@ import org.springframework.data.elasticsearch.support.HttpHeaders;
 
 import java.util.*;
 
+@Configuration
 public class ElasticsearchConfig extends ElasticsearchConfiguration {
-
-	public static final String INDEX_MAX_TERMS_COUNT = "index.max_terms_count";
 
 	@Value("${elasticsearch.username}")
 	private String elasticsearchUsername;
@@ -47,13 +48,14 @@ public class ElasticsearchConfig extends ElasticsearchConfiguration {
 	short indexReplicas;
 
 	@Autowired
+	@Lazy
 	private ElasticsearchOperations elasticsearchOperations;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	@PostConstruct
 	public void init() {
-		initialiseIndices(false);
+		initialiseIndices(elasticsearchOperations, false);
 	}
 
 	@Override
@@ -131,7 +133,7 @@ public class ElasticsearchConfig extends ElasticsearchConfiguration {
 		return new IndexNameProvider(indexNamePrefix);
 	}
 
-	protected void initialiseIndices(boolean deleteExisting) {
+	protected void initialiseIndices(ElasticsearchOperations elasticsearchOperations, boolean deleteExisting) {
 		Set<Class<?>> entities = scanForEntities("org.snomed.heathanalytics.server.model");
 		logger.debug("Found {} entities to initialise", entities.size());
 		// Initialise Elasticsearch indices

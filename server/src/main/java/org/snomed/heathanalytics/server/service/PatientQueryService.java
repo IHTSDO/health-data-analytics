@@ -18,7 +18,7 @@ import org.snomed.heathanalytics.model.pojo.TermHolder;
 import org.snomed.heathanalytics.server.model.*;
 import org.snomed.heathanalytics.server.pojo.Stats;
 import org.snomed.heathanalytics.server.store.SubsetRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -39,23 +39,27 @@ import static org.springframework.data.elasticsearch.client.elc.Queries.termQuer
 @Service
 public class PatientQueryService {
 
-	@Autowired
-	private SnomedService snomedService;
+	private final SnomedService snomedService;
 
-	@Autowired
-	private ElasticsearchOperations elasticsearchTemplate;
+	private final ElasticsearchOperations elasticsearchOperations;
 
-	@Autowired
-	private SubsetRepository subsetRepository;
+	private final SubsetRepository subsetRepository;
 
-	@Autowired
-	private CPTService cptService;
+	private final CPTService cptService;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
+	public PatientQueryService(SnomedService snomedService, ElasticsearchOperations elasticsearchOperations,
+			SubsetRepository subsetRepository, CPTService cptService) {
+		this.snomedService = snomedService;
+		this.elasticsearchOperations = elasticsearchOperations;
+		this.subsetRepository = subsetRepository;
+		this.cptService = cptService;
+	}
+
 	public Stats getStats() {
 		NativeQuery searchQuery = new NativeQueryBuilder().build();
-		long patientCount = elasticsearchTemplate.count(searchQuery, Patient.class);
+		long patientCount = elasticsearchOperations.count(searchQuery, Patient.class);
 		return new Stats(new Date(), patientCount);
 	}
 
@@ -66,7 +70,7 @@ public class PatientQueryService {
 				.setPageable(PageRequest.of(0, 1));
 
 		List<String> datasets = new ArrayList<>();
-		SearchHits<Patient> hits = elasticsearchTemplate.search(searchQuery, Patient.class);
+		SearchHits<Patient> hits = elasticsearchOperations.search(searchQuery, Patient.class);
 		if (hits.getAggregations() != null) {
 			@SuppressWarnings("unchecked")
 			List<ElasticsearchAggregation> aggregations = (List<ElasticsearchAggregation>) hits.getAggregations().aggregations();
@@ -215,7 +219,7 @@ public class PatientQueryService {
 		// Grab page of Patients from Elasticsearch.
 		NativeQuery query = patientElasticQuery.build();
 		query.setTrackTotalHits(true);
-		SearchHits<Patient> searchHits = elasticsearchTemplate.search(query, Patient.class);
+		SearchHits<Patient> searchHits = elasticsearchOperations.search(query, Patient.class);
 		List<Patient> content = searchHits.stream().map(SearchHit::getContent).collect(Collectors.toList());
 		Page<Patient> patients = new PageImpl<>(content, query.getPageable(), searchHits.getTotalHits());
 

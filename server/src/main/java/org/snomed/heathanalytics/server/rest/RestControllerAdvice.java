@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,13 +36,16 @@ public class RestControllerAdvice {
 		return result;
 	}
 
-	@ExceptionHandler({NotFoundException.class})
+	@ExceptionHandler({
+			NotFoundException.class,
+			NoResourceFoundException.class})
 	@ResponseStatus(HttpStatus.NOT_FOUND)
 	@ResponseBody
 	public Map<String,Object> handleNotFoundException(Exception exception) {
 		HashMap<String, Object> result = new HashMap<>();
 		result.put("error", HttpStatus.NOT_FOUND);
 		result.put("message", exception.getMessage());
+		logger.debug("not found {}", exception.getMessage());
 		return result;
 	}
 

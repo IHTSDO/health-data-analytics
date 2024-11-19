@@ -15,7 +15,7 @@ public class RootController {
 	@RequestMapping(path = "/", method = RequestMethod.GET)
 	@Operation(summary = "Root controller, redirects to swagger-ui.", hidden = true)
 	public void getRoot(HttpServletResponse response) throws IOException {
-		response.sendRedirect("swagger-ui.html");
+		response.sendRedirect("/swagger-ui.html");
 	}
 
 }

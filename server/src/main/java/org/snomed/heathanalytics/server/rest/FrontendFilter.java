@@ -21,7 +21,7 @@ public class FrontendFilter extends HttpFilter {
 		String servletPath = request.getServletPath();
 		if (servletPath.startsWith("/api") || servletPath.contains(".") ||
 				// Swagger page and resources
-				servletPath.startsWith("/swagger") || servletPath.startsWith("/webjars") || servletPath.startsWith("/v2")) {
+				servletPath.startsWith("/swagger") || servletPath.startsWith("/webjars") || servletPath.startsWith("/v3")) {
 			filterChain.doFilter(servletRequest, servletResponse);
 		} else {
 			// Frontend app URL

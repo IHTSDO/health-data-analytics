@@ -6,6 +6,7 @@ import ca.uhn.fhir.rest.server.exceptions.BaseServerResponseException;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.hl7.fhir.r4.model.Parameters;
 import org.hl7.fhir.r4.model.ValueSet;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +25,7 @@ public class SnomedConceptService {
 	private final Map<Long, List<Long>> conceptDescendantMap;
 
 	public SnomedConceptService(@Value("${fhir-terminology-server-url}") String fhirTerminologyServerUrl) {
+		LoggerFactory.getLogger(getClass()).info("Connecting to FHIR Terminology server {}", fhirTerminologyServerUrl);
 		fhirClient = FhirContext.forR4().newRestfulGenericClient(fhirTerminologyServerUrl);
 		conceptDescendantMap = new Long2ObjectOpenHashMap<>();
 	}

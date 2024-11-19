@@ -17,6 +17,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.annotation.Lazy;
 
 import java.io.File;
@@ -34,11 +35,16 @@ public class ServerApplication extends Config implements ApplicationRunner {
 	public static final String IMPORT_POPULATION_FHIR_SINGLE_RESOURCES = "import-population-fhir-single";
 	public static final String IMPORT_FHIR_VERSION = "import-fhir-version";
 
-	@Autowired
-	@Lazy
-	private ElasticOutputStream elasticOutputStream;
+	private final ElasticOutputStream elasticOutputStream;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
+
+	public ServerApplication(
+			@Autowired(required = false) BuildProperties buildProperties,
+			@Autowired @Lazy ElasticOutputStream elasticOutputStream) {
+		super(buildProperties);
+		this.elasticOutputStream = elasticOutputStream;
+	}
 
 	public static void main(String[] args) {
 		SpringApplication.run(ServerApplication.class, args);

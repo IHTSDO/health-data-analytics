@@ -1,17 +1,15 @@
 package org.snomed.heathanalytics.server;
 
-import org.elasticsearch.client.RestHighLevelClient;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.heathanalytics.server.config.Config;
+import org.snomed.heathanalytics.server.config.ElasticsearchConfig;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.elasticsearch.client.ClientConfiguration;
-import org.springframework.data.elasticsearch.client.RestClients;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -24,9 +22,9 @@ import org.testcontainers.junit.jupiter.Container;
 				ElasticsearchRestClientAutoConfiguration.class,
 				ElasticsearchDataAutoConfiguration.class
 		})
-public class TestConfig extends Config {
+public class TestConfig extends ElasticsearchConfig {
 
-	private static final String ELASTIC_SEARCH_SERVER_VERSION = "7.10.2";
+	private static final String ELASTIC_SEARCH_SERVER_VERSION = "8.11.1";
 
 	// set it to true to use local instance instead of test container
 	static final boolean useLocalElasticsearch = false;
@@ -52,14 +50,13 @@ public class TestConfig extends Config {
 		}
 	}
 
-	public static final String DEFAULT_LANGUAGE_CODE = "en";
-
 	public static class CustomElasticsearchContainer extends ElasticsearchContainer {
 		public CustomElasticsearchContainer() {
 			super("docker.elastic.co/elasticsearch/elasticsearch:" + ELASTIC_SEARCH_SERVER_VERSION);
 			// these are mapped ports used by the test container the actual ports used might be different
 			this.addFixedExposedPort(9235, 9235);
 			this.addFixedExposedPort(9330, 9330);
+			addEnv("xpack.security.enabled", "false");
 			this.addEnv("cluster.name", "integration-test-cluster");
 		}
 	}
@@ -68,15 +65,26 @@ public class TestConfig extends Config {
 		return elasticsearchContainer;
 	}
 
+//	@Override
+//	public ClientConfiguration clientConfiguration() {
+//		String httpHostAddress = useLocalElasticsearch ? "localhost:9200" : elasticsearchContainer.getHttpHostAddress();
+//		System.out.println("Connecting to " + httpHostAddress);
+//		return ClientConfiguration.builder()
+//				.connectedTo(httpHostAddress)
+//				.withSocketTimeout(Duration.of(20, ChronoUnit.SECONDS))
+//				.build();
+//	}
+
 	@Override
-	@Bean
-	public RestHighLevelClient elasticsearchRestClient() {
+	public @NotNull ClientConfiguration clientConfiguration() {
 		if (!useLocalElasticsearch) {
-			System.out.println("Connecting to " + elasticsearchContainer.getHttpHostAddress());
-			return RestClients.create(ClientConfiguration.builder()
-					.connectedTo(elasticsearchContainer.getHttpHostAddress()).build()).rest();
+			assert elasticsearchContainer != null;
+			LOGGER.info("Test container Elasticsearch host {} ", elasticsearchContainer.getHttpHostAddress());
+			return ClientConfiguration.builder()
+					.connectedTo(elasticsearchContainer.getHttpHostAddress()).build();
 		}
-		return RestClients.create(ClientConfiguration.builder()
-				.connectedTo("localhost:9200").build()).rest();
+		return ClientConfiguration.builder()
+				.connectedTo("localhost:9200").build();
 	}
+
 }

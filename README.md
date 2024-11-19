@@ -119,8 +119,7 @@ java -Xms3g -jar server/target/server*.jar --data-set="Hospital-C" --import-popu
 ```
 The `--data-set` parameter is required to give a label to the set of data being imported. The user interface and API support switching between data sets. 
 
-The optional parameter `"--import-fhir-version"` specifies the FHIR version. Currently, version 3 ("dstu3") and
-4 ("r4") are supported. The default is "r4". 
+Only FHIR version R4 is supported. 
 Each file has to contain a "Bundle" or "Collection" resource.
 Import of 10,000 patients (roughly 25GB data) from https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/QDXLWR
 takes about 20min on an I7 notebook.

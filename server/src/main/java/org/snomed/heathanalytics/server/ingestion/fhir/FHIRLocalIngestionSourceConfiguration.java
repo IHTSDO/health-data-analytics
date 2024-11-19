@@ -8,7 +8,7 @@ public class FHIRLocalIngestionSourceConfiguration implements HealthDataIngestio
 
 	private final String dataset;
 
-	public enum FHIR_VERSION {dstu3, r4};
+	public enum FHIR_VERSION {r4};
 
 	private final File fileDirectory;
 	private FHIR_VERSION fhirVersion = FHIR_VERSION.r4;

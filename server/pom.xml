@@ -15,7 +15,6 @@
 
 	<properties>
 		<packageName>health-data-analytics</packageName>
-		<testcontainers.version>1.17.3</testcontainers.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -24,9 +23,8 @@
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>fastutil</groupId>
+			<groupId>it.unimi.dsi</groupId>
 			<artifactId>fastutil</artifactId>
-			<version>5.0.9</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springdoc</groupId>
@@ -36,7 +34,6 @@
 		<dependency>
 			<groupId>org.snomed.otf</groupId>
 			<artifactId>snomed-boot</artifactId>
-			<version>2.2.0</version>
 			<scope>test</scope>
 			<exclusions>
 				<exclusion>
@@ -88,12 +85,23 @@
 		<dependency>
 			<groupId>net.java.dev.jna</groupId>
 			<artifactId>jna</artifactId>
-			<version>5.9.0</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>org.owasp</groupId>
+				<artifactId>dependency-check-maven</artifactId>
+				<inherited>false</inherited>
+				<executions>
+					<execution>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
@@ -128,7 +136,6 @@
 					<plugin>
 						<groupId>com.github.eirslett</groupId>
 						<artifactId>frontend-maven-plugin</artifactId>
-						<version>1.12.1</version>
 						<configuration>
 							<nodeVersion>v14.20.0</nodeVersion>
 <!--							<nodeVersion>v16.13.2</nodeVersion>-->
@@ -178,54 +185,6 @@
 											<directory>../ui/dist</directory>
 										</resource>
 									</resources>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-		<profile>
-			<id>deb</id>
-			<activation>
-				<activeByDefault>false</activeByDefault>
-			</activation>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.vafer</groupId>
-						<artifactId>jdeb</artifactId>
-						<version>1.1.1</version>
-						<executions>
-							<execution>
-								<phase>package</phase>
-								<goals>
-									<goal>jdeb</goal>
-								</goals>
-								<configuration>
-									<deb>${project.build.directory}/${packageName}-${project.version}-all.deb</deb>
-									<controlDir>${basedir}/src/deb/control</controlDir>
-									<snapshotExpand>true</snapshotExpand>
-									<snapshotEnv>BUILD_NUMBER</snapshotEnv>
-									<verbose>true</verbose>
-									<classifier>all</classifier>
-									<signPackage>false</signPackage>
-									<dataSet>
-										<data>
-											<src>${project.build.directory}/${project.build.finalName}.jar</src>
-											<dst>server.jar</dst>
-											<type>file</type>
-											<mapper>
-												<type>perm</type>
-												<prefix>/opt/${packageName}/</prefix>
-											</mapper>
-										</data>
-										<data>
-											<src>${basedir}/src/deb/supervisor.conf</src>
-											<dst>/etc/supervisor/conf.d/${packageName}.conf</dst>
-											<type>file</type>
-										</data>
-									</dataSet>
 								</configuration>
 							</execution>
 						</executions>

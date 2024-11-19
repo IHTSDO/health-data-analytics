@@ -1,7 +1,5 @@
 package org.snomed.heathanalytics.server.ingestion.fhir;
 
-import org.elasticsearch.common.Strings;
-
 import java.util.Date;
 
 public class FHIRProcedure {

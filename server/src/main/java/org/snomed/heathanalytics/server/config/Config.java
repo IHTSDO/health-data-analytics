@@ -7,25 +7,14 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
-import org.apache.http.HttpHost;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @SpringBootApplication(
 		exclude = {
@@ -39,36 +28,10 @@ import java.util.List;
 		})
 public abstract class Config {
 
-	@Bean(name = { "elasticsearchOperations", "elasticsearchTemplate"})
-	public ElasticsearchRestTemplate elasticsearchTemplate() {
-		return new ElasticsearchRestTemplate(elasticsearchRestClient());
-	}
+	private final BuildProperties buildProperties;
 
-	@Value("${spring.data.elasticsearch.cluster-nodes}")
-	private String nodes;
-
-	@Autowired(required = false)
-	private BuildProperties buildProperties;
-
-	private final Logger logger = LoggerFactory.getLogger(getClass());
-
-	@Bean
-	public RestHighLevelClient elasticsearchRestClient() {
-		List<HttpHost> httpHosts = new ArrayList<>();
-		try {
-			String[] split = nodes.split(",");
-			for (String node : split) {
-				node = node.trim();
-				String[] split1 = node.split(":");
-				String hostname = split1[0];
-				int port = Integer.parseInt(split1[1]);
-				httpHosts.add(new HttpHost(hostname, port));
-			}
-		} catch (Exception e) {
-			logger.error("Failed to parse Elasticsearch cluster-nodes configuration value '{}'", nodes);
-			throw e;
-		}
-		return new RestHighLevelClient(RestClient.builder(httpHosts.toArray(new HttpHost[]{})));
+	public Config(@Autowired(required = false) BuildProperties buildProperties) {
+		this.buildProperties = buildProperties;
 	}
 
 	@Bean

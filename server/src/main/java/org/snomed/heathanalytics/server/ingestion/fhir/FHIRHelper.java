@@ -1,6 +1,6 @@
 package org.snomed.heathanalytics.server.ingestion.fhir;
 
-import org.elasticsearch.common.Strings;
+import com.google.common.base.Strings;
 
 public class FHIRHelper {
 	public static String getSubjectId(FHIRReference subject) {

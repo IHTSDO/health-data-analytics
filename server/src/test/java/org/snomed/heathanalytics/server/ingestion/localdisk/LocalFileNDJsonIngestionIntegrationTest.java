@@ -9,17 +9,17 @@ import org.snomed.heathanalytics.server.ingestion.elasticsearch.ElasticOutputStr
 import org.snomed.heathanalytics.server.store.PatientRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.elasticsearch.client.elc.NativeQueryBuilder;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHits;
-import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 
 import java.io.File;
 import java.util.*;
 
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.snomed.heathanalytics.model.Gender.MALE;
+import static org.springframework.data.elasticsearch.client.elc.Queries.termQuery;
 
 public class LocalFileNDJsonIngestionIntegrationTest extends AbstractDataTest {
 
@@ -56,7 +56,7 @@ public class LocalFileNDJsonIngestionIntegrationTest extends AbstractDataTest {
 		String conceptDate = "195957006," + event.getDate().getTime();
 		assertEquals(conceptDate, event.getConceptDate());
 		SearchHits<Patient> hits = elasticsearchOperations.search(
-				new NativeSearchQueryBuilder().withQuery(termQuery("events.conceptDate.keyword", conceptDate)).build(), Patient.class);
+				new NativeQueryBuilder().withQuery(termQuery("events.conceptDate.keyword", conceptDate)._toQuery()).build(), Patient.class);
 		assertEquals(1, hits.getTotalHits());
 	}
 

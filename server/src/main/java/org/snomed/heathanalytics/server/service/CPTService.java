@@ -1,5 +1,6 @@
 package org.snomed.heathanalytics.server.service;
 
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.server.model.CPTCode;
@@ -7,7 +8,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import javax.annotation.PostConstruct;
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,17 +34,17 @@ public class CPTService {
 
 	@PostConstruct
 	public void attemptToLoadCPTDataFiles() throws IOException {
-		if (!StringUtils.isEmpty(dataDirectory)) {
+		if (StringUtils.hasLength(dataDirectory)) {
 			File dataDirectoryFile = new File(dataDirectory);
 			if (dataDirectoryFile.isDirectory()) {
 				File cptCodesFile = new File(dataDirectoryFile, CPT_CODES_TXT);
 				if (cptCodesFile.isFile()) {
-					logger.info("Loading {}", cptCodesFile.getName());
+					logger.info("Loading CPT file {}", cptCodesFile.getName());
 					loadCPTCodes(new FileInputStream(cptCodesFile));
 
 					File snomedCptMapFile = new File(dataDirectoryFile, SNOMED_CPT_MAP_TXT);
 					if (snomedCptMapFile.isFile()) {
-						logger.info("Loading {}", snomedCptMapFile.getName());
+						logger.info("Loading CPT Map {}", snomedCptMapFile.getName());
 						loadSnomedCPTMap(new FileInputStream(snomedCptMapFile));
 					} else {
 						logger.warn("{} file was found but {} was not. " +

@@ -38,12 +38,22 @@
 	<parent>
 		<groupId>org.snomed</groupId>
 		<artifactId>snomed-parent-bom</artifactId>
-		<version>2.0.0</version>
+		<version>3.7.1</version>
 	</parent>
 	<properties>
-		<tomcat-embed.version>9.0.82</tomcat-embed.version><!-- Force version newer than BOM for CVE fix -->
+		<!-- Elasticsearch version from property <elasticsearch.version> must be copied into TestConfig.java for integration testing -->
+		<!-- BOM Overrides: Delete and reevaluate during each upgrade -->
+		<spring-boot.version>3.2.11</spring-boot.version>
+		<spring.version>6.1.14</spring.version>
+		<hapi-fhir.version>7.4.5</hapi-fhir.version>
+		<org.hl7.fhir.version>6.4.0</org.hl7.fhir.version>
 	</properties>
 	<dependencies>
+		<dependency>
+			<groupId>org.webjars</groupId>
+			<artifactId>swagger-ui</artifactId>
+			<version>5.18.2</version>
+		</dependency>
 		<!-- Spring Dependencies -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -52,29 +62,16 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
-			<version>2.7.17</version><!-- Force version newer than BOM for CVE fix -->
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-tomcat</artifactId>
-			<version>2.7.17</version><!-- Force version newer than BOM for CVE fix -->
 		</dependency>
 
 		<!-- Elasticsearch -->
 		<dependency>
-			<groupId>org.snomed.otf</groupId>
+			<groupId>org.springframework.data</groupId>
 			<artifactId>spring-data-elasticsearch</artifactId>
-			<version>4.1.16</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.elasticsearch</groupId>
-					<artifactId>jna</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.elasticsearch.plugin</groupId>
-					<artifactId>transport-netty4-client</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 
 		<!-- HAPI FHIR -->
@@ -95,22 +92,15 @@
 		</dependency>
 		<dependency>
 			<groupId>ca.uhn.hapi.fhir</groupId>
-			<artifactId>hapi-fhir-structures-dstu3</artifactId>
-			<version>${hapi-fhir.version}</version>
+			<artifactId>org.hl7.fhir.r4</artifactId>
+			<version>${org.hl7.fhir.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>ca.uhn.hapi.fhir</groupId>
+			<artifactId>org.hl7.fhir.utilities</artifactId>
+			<version>${org.hl7.fhir.version}</version>
 		</dependency>
 	</dependencies>
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.owasp</groupId>
-				<artifactId>dependency-check-maven</artifactId>
-				<configuration>
-					<!-- Do not fail build -->
-					<failBuildOnCVSS>11</failBuildOnCVSS>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
 	<repositories>
 		<repository>
 			<id>ihtsdo-releases</id>

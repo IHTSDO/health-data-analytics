@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestCli
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.elasticsearch.client.ClientConfiguration;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -77,4 +78,8 @@ public class TestConfig extends ElasticsearchConfig {
 				.connectedTo("localhost:9200").build();
 	}
 
+	@Override
+	protected void initialiseIndices(ElasticsearchOperations elasticsearchOperations, boolean deleteExisting) {
+		// Do nothing otherwise test spring context setup fails
+	}
 }

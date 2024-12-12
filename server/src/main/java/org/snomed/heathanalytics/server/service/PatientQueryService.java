@@ -1,5 +1,6 @@
 package org.snomed.heathanalytics.server.service;
 
+import ch.qos.logback.classic.Level;
 import co.elastic.clients.elasticsearch._types.Script;
 import co.elastic.clients.elasticsearch._types.ScriptLanguage;
 import co.elastic.clients.elasticsearch._types.aggregations.*;
@@ -16,10 +17,9 @@ import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.model.pojo.TermHolder;
 import org.snomed.heathanalytics.server.model.*;
 import org.snomed.heathanalytics.server.pojo.Stats;
+import org.snomed.heathanalytics.server.service.util.SearchAfterHelper;
 import org.snomed.heathanalytics.server.store.SubsetRepository;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.client.elc.Aggregation;
 import org.springframework.data.elasticsearch.client.elc.*;
@@ -105,10 +105,14 @@ public class PatientQueryService {
 	}
 
 	public Page<Patient> fetchCohort(CohortCriteria cohortCriteria, int page, int size) throws ServiceException {
-		return doFetchCohort(cohortCriteria, page, size, new GregorianCalendar(), new Timer());
+		return doFetchCohort(cohortCriteria, page, null, size, new GregorianCalendar(), new Timer("FetchCohort"));
 	}
 
-	private Page<Patient> doFetchCohort(CohortCriteria patientCriteria, int page, int size, GregorianCalendar now, Timer timer) throws ServiceException {
+	public Page<Patient> fetchCohort(CohortCriteria cohortCriteria, String searchAfter, int size) throws ServiceException {
+		return doFetchCohort(cohortCriteria, 0, searchAfter, size, new GregorianCalendar(), new Timer("FetchCohort", Level.INFO, 10));
+	}
+
+	private Page<Patient> doFetchCohort(CohortCriteria patientCriteria, int page, String searchAfter, int size, GregorianCalendar now, Timer timer) throws ServiceException {
 
 		validateCriteria(patientCriteria);
 
@@ -125,7 +129,7 @@ public class PatientQueryService {
 			String criterionEcl = getGivenOrSubsetEcl(criterion);
 			if (criterionEcl != null) {
 				if (!eclToConceptsMap.containsKey(criterionEcl)) {
-					timer.split("Fetching concepts for ECL " + criterionEcl);
+					timer.checkpoint("Fetching concepts for ECL " + criterionEcl);
 					eclToConceptsMap.put(criterionEcl, snomedService.getConceptIds(criterionEcl));
 				}
 			}
@@ -148,6 +152,7 @@ public class PatientQueryService {
 		PageRequest pageable = PageRequest.of(page, size);
 		NativeQueryBuilder patientElasticQuery = new NativeQueryBuilder()
 				.withQuery(patientQuery.build()._toQuery())
+				.withTrackTotalHits(true)
 				.withPageable(pageable);
 
 		List<EventCriterion> eventCriteriaWithCPTAnalysis = eventCriteria.stream().filter(EventCriterion::isIncludeCPTAnalysis).toList();
@@ -220,12 +225,17 @@ public class PatientQueryService {
 		query.setTrackTotalHits(true);
 		SearchHits<Patient> searchHits = elasticsearchOperations.search(query, Patient.class);
 		List<Patient> content = searchHits.stream().map(SearchHit::getContent).collect(Collectors.toList());
-		Page<Patient> patients = new PageImpl<>(content, query.getPageable(), searchHits.getTotalHits());
+		String searchAfterToken = null;
+		if (!content.isEmpty()) {
+			String lastPatientId = content.get(content.size() - 1).getRoleId();
+			searchAfterToken = SearchAfterHelper.toSearchAfterToken(new String[]{lastPatientId});
+		}
+		PatientPageWithSearchAfter patients = new PatientPageWithSearchAfter(content, query.getPageable(), searchHits.getTotalHits(), searchAfterToken);
 
-		timer.split("Fetching patients");
+		timer.checkpoint("Fetching patients");
 		if (!eventCriteriaWithCPTAnalysis.isEmpty() && searchHits.getAggregations() != null) {
 			Map<String, CPTTotals> cptTotalsMap = getCPTCounts(searchHits);
-			patients = new PatientPageWithCPTTotals(patients.getContent(), pageable, patients.getTotalElements(), cptTotalsMap);
+			patients = new PatientPageWithCPTTotals(patients, cptTotalsMap);
 		}
 
 		// Process matching patients for display
@@ -248,7 +258,7 @@ public class PatientQueryService {
 //			}
 //			timer.split("Fetching concept terms");
 		}
-		logger.info("Times: {}", timer.getTimes());
+		timer.finish();
 		return patients;
 	}
 

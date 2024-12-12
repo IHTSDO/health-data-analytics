@@ -29,6 +29,9 @@
                     style="max-width: 30rem;"
                     class="mb-2">
                     <b-card-text>
+                        <div class="patient-group" style="animation: pulse 1.5s infinite;" v-if="this.discovering">
+                            Analyzing
+                        </div>
                         <div v-for="(group, index) in groups" v-bind:key="group.name" class="patient-group">
                             <b-row>
                                 <b-col>
@@ -38,12 +41,19 @@
                             <b-row>
                                 <b-col>
                                     <b-form-input v-model="group.name" lazy
-                                        style="font-weight: bold; text-align: center; border: 0px"></b-form-input>
+                                        style="font-weight: bold; text-align: center; border: 0"></b-form-input>
                                 </b-col>
                             </b-row>
                             <PatientCriteria :model="group.criteria" hide-gender="true"></PatientCriteria>
                         </div>
-                        <b-button v-on:click="addGroup">Add Group</b-button>
+                        <div>
+                            <b-button v-on:click="addGroup">Add Group</b-button>
+                        </div>
+                        <div>
+                            <b-button v-if="this.outcomes.length === 1" style="margin-top:15px" v-on:click="discoverGroups">                                <b-icon icon="stars" :style="{ opacity: correlationDiscoveryIconOpacity }"></b-icon>
+                                Find High Risk Groups
+                            </b-button>
+                        </div>
                         <b-row style="margin-top:15px">
                             <b-col>
                                 <b-check v-model="includeGroupNoneOfAbove">Include group for all other patients</b-check>
@@ -57,7 +67,7 @@
             <!-- <b-button v-on:click="load">Load</b-button> -->
         </b-col>
         <b-col style="margin-top:300px">
-            <div hidden>{{conditionsTrigger}}</div>
+<!--            <div hidden>{{conditionsTrigger}}</div>-->
             <ReportChart ref="chart" :series="series" ></ReportChart>
         </b-col>
     </b-row>
@@ -69,7 +79,7 @@ import debounce from 'lodash.debounce'
 import { plainToInstance } from 'class-transformer';
 
 import ClinicalEventCriterion from './ClinicalEventCriterion.vue'
-import { ClinicalEventCriterionModel } from './../model/ClinicalEventCriterionModel'
+import { ClinicalEventCriterionModel } from '@/model/ClinicalEventCriterionModel'
 import PatientCriteria from './PatientCriteria.vue'
 import { PatientCriteriaModel } from '@/model/PatientCriteriaModel'
 import AddCriteriaDropdown from './AddCriteriaDropdown.vue'
@@ -90,13 +100,15 @@ export default defineComponent({
             groups: [
             ],
             includeGroupNoneOfAbove: false,
+            discovering: false,
             outcomes: new Array<ClinicalEventCriterionModel>(),
             cohortSize: "0",
             numberFormat: new Intl.NumberFormat('en-US'),
 
             // apex
             series: [{data: []}],
-            colors: ['#FA8989','#FF924C','#FFCA3A','#C5CA30','#8AC926','#52A675','#1982C4','#4267AC','#6A4C93']
+            colors: ['#FA8989','#FF924C','#FFCA3A','#C5CA30','#8AC926','#52A675','#1982C4','#4267AC','#6A4C93'],
+            correlationDiscoveryIconOpacity: 1,
         }
     },
     mounted() {
@@ -175,6 +187,34 @@ export default defineComponent({
         addGroup() {
             this.groups.push({name: "", criteria: new PatientCriteriaModel()})
         },
+        discoverGroups() {
+            console.log('Discover Correlations...')
+            this.discovering = true;
+            // Create Correlation Discovery Report request
+            const reportRequest = {} as any;
+            reportRequest.baseCriteria = this.cohortCriteria.getForAPI()
+            let outcome = this.outcomes[0];
+            console.log(outcome.conceptECL)
+            reportRequest.negativeOutcomeECL = outcome.conceptECL
+            this.discoverCorrelations(reportRequest)
+        },
+        discoverCorrelations(reportRequest: any) {
+            // eslint-disable-next-line
+            const context = this;
+            axios.post('api/correlation-discovery-report', reportRequest)
+                .then(response => {
+                    context.discovering = false;
+                    for (const node of response.data.nodes) {
+                        let patientCriteriaModel = new PatientCriteriaModel();
+                        let eventCriteria = new ClinicalEventCriterionModel(node.label, "<<" + node.conceptId);
+                        eventCriteria.conceptECL = "<<" + node.conceptId + " |" + node.label + "|";
+                        eventCriteria.display = node.label;
+
+                        patientCriteriaModel.eventCriteria.push(eventCriteria)
+                        context.groups.push({name: node.label+"*", criteria: patientCriteriaModel})
+                    }
+                })
+        },
         updateCohortSize: function() {
             // eslint-disable-next-line
             const context = this;
@@ -236,7 +276,7 @@ export default defineComponent({
             report.groups = [patientGroups, outcomesRequest];
             report.colors = colors
             return report;
-        },
+        }
     }
 })
 </script>
@@ -250,10 +290,23 @@ h3 {
     margin: 10px;
     padding: 5px;
 }
+
 </style>
 <style>
 legend {
     text-align: left;
     font-weight: bold;
+}
+@keyframes pulse {
+    0% {
+        opacity: 1.0;
+    }
+    50% {
+        opacity: 0.5;
+    }
+
+    100% {
+        opacity: 1.0;
+    }
 }
 </style>

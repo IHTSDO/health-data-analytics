@@ -98,7 +98,7 @@ import debounce from 'lodash.debounce'
 import { plainToInstance } from 'class-transformer';
 
 import ClinicalEventCriterion from './ClinicalEventCriterion.vue'
-import { ClinicalEventCriterionModel } from './../model/ClinicalEventCriterionModel'
+import { ClinicalEventCriterionModel } from '@/model/ClinicalEventCriterionModel'
 import PatientCriteria from './PatientCriteria.vue'
 import { PatientCriteriaModel } from '@/model/PatientCriteriaModel'
 import AddCriteriaDropdown from './AddCriteriaDropdown.vue'

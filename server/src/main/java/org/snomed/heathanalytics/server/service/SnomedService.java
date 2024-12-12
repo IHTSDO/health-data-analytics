@@ -6,16 +6,20 @@ import ca.uhn.fhir.rest.server.exceptions.BaseServerResponseException;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.hl7.fhir.r4.model.Parameters;
 import org.hl7.fhir.r4.model.ValueSet;
+import org.snomed.heathanalytics.server.model.SnomedConstants;
 import org.snomed.heathanalytics.server.pojo.ConceptResult;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -25,22 +29,22 @@ import static java.lang.String.format;
 public class SnomedService {
 
 	private final IGenericClient fhirClient;
-
+	private final RestTemplate snowstormLiteRestTemplate;
 	private final Map<String, List<Long>> eclResultsCache;
 
 	@Value("${fhir.codesystem.snomed.uri}")
 	private String snomedCodeSystemUri;
 
-	public SnomedService(@Value("${fhir-terminology-server-url}") String fhirTerminologyServerUrl) {
+	public SnomedService(@Value("${fhir-terminology-server-url}") String fhirTerminologyServerUrl,
+			@Value("${snowstorm-lite-url}") String snowstormLiteUrl) {
 		FhirContext context = FhirContext.forR4();
 		context.getRestfulClientFactory().setSocketTimeout(30_000);
 		fhirClient = context.newRestfulGenericClient(fhirTerminologyServerUrl);
+		snowstormLiteRestTemplate = new RestTemplateBuilder().rootUri(snowstormLiteUrl).build();
 		eclResultsCache = new HashMap<>();
 	}
 
 	public List<Long> getConceptIds(String ecl) throws ServiceException {
-		System.out.println("_getConceptIds " + ecl);
-
 		List<Long> results = eclResultsCache.get(ecl);
 		if (results != null) {
 			return results;
@@ -95,4 +99,57 @@ public class SnomedService {
 		List<ValueSet.ValueSetExpansionContainsComponent> contains = valueSet.getExpansion().getContains();
 		resultConsumer.accept(contains.stream());
 	}
+
+	public List<NodeWithParents> loadPartialHierarchy(Set<Long> codes) {
+		String version = null;
+		if (!snomedCodeSystemUri.equals(SnomedConstants.SNOMED_URI)) {
+			version = snomedCodeSystemUri;
+		}
+		List<String> codeStrings = codes.stream().map(Object::toString).toList();
+		HierarchyRequest hierarchyRequest = new HierarchyRequest(SnomedConstants.SNOMED_URI, version, codeStrings);
+		ParameterizedTypeReference<List<NodeWithParents>> responseType = new ParameterizedTypeReference<>() {};
+		HttpEntity<HierarchyRequest> requestEntity = new HttpEntity<>(hierarchyRequest);
+		ResponseEntity<List<NodeWithParents>> response = snowstormLiteRestTemplate.exchange("/partial-hierarchy", HttpMethod.POST, requestEntity, responseType);
+		return response.getBody();
+	}
+
+	public static class HierarchyRequest {
+
+		private String system;
+		private String version;
+		private List<String> codes;
+
+		public HierarchyRequest(String system, String version, List<String> codes) {
+			this.system = system;
+			this.version = version;
+			this.codes = codes;
+		}
+
+		public String getSystem() {
+			return system;
+		}
+
+		public void setSystem(String system) {
+			this.system = system;
+		}
+
+		public String getVersion() {
+			return version;
+		}
+
+		public void setVersion(String version) {
+			this.version = version;
+		}
+
+		public List<String> getCodes() {
+			return codes;
+		}
+
+		public void setCodes(List<String> codes) {
+			this.codes = codes;
+		}
+	}
+
+	public record NodeWithParents(String code, String[] parents) {}
+
 }

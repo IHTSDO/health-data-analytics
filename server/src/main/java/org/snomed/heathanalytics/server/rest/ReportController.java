@@ -2,15 +2,14 @@ package org.snomed.heathanalytics.server.rest;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.snomed.heathanalytics.server.model.Report;
-import org.snomed.heathanalytics.server.model.ReportDefinition;
-import org.snomed.heathanalytics.server.model.StatisticalCorrelationReport;
-import org.snomed.heathanalytics.server.model.StatisticalCorrelationReportDefinition;
+import org.snomed.heathanalytics.server.model.*;
+import org.snomed.heathanalytics.server.model.correlation.CorrelationDiscoveryReportDefinition;
+import org.snomed.heathanalytics.server.model.correlation.CorrelationDiscoveryReportResult;
 import org.snomed.heathanalytics.server.pojo.Stats;
+import org.snomed.heathanalytics.server.service.CorrelationDiscoveryReportService;
 import org.snomed.heathanalytics.server.service.PatientQueryService;
 import org.snomed.heathanalytics.server.service.ReportService;
 import org.snomed.heathanalytics.server.service.ServiceException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,11 +17,18 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Reports", description = "-")
 public class ReportController {
 
-	@Autowired
-	private ReportService reportService;
+	private final ReportService reportService;
 
-	@Autowired
-	private PatientQueryService patientQueryService;
+	private final CorrelationDiscoveryReportService correlationDiscoveryReportService;
+
+	private final PatientQueryService patientQueryService;
+
+	public ReportController(ReportService reportService, CorrelationDiscoveryReportService correlationDiscoveryReportService,
+			PatientQueryService patientQueryService) {
+		this.reportService = reportService;
+		this.correlationDiscoveryReportService = correlationDiscoveryReportService;
+		this.patientQueryService = patientQueryService;
+	}
 
 	@Operation(summary = "Service statistics.", description = "Just reports the server date and number of patients in the store.")
 	@RequestMapping(value = "/stats", method = RequestMethod.GET, produces = "application/json")
@@ -64,5 +70,14 @@ public class ReportController {
 	public StatisticalCorrelationReport runReportSta(@RequestBody StatisticalCorrelationReportDefinition reportDefinition) throws ServiceException {
 		return reportService.runStatisticalReport(reportDefinition);
 	}
+
+	@Operation(summary = "Correlation discovery report.",
+			description = "Within eventCriteria days value of '-1' can be used as an unbounded value.")
+	@RequestMapping(value = "/correlation-discovery-report", method = RequestMethod.POST, produces = "application/json")
+	@ResponseBody
+	public CorrelationDiscoveryReportResult runCorrelationDiscoveryReport(@RequestBody CorrelationDiscoveryReportDefinition reportDefinition) throws ServiceException {
+		return correlationDiscoveryReportService.runCorrelationDiscoveryReport(reportDefinition);
+	}
+
 
 }

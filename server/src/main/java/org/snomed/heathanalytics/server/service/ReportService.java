@@ -1,9 +1,7 @@
 package org.snomed.heathanalytics.server.service;
 
-import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.model.Patient;
 import org.snomed.heathanalytics.server.model.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
@@ -18,13 +16,16 @@ import java.util.concurrent.Future;
 @Service
 public class ReportService {
 
-	@Autowired
-	private PatientQueryService patientQueryService;
+	private final PatientQueryService patientQueryService;
 
 	private final ExecutorService executorService = Executors.newFixedThreadPool(4);
 
+	public ReportService(PatientQueryService patientQueryService) {
+		this.patientQueryService = patientQueryService;
+	}
+
 	public Report runReport(ReportDefinition reportDefinition) throws ServiceException {
-		Timer timer = new Timer();
+		Timer timer = new Timer("Report");
 		// Fetch page of patients matching top level criteria
 		CohortCriteria patientCriteria = reportDefinition.getCriteria();
 		int count;
@@ -33,13 +34,13 @@ public class ReportService {
 		} else {
 			count = (int) patientQueryService.getStats().getPatientCount();
 		}
-		timer.split("cohort count");
+		timer.checkpoint("cohort count");
 		Report report = new Report(reportDefinition.getName(), count, patientCriteria);
 
 		List<List<SubReportDefinition>> subGroupLists = reportDefinition.getGroups();
 		addReportGroups(report, subGroupLists, 0, patientCriteria, timer);
 
-		LoggerFactory.getLogger(getClass()).info("Times: {}", timer.getTimes());
+		timer.finish();
 		return report;
 	}
 
@@ -111,8 +112,7 @@ public class ReportService {
 					CohortCriteria combinedCriteria = combinedCriteriaList.get(i);
 					Page<Patient> patientsPage = future.get();
 					Map<String, CPTTotals> cptTotals = null;
-					if (patientsPage instanceof PatientPageWithCPTTotals) {
-						PatientPageWithCPTTotals pageWithEventCounts = (PatientPageWithCPTTotals) patientsPage;
+					if (patientsPage instanceof PatientPageWithCPTTotals pageWithEventCounts) {
 						cptTotals = pageWithEventCounts.getCptTotals();
 					}
 					Report reportGroup = new Report(reportDefinition.getName(), (int) patientsPage.getTotalElements(), combinedCriteria, cptTotals);

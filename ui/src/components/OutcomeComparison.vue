@@ -8,7 +8,7 @@
                     style="max-width: 30rem;"
                     class="mb-2">
                     <b-card-text>
-                        <PatientCriteria :model="cohortCriteria"></PatientCriteria>
+                        <PatientCriteria :model="cohortCriteria" :preselect-dataset="true"></PatientCriteria>
                     </b-card-text>
                 </b-card>
                 <b-card
@@ -50,7 +50,8 @@
                             <b-button v-on:click="addGroup">Add Group</b-button>
                         </div>
                         <div>
-                            <b-button v-if="this.outcomes.length === 1" style="margin-top:15px" v-on:click="discoverGroups">                                <b-icon icon="stars" :style="{ opacity: correlationDiscoveryIconOpacity }"></b-icon>
+                            <b-button v-if="this.outcomes.length === 1" style="margin-top:15px" v-on:click="discoverGroups">
+                              <b-icon icon="stars" :style="{ opacity: correlationDiscoveryIconOpacity }"></b-icon>
                                 Find High Risk Groups
                             </b-button>
                         </div>
@@ -304,7 +305,6 @@ legend {
     50% {
         opacity: 0.5;
     }
-
     100% {
         opacity: 1.0;
     }

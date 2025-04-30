@@ -107,7 +107,7 @@ Or
 
 - Import native bulk resources:
 ```bash
-java -Xms3g -jar server/target/server*.jar --data-set="Hospital-B" --import-population='patient-data-for-import'
+java -Xms3g -jar server/target/server*.jar --data-set="Main-Hospital" --import-population='patient-data-for-import'
 ```
 
 Or

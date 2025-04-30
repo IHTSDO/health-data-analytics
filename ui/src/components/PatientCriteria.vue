@@ -22,7 +22,7 @@
 import { defineComponent } from 'vue'
 import axios from 'axios'
 
-import {PatientCriteriaModel} from '../model/PatientCriteriaModel'
+import {PatientCriteriaModel} from '@/model/PatientCriteriaModel'
 import { ClinicalEventCriterionModel } from '@/model/ClinicalEventCriterionModel';
 import ClinicalEventCriterion from './ClinicalEventCriterion.vue'
 import AddCriteriaDropdown from './AddCriteriaDropdown.vue'
@@ -37,6 +37,7 @@ export default defineComponent({
         model: PatientCriteriaModel,
         hideGender: String,
         hideSize: Boolean,
+        preselectDataset: Boolean,
     },
     mounted() {
         if (!this.model) {
@@ -45,6 +46,14 @@ export default defineComponent({
             axios.get('api/datasets')
                 .then(response => {
                     this.datasets = response.data;
+
+                    // Preselect the first dataset if preselectDataset is true
+                    if (this.preselectDataset && this.datasets.length > 0) {
+                        this.dataset = this.datasets[0];
+                        if (this.model) {
+                            this.$set(this.model, 'dataset', this.dataset);
+                        }
+                    }
                 })
         }
     },

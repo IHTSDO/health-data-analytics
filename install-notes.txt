@@ -1,0 +1,10 @@
+#!/bin/bash
+
+username="`sed -n 's/^elasticsearch\.username=\(.*\)$/\1/p' /opt/health-data-analytics/application.properties`"
+password="`sed -n 's/^elasticsearch\.password=\(.*\)$/\1/p' /opt/health-data-analytics/application.properties`"
+
+# Delete all existing subsets
+curl -u "${username}:${password}" -X POST "http://localhost:9200/subset/_delete_by_query?scroll_size=1000" -H "Content-Type: application/json" -d '{"query": {"match_all": {}}}'
+
+# Add required subsets
+curl -u "${username}:${password}" -XPOST localhost:9200/subset/_doc -H "Content-Type: application/json" -d '{ "_class": "org.snomed.heathanalytics.server.model.Subset", "id": "a1d45728-742c-4ee3-affd-63476b4578ff",  "name": "Breast cancer prevention medication", "description": "", "ecl": "<< 75959001 |Product containing tamoxifen (medicinal product)| or << 108774000 |Product containing anastrozole (medicinal product)| or << 419530003 |Product containing raloxifene (medicinal product)|"}'

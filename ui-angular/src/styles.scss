@@ -1,0 +1,80 @@
+@use "bootstrap/scss/bootstrap" as *;
+
+html,
+body {
+	height: 100%;
+}
+
+#app {
+	font-family: Avenir, Helvetica, Arial, sans-serif;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	text-align: center;
+	color: #2c3e50;
+}
+
+.navbar.sn-navbar {
+	background-color: #00a9e0;
+	margin-bottom: 10px;
+}
+
+.navbar.sn-navbar .navbar-nav {
+	font-weight: 500;
+}
+
+.navbar.sn-navbar .nav-link.active,
+.navbar.sn-navbar .nav-link.router-link-active-exact {
+	color: rgba(255, 255, 255, 0.9);
+}
+
+.navbar.sn-navbar .nav-link-subpages.router-link-active-partial {
+	color: rgba(255, 255, 255, 0.9);
+}
+
+.btn-primary {
+	color: #fff;
+	background-color: #00a9e0;
+	border-color: #00a9e0;
+}
+
+.remove-btn {
+	line-height: 10px;
+	background-color: white;
+	opacity: 0.75;
+	color: #ce0037;
+	border: 0;
+	float: right;
+	padding: 0;
+}
+
+legend {
+	text-align: left;
+	font-weight: bold;
+}
+
+.custom-control.custom-radio {
+	display: inline-block;
+	margin-right: 10px;
+}
+
+.patient-group {
+	border: 1px solid lightgray;
+	margin: 10px;
+	padding: 5px;
+}
+
+@keyframes pulse {
+	0% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.5;
+	}
+	100% {
+		opacity: 1;
+	}
+}
+
+.discovering-pulse {
+	animation: pulse 1.5s infinite;
+}

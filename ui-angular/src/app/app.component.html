@@ -1,0 +1,39 @@
+<div id="app" class="container">
+	<div class="row">
+		<div class="col px-0">
+			<nav class="navbar navbar-expand-lg navbar-dark sn-navbar">
+				<div class="collapse navbar-collapse">
+					<ul class="navbar-nav">
+						<li class="nav-item">
+							<a class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+								>Home</a
+							>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" routerLink="/treatment-comparison" routerLinkActive="active">Treatments</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" routerLink="/group-comparison" routerLinkActive="active">Patient Groups</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link" routerLink="/longitudinal-comparison" routerLinkActive="active">Longitudinal</a>
+						</li>
+						<li class="nav-item">
+							<a
+								class="nav-link nav-link-subpages"
+								routerLink="/subsets"
+								routerLinkActive="active"
+								[routerLinkActiveOptions]="{ exact: false }"
+								>Subsets</a
+							>
+						</li>
+					</ul>
+					<ul class="navbar-nav ms-auto">
+						<li class="navbar-text text-white fw-semibold">Snolytical</li>
+					</ul>
+				</div>
+			</nav>
+		</div>
+	</div>
+	<router-outlet></router-outlet>
+</div>

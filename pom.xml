@@ -12,6 +12,7 @@
 		<module>model</module>
 		<module>generator</module>
 		<module>ui</module>
+		<module>ui-angular</module>
 		<module>server</module>
 	</modules>
 

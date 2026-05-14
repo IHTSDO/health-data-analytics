@@ -1,0 +1,64 @@
+<div class="row">
+	<div class="col-4">
+		<div class="card mb-2 text-start" style="max-width: 30rem">
+			<div class="card-body">
+				<h5 class="card-title">Patient Cohort</h5>
+				<app-patient-criteria [model]="cohortCriteria" [hideSize]="true"></app-patient-criteria>
+			</div>
+		</div>
+		<div class="card mb-2 text-start" style="max-width: 30rem">
+			<div class="card-body">
+				<h5 class="card-title">Time Period:</h5>
+				<div class="mb-3">
+					<label class="form-label">Start date</label>
+					<input class="form-control" type="date" [(ngModel)]="startDate" name="startDate" />
+				</div>
+				<div class="mb-3">
+					<label class="form-label">End date</label>
+					<input class="form-control" type="date" [(ngModel)]="endDate" name="endDate" />
+				</div>
+				<label class="form-label">Granularity</label>
+				<div class="form-check">
+					<input class="form-check-input" type="radio" name="gran" id="g-y" [(ngModel)]="granularity" value="YEAR" />
+					<label class="form-check-label" for="g-y">Year</label>
+				</div>
+				<div class="form-check">
+					<input class="form-check-input" type="radio" name="gran" id="g-m" [(ngModel)]="granularity" value="MONTH" />
+					<label class="form-check-label" for="g-m">Month</label>
+				</div>
+				<div class="form-check">
+					<input class="form-check-input" type="radio" name="gran" id="g-d" [(ngModel)]="granularity" value="DAY" />
+					<label class="form-check-label" for="g-d">Day</label>
+				</div>
+				<div class="form-check">
+					<input class="form-check-input" type="radio" name="gran" id="g-h" [(ngModel)]="granularity" value="HOUR" />
+					<label class="form-check-label" for="g-h">Hour</label>
+				</div>
+			</div>
+		</div>
+		<div class="card mb-2 text-start" style="max-width: 30rem">
+			<div class="card-body">
+				<h5 class="card-title">Outcomes to Measure:</h5>
+				<div class="mb-2" *ngFor="let outcome of outcomes">
+					<app-clinical-event-criterion [model]="outcome" (remove)="removeOutcome(outcome)" />
+				</div>
+				<app-add-criteria-dropdown label="Add Outcome" (addCriterion)="addOutcome($event.display, $event.eclBinding)" />
+				<div class="form-check mt-2">
+					<input
+						class="form-check-input"
+						type="checkbox"
+						id="hist"
+						[(ngModel)]="outcomesIncludeHistory"
+						(ngModelChange)="onHistoryToggle()"
+						name="hist"
+					/>
+					<label class="form-check-label" for="hist">Include historic concepts</label>
+				</div>
+			</div>
+		</div>
+		<button type="button" class="btn btn-primary mt-3 mb-5" (click)="run()">Run Report</button>
+	</div>
+	<div class="col">
+		<app-report-chart-longitudinal></app-report-chart-longitudinal>
+	</div>
+</div>

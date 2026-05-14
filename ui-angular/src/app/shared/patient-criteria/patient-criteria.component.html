@@ -1,0 +1,60 @@
+<div *ngIf="model">
+	<div class="mb-2" *ngIf="!hideGender">
+		<label class="form-label">Patient Dataset</label>
+		<select class="form-select form-select-sm" [(ngModel)]="datasetValue">
+			<option *ngFor="let d of datasets" [value]="d">{{ d }}</option>
+		</select>
+	</div>
+	<div class="mb-2" *ngIf="!hideGender">
+		<label class="form-label">Gender</label>
+		<div>
+			<div class="form-check form-check-inline">
+				<input
+					class="form-check-input"
+					type="radio"
+					name="gender-{{ groupId }}"
+					id="g-all-{{ groupId }}"
+					value=""
+					[(ngModel)]="genderValue"
+				/>
+				<label class="form-check-label" for="g-all-{{ groupId }}">All</label>
+			</div>
+			<div class="form-check form-check-inline">
+				<input
+					class="form-check-input"
+					type="radio"
+					name="gender-{{ groupId }}"
+					id="g-f-{{ groupId }}"
+					value="FEMALE"
+					[(ngModel)]="genderValue"
+				/>
+				<label class="form-check-label" for="g-f-{{ groupId }}">Female</label>
+			</div>
+			<div class="form-check form-check-inline">
+				<input
+					class="form-check-input"
+					type="radio"
+					name="gender-{{ groupId }}"
+					id="g-m-{{ groupId }}"
+					value="MALE"
+					[(ngModel)]="genderValue"
+				/>
+				<label class="form-check-label" for="g-m-{{ groupId }}">Male</label>
+			</div>
+		</div>
+	</div>
+	<div class="mb-2" *ngFor="let eventCriterion of model.eventCriteria">
+		<app-clinical-event-criterion
+			[model]="eventCriterion"
+			(remove)="removeCriterion(eventCriterion)"
+			(changed)="onCriterionChanged()"
+		/>
+	</div>
+	<div *ngIf="!(hideGender || hideSize)">
+		<div>Cohort Size: {{ cohortSize }}</div>
+	</div>
+	<app-add-criteria-dropdown
+		[treatment]="model.treatment"
+		(addCriterion)="addEventCriterion($event.display, $event.eclBinding)"
+	/>
+</div>

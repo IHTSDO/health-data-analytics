@@ -15,6 +15,10 @@
 
 	<properties>
 		<packageName>health-data-analytics</packageName>
+		<!-- Default: Vue ui; activate profile angular-ui to build/serve from ui-angular -->
+		<ui.frontend.dir>${project.basedir}/../ui</ui.frontend.dir>
+		<ui.static.dist>${ui.frontend.dir}/dist</ui.static.dist>
+		<frontend.node.version>v14.20.0</frontend.node.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -149,9 +153,8 @@
 						<artifactId>frontend-maven-plugin</artifactId>
 						<version>1.15.1</version>
 						<configuration>
-							<nodeVersion>v14.20.0</nodeVersion>
-<!--							<nodeVersion>v16.13.2</nodeVersion>-->
-							<workingDirectory>../ui</workingDirectory>
+							<nodeVersion>${frontend.node.version}</nodeVersion>
+							<workingDirectory>${ui.frontend.dir}</workingDirectory>
 						</configuration>
 						<executions>
 							<execution>
@@ -194,7 +197,7 @@
 									<outputDirectory>${basedir}/target/classes/static</outputDirectory>
 									<resources>
 										<resource>
-											<directory>../ui/dist</directory>
+											<directory>${ui.static.dist}</directory>
 										</resource>
 									</resources>
 								</configuration>
@@ -203,6 +206,18 @@
 					</plugin>
 				</plugins>
 			</build>
+		</profile>
+		<profile>
+			<id>angular-ui</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<!-- Use with prod: mvn -Pprod,angular-ui package — packs Angular build into Spring Boot static -->
+			<properties>
+				<ui.frontend.dir>${project.basedir}/../ui-angular</ui.frontend.dir>
+				<ui.static.dist>${ui.frontend.dir}/dist/ui-angular/browser</ui.static.dist>
+				<frontend.node.version>v18.20.5</frontend.node.version>
+			</properties>
 		</profile>
 	</profiles>
 </project>

@@ -1,0 +1,32 @@
+<div class="dropdown m-2" dropdown>
+	<button dropdownToggle type="button" class="btn btn-primary dropdown-toggle">
+		{{ label }}
+	</button>
+	<ul *dropdownMenu class="dropdown-menu">
+		<li *ngIf="!treatment">
+			<button type="button" class="dropdown-item" (click)="emit('Clinical Finding', '<404684003')">
+				Clinical Finding
+			</button>
+		</li>
+		<li *ngIf="!treatment">
+			<button type="button" class="dropdown-item" (click)="emit('Disorder', '<64572001')">
+				Disorder
+			</button>
+		</li>
+		<li>
+			<button type="button" class="dropdown-item" (click)="emit('Procedure', '<71388002')">
+				Procedure
+			</button>
+		</li>
+		<li *ngIf="!treatment">
+			<button type="button" class="dropdown-item" (click)="emit('Observable', '<363787002')">
+				Observable
+			</button>
+		</li>
+		<li>
+			<button type="button" class="dropdown-item" (click)="emit('Pharma / biological product', '<373873005')">
+				Pharma / biological product
+			</button>
+		</li>
+	</ul>
+</div>

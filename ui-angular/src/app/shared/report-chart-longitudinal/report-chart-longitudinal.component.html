@@ -1,0 +1,16 @@
+<div *ngIf="createChart">
+	<apx-chart
+		#outcomeChart
+		[series]="series"
+		[chart]="chart"
+		[dataLabels]="dataLabels"
+		[colors]="colors"
+		[markers]="markers"
+		[stroke]="stroke"
+		[plotOptions]="plotOptions"
+		[xaxis]="xaxis"
+		[yaxis]="yaxis"
+		[tooltip]="tooltip"
+		[legend]="legend"
+	></apx-chart>
+</div>

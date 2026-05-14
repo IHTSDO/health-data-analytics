@@ -1,0 +1,50 @@
+<div class="row">
+	<div class="col-4">
+		<div class="card mb-2 text-start" style="max-width: 30rem">
+			<div class="card-body">
+				<h5 class="card-title">Patient Cohort</h5>
+				<app-patient-criteria [model]="cohortCriteria"></app-patient-criteria>
+			</div>
+		</div>
+		<div class="card mb-2 text-start" style="max-width: 30rem">
+			<div class="card-body">
+				<h5 class="card-title">Treatment Options:</h5>
+				<div class="patient-group" *ngFor="let group of groups; let index = index">
+					<div class="text-end">
+						<button type="button" class="remove-btn" (click)="groups.splice(index, 1)">x</button>
+					</div>
+					<input
+						class="form-control fw-bold text-center border-0"
+						[(ngModel)]="group.name"
+						name="gname{{ index }}"
+					/>
+					<app-patient-criteria [model]="group.criteria" [hideGender]="true"></app-patient-criteria>
+				</div>
+				<button type="button" class="btn btn-secondary mt-2" (click)="addGroup()">Add Option</button>
+				<div class="form-check mt-3">
+					<input
+						class="form-check-input"
+						type="checkbox"
+						id="includeOther"
+						[(ngModel)]="includeNoTreatmentOption"
+						name="includeOther"
+					/>
+					<label class="form-check-label" for="includeOther">Include group for all other patients</label>
+				</div>
+			</div>
+		</div>
+		<div class="card mb-2 text-start" style="max-width: 30rem">
+			<div class="card-body">
+				<h5 class="card-title">Subsequent Outcomes:</h5>
+				<div class="mb-2" *ngFor="let outcome of outcomes; let index = index">
+					<app-clinical-event-criterion [model]="outcome" (remove)="outcomes.splice(index, 1)" />
+				</div>
+				<app-add-criteria-dropdown label="Add Outcome" (addCriterion)="addOutcome($event.display, $event.eclBinding)" />
+			</div>
+		</div>
+		<button type="button" class="btn btn-primary mt-3 mb-5" (click)="runReport()">Run Report</button>
+	</div>
+	<div class="col" style="margin-top: 300px">
+		<app-report-chart></app-report-chart>
+	</div>
+</div>

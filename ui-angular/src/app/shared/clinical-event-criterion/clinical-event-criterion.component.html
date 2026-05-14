@@ -1,0 +1,37 @@
+<div>
+	<div style="font-size: 0.85em; text-align: left; font-style: italic">{{ model.title }}</div>
+	<input
+		class="form-control"
+		name="criterion-search"
+		[ngModel]="searchInput"
+		(ngModelChange)="onSearchInput($event)"
+		[ngStyle]="boxStyle"
+		[attr.autocomplete]="'off'"
+		[attr.title]="tooltipText"
+	/>
+	<div class="input-menu" dropdown container="body">
+		<button
+			type="button"
+			dropdownToggle
+			class="btn btn-link btn-sm text-muted border-0 p-0"
+			aria-label="Criterion menu"
+		>
+			&#8942;
+		</button>
+		<ul *dropdownMenu class="dropdown-menu dropdown-menu-end">
+			<li><button type="button" class="dropdown-item" (click)="remove.emit()">Remove</button></li>
+		</ul>
+	</div>
+	<div class="typeahead" *ngIf="showResultsDropdown">
+		<div class="list-group">
+			<button
+				type="button"
+				class="list-group-item list-group-item-action py-1"
+				*ngFor="let item of searchResults"
+				(click)="selectResult(item)"
+			>
+				{{ item.display }}
+			</button>
+		</div>
+	</div>
+</div>

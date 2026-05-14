@@ -2,7 +2,6 @@ package org.snomed.heathanalytics.server.config;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
-import jakarta.annotation.PostConstruct;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -13,9 +12,11 @@ import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.server.config.elasticsearch.DateToLongConverter;
 import org.snomed.heathanalytics.server.config.elasticsearch.IndexNameProvider;
 import org.snomed.heathanalytics.server.config.elasticsearch.LongToDateConverter;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.SmartInitializingSingleton;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.data.elasticsearch.client.ClientConfiguration;
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchClients;
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchConfiguration;
@@ -28,7 +29,7 @@ import org.springframework.data.elasticsearch.support.HttpHeaders;
 import java.time.Duration;
 import java.util.*;
 
-public class ElasticsearchConfig extends ElasticsearchConfiguration {
+public class ElasticsearchConfig extends ElasticsearchConfiguration implements SmartInitializingSingleton {
 
 	@Value("${elasticsearch.username}")
 	private String elasticsearchUsername;
@@ -50,19 +51,25 @@ public class ElasticsearchConfig extends ElasticsearchConfiguration {
 
 	@Value("${elasticsearch.client.socket-timeout-seconds}")
 	private long elasticsearchSocketTimeoutSeconds;
-	@Lazy
-	private ElasticsearchOperations elasticsearchOperations;
+
+	@Autowired
+	private ElasticsearchProperties elasticsearchProperties;
+
+	@Autowired
+	private ObjectProvider<ElasticsearchOperations> elasticsearchOperationsProvider;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	@PostConstruct
-	public void init() {
-		initialiseIndices(elasticsearchOperations, false);
+	@Override
+	public void afterSingletonsInstantiated() {
+		initialiseIndices(elasticsearchOperationsProvider.getObject(), false);
 	}
 
 	@Override
 	public ClientConfiguration clientConfiguration() {
-		final String[] urls = elasticsearchProperties().getUrls();
+		final String[] urls = Objects.requireNonNull(
+				elasticsearchProperties.getUrls(),
+				"elasticsearch.urls must be set");
 		for (String url : urls) {
 			logger.info("Elasticsearch host: {}", url);
 		}
@@ -124,22 +131,17 @@ public class ElasticsearchConfig extends ElasticsearchConfiguration {
 		return httpHosts.stream().map(HttpHost::toHostString).toList().toArray(new String[]{});
 	}
 
-	private static int secondsToRequestConfigTimeout(long millis) {
-		if (millis > Integer.MAX_VALUE) {
-			return Integer.MAX_VALUE;
+	private static int secondsToRequestConfigTimeout(long seconds) {
+		if (seconds > Integer.MAX_VALUE / 1000) {
+			return Integer.MAX_VALUE / 1000;
 		}
-		return (int) millis;
+		return (int) seconds;
 	}
 
 	@Bean
 	@Override
 	public ElasticsearchCustomConversions elasticsearchCustomConversions() {
 		return new ElasticsearchCustomConversions(Arrays.asList(new DateToLongConverter(), new LongToDateConverter()));
-	}
-
-	@Bean
-	public ElasticsearchProperties elasticsearchProperties() {
-		return new ElasticsearchProperties();
 	}
 
 	@Bean

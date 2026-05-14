@@ -4,11 +4,16 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.server.config.ElasticsearchConfig;
+import org.snomed.heathanalytics.server.config.ElasticsearchProperties;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.PropertySource;
+import org.snomed.heathanalytics.server.config.ExcludeElasticsearchConfigFromComponentScan;
 import org.springframework.data.elasticsearch.client.ClientConfiguration;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.testcontainers.DockerClientFactory;
@@ -18,11 +23,17 @@ import org.testcontainers.junit.jupiter.Container;
 @PropertySource("application.properties")
 @PropertySource("application-test.properties")
 @TestConfiguration
+@EnableConfigurationProperties(ElasticsearchProperties.class)
 @SpringBootApplication(
 		exclude = {
 				ElasticsearchRestClientAutoConfiguration.class,
 				ElasticsearchDataAutoConfiguration.class
 		})
+@ComponentScan(
+		excludeFilters = @ComponentScan.Filter(
+				type = FilterType.CUSTOM,
+				classes = ExcludeElasticsearchConfigFromComponentScan.class
+		))
 public class TestConfig extends ElasticsearchConfig {
 
 	private static final String ELASTIC_SEARCH_SERVER_VERSION = "8.19.8";

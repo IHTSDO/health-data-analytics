@@ -5,7 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
@@ -15,6 +18,13 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 				ElasticsearchRestClientAutoConfiguration.class
 		}
 )
+@ComponentScan(
+		excludeFilters = @ComponentScan.Filter(
+				type = FilterType.CUSTOM,
+				classes = ExcludeElasticsearchConfigFromComponentScan.class
+		)
+)
+@EnableConfigurationProperties(ElasticsearchProperties.class)
 @EnableElasticsearchRepositories(
 		basePackages = {
 				"org.snomed.heathanalytics.server.store"

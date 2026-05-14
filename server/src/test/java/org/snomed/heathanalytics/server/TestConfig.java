@@ -25,7 +25,7 @@ import org.testcontainers.junit.jupiter.Container;
 		})
 public class TestConfig extends ElasticsearchConfig {
 
-	private static final String ELASTIC_SEARCH_SERVER_VERSION = "8.11.1";
+	private static final String ELASTIC_SEARCH_SERVER_VERSION = "8.19.8";
 
 	// set it to true to use local instance instead of test container
 	static final boolean useLocalElasticsearch = false;

@@ -38,15 +38,11 @@
 	<parent>
 		<groupId>org.snomed</groupId>
 		<artifactId>snomed-parent-bom</artifactId>
-		<version>3.7.1</version>
+		<version>3.15.0-SNAPSHOT</version>
 	</parent>
 	<properties>
 		<!-- Elasticsearch version from property <elasticsearch.version> must be copied into TestConfig.java for integration testing -->
 		<!-- BOM Overrides: Delete and reevaluate during each upgrade -->
-		<spring-boot.version>3.2.11</spring-boot.version>
-		<spring.version>6.1.14</spring.version>
-		<hapi-fhir.version>7.4.5</hapi-fhir.version>
-		<org.hl7.fhir.version>6.4.0</org.hl7.fhir.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -77,30 +73,36 @@
 		<!-- HAPI FHIR -->
 		<dependency>
 			<groupId>ca.uhn.hapi.fhir</groupId>
-			<artifactId>hapi-fhir-base</artifactId>
-			<version>${hapi-fhir.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>ca.uhn.hapi.fhir</groupId>
-			<artifactId>hapi-fhir-client</artifactId>
-			<version>${hapi-fhir.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>ca.uhn.hapi.fhir</groupId>
 			<artifactId>hapi-fhir-structures-r4</artifactId>
-			<version>${hapi-fhir.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>ca.uhn.hapi.fhir</groupId>
 			<artifactId>org.hl7.fhir.r4</artifactId>
-			<version>${org.hl7.fhir.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>ca.uhn.hapi.fhir</groupId>
 			<artifactId>org.hl7.fhir.utilities</artifactId>
-			<version>${org.hl7.fhir.version}</version>
 		</dependency>
 	</dependencies>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.owasp</groupId>
+				<artifactId>dependency-check-maven</artifactId>
+				<inherited>false</inherited>
+				<configuration>
+					<nvdApiKey>${nvdApiKey}</nvdApiKey>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>update-only</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 	<repositories>
 		<repository>
 			<id>ihtsdo-releases</id>

@@ -1,6 +1,5 @@
 package org.snomed.heathanalytics.server.service;
 
-import co.elastic.clients.elasticsearch._types.InlineScript;
 import co.elastic.clients.elasticsearch._types.Script;
 import co.elastic.clients.elasticsearch._types.ScriptLanguage;
 import co.elastic.clients.elasticsearch._types.aggregations.*;
@@ -327,16 +326,17 @@ public class PatientQueryService {
 		}
 		if (minAgeNow != null || maxAgeNow != null) {
 			// Crude match using birth year
-			RangeQuery.Builder rangeQueryBuilder = QueryBuilders.range();
-			rangeQueryBuilder.field(Patient.Fields.DOB_YEAR);
 			int thisYear = now.get(Calendar.YEAR);
-			if (minAgeNow != null) {
-				rangeQueryBuilder.lte(JsonData.of(thisYear - minAgeNow));
-			}
-			if (maxAgeNow != null) {
-				rangeQueryBuilder.gte(JsonData.of(thisYear - maxAgeNow));
-			}
-			patientQuery.must(rangeQueryBuilder.build()._toQuery());
+			patientQuery.must(RangeQueryBuilders.number(b -> {
+				b.field(Patient.Fields.DOB_YEAR);
+				if (minAgeNow != null) {
+					b.lte((double) (thisYear - minAgeNow));
+				}
+				if (maxAgeNow != null) {
+					b.gte((double) (thisYear - maxAgeNow));
+				}
+				return b;
+			})._toQuery());
 		}
 		return patientQuery;
 	}
@@ -356,14 +356,16 @@ public class PatientQueryService {
 					// are stored together in the index of the patient document.
 					// Additional filtering happens in the Painless script.
 					// Setting this range at the index level reduces the number of documents the painless script needs to process.
-					RangeQuery.Builder rangeQuery = new RangeQuery.Builder().field(Patient.Fields.events + "." + ClinicalEvent.Fields.DATE_LONG);
-					if (criterion.getMinDate() != null) {
-						rangeQuery.gte(JsonData.of(criterion.getMinDate().getTime()));
-					}
-					if (criterion.getMaxDate() != null) {
-						rangeQuery.lt(JsonData.of(criterion.getMaxDate().getTime()));
-					}
-					eventQuery.must(rangeQuery.build()._toQuery());
+					eventQuery.must(RangeQueryBuilders.number(b -> {
+						b.field(Patient.Fields.events + "." + ClinicalEvent.Fields.DATE_LONG);
+						if (criterion.getMinDate() != null) {
+							b.gte((double) criterion.getMinDate().getTime());
+						}
+						if (criterion.getMaxDate() != null) {
+							b.lt((double) criterion.getMaxDate().getTime());
+						}
+						return b;
+					})._toQuery());
 				}
 				if (criterion.isHas()) {
 					patientFilter.must(eventQuery.build()._toQuery());
@@ -595,11 +597,18 @@ public class PatientQueryService {
 	}
 
 	private Script createScript(String scriptSource, Map<String, JsonData> params) {
-		return new Script.Builder().inline(new InlineScript.Builder().lang(ScriptLanguage.Painless).source(scriptSource).params(params).build()).build();
+		return new Script.Builder()
+				.lang(ScriptLanguage.Painless.jsonValue())
+				.source(scriptSource)
+				.params(params)
+				.build();
 	}
 
 	private Script createScript(String scriptSource) {
-		return new Script.Builder().inline(new InlineScript.Builder().lang(ScriptLanguage.Painless).source(scriptSource).build()).build();
+		return new Script.Builder()
+				.lang(ScriptLanguage.Painless.jsonValue())
+				.source(scriptSource)
+				.build();
 	}
 
 	private Query createQuery(String scriptSource, Map<String, JsonData> params) {

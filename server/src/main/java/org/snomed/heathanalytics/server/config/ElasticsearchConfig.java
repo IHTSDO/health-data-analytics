@@ -13,10 +13,8 @@ import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.server.config.elasticsearch.DateToLongConverter;
 import org.snomed.heathanalytics.server.config.elasticsearch.IndexNameProvider;
 import org.snomed.heathanalytics.server.config.elasticsearch.LongToDateConverter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.elasticsearch.client.ClientConfiguration;
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchClients;
@@ -27,9 +25,9 @@ import org.springframework.data.elasticsearch.core.convert.ElasticsearchCustomCo
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
 import org.springframework.data.elasticsearch.support.HttpHeaders;
 
+import java.time.Duration;
 import java.util.*;
 
-@Configuration
 public class ElasticsearchConfig extends ElasticsearchConfiguration {
 
 	@Value("${elasticsearch.username}")
@@ -47,7 +45,11 @@ public class ElasticsearchConfig extends ElasticsearchConfiguration {
 	@Value("${elasticsearch.index.replicas}")
 	short indexReplicas;
 
-	@Autowired
+	@Value("${elasticsearch.client.connect-timeout-seconds}")
+	private long elasticsearchConnectTimeoutSeconds;
+
+	@Value("${elasticsearch.client.socket-timeout-seconds}")
+	private long elasticsearchSocketTimeoutSeconds;
 	@Lazy
 	private ElasticsearchOperations elasticsearchOperations;
 
@@ -64,22 +66,23 @@ public class ElasticsearchConfig extends ElasticsearchConfiguration {
 		for (String url : urls) {
 			logger.info("Elasticsearch host: {}", url);
 		}
-		HttpHeaders apiKeyHeaders = new HttpHeaders();
+		return buildClientConfiguration(getHosts(urls), useHttps(urls));
+	}
 
-		if (useHttps(urls)) {
-			return ClientConfiguration.builder()
-					.connectedTo(getHosts(urls))
-					.usingSsl()
-					.withDefaultHeaders(apiKeyHeaders)
-					.withClientConfigurer(configureHttpClient())
-					.build();
-		} else {
-			return ClientConfiguration.builder()
-					.connectedTo(getHosts(urls))
-					.withDefaultHeaders(apiKeyHeaders)
-					.withClientConfigurer(configureHttpClient())
-					.build();
-		}
+	/**
+	 * Hosts are {@code host:port} strings as required by {@code ClientConfiguration.builder().connectedTo(...)}.
+	 */
+	protected ClientConfiguration buildClientConfiguration(String[] hosts, boolean useSsl) {
+		HttpHeaders apiKeyHeaders = new HttpHeaders();
+		ClientConfiguration.MaybeSecureClientConfigurationBuilder builder = ClientConfiguration.builder()
+				.connectedTo(hosts);
+		ClientConfiguration.TerminalClientConfigurationBuilder terminal = useSsl ? builder.usingSsl() : builder;
+		return terminal
+				.withDefaultHeaders(apiKeyHeaders)
+				.withConnectTimeout(Duration.ofSeconds(elasticsearchConnectTimeoutSeconds))
+				.withSocketTimeout(Duration.ofSeconds(elasticsearchSocketTimeoutSeconds))
+				.withClientConfigurer(configureHttpClient())
+				.build();
 	}
 
 	private boolean useHttps(String[] urls) {
@@ -93,8 +96,12 @@ public class ElasticsearchConfig extends ElasticsearchConfiguration {
 
 	private ElasticsearchClients.ElasticsearchRestClientConfigurationCallback configureHttpClient() {
 		return ElasticsearchClients.ElasticsearchRestClientConfigurationCallback.from(clientBuilder -> {
+			int connectTimeoutSeconds = secondsToRequestConfigTimeout(elasticsearchConnectTimeoutSeconds);
+			int socketTimeoutSeconds = secondsToRequestConfigTimeout(elasticsearchSocketTimeoutSeconds);
 			clientBuilder.setRequestConfigCallback(builder -> {
 				builder.setConnectionRequestTimeout(0);//Disable lease handling for the connection pool! See https://github.com/elastic/elasticsearch/issues/24069
+				builder.setConnectTimeout(connectTimeoutSeconds * 1000);
+				builder.setSocketTimeout(socketTimeoutSeconds * 1000);
 				return builder;
 			});
 			final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
@@ -115,6 +122,13 @@ public class ElasticsearchConfig extends ElasticsearchConfiguration {
 			httpHosts.add(HttpHost.create(host));
 		}
 		return httpHosts.stream().map(HttpHost::toHostString).toList().toArray(new String[]{});
+	}
+
+	private static int secondsToRequestConfigTimeout(long millis) {
+		if (millis > Integer.MAX_VALUE) {
+			return Integer.MAX_VALUE;
+		}
+		return (int) millis;
 	}
 
 	@Bean

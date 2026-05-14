@@ -71,11 +71,9 @@ public class TestConfig extends ElasticsearchConfig {
 		if (!useLocalElasticsearch) {
 			assert elasticsearchContainer != null;
 			LOGGER.info("Test container Elasticsearch host {} ", elasticsearchContainer.getHttpHostAddress());
-			return ClientConfiguration.builder()
-					.connectedTo(elasticsearchContainer.getHttpHostAddress()).build();
+			return buildClientConfiguration(new String[] {elasticsearchContainer.getHttpHostAddress()}, false);
 		}
-		return ClientConfiguration.builder()
-				.connectedTo("localhost:9200").build();
+		return buildClientConfiguration(new String[] {"localhost:9200"}, false);
 	}
 
 	@Override

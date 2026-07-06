@@ -81,7 +81,6 @@ public class SnomedService {
 	}
 
 	private void valueSetExpand(String ecl, int offset, int limit, String filter, Consumer<Stream<ValueSet.ValueSetExpansionContainsComponent>> resultConsumer) {
-		ecl = URLEncoder.encode(ecl, StandardCharsets.UTF_8);
 		Parameters requestParameters = new Parameters()
 				.addParameter("url", format("%s?fhir_vs=ecl/%s", snomedCodeSystemUri, ecl))
 				.addParameter("offset", offset + "")

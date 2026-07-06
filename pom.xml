@@ -43,6 +43,9 @@
 	<properties>
 		<!-- Elasticsearch version from property <elasticsearch.version> must be copied into TestConfig.java for integration testing -->
 		<!-- BOM Overrides: Delete and reevaluate during each upgrade -->
+		<jackson.version>2.18.8</jackson.version>
+		<spring.version>6.2.19</spring.version>
+		<tomcat-embed.version>10.1.56</tomcat-embed.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -90,6 +93,18 @@
 		</dependency>
 	</dependencies>
 	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.owasp</groupId>
+					<artifactId>dependency-check-maven</artifactId>
+					<configuration>
+						<nvdApiKey>${nvdApiKey}</nvdApiKey>
+						<ossindexAnalyzerEnabled>false</ossindexAnalyzerEnabled>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 		<plugins>
 			<plugin>
 				<groupId>org.owasp</groupId>

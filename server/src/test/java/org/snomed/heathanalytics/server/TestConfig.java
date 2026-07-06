@@ -4,7 +4,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.heathanalytics.server.config.ElasticsearchConfig;
-import org.snomed.heathanalytics.server.config.ElasticsearchProperties;
+import org.snomed.heathanalytics.server.config.UIProperties;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
@@ -23,7 +23,7 @@ import org.testcontainers.junit.jupiter.Container;
 @PropertySource("application.properties")
 @PropertySource("application-test.properties")
 @TestConfiguration
-@EnableConfigurationProperties(ElasticsearchProperties.class)
+@EnableConfigurationProperties({ElasticsearchProperties.class, UIProperties.class})
 @SpringBootApplication(
 		exclude = {
 				ElasticsearchRestClientAutoConfiguration.class,

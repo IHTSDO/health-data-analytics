@@ -24,7 +24,7 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 				classes = ExcludeElasticsearchConfigFromComponentScan.class
 		)
 )
-@EnableConfigurationProperties(ElasticsearchProperties.class)
+@EnableConfigurationProperties({ElasticsearchProperties.class, UIProperties.class})
 @EnableElasticsearchRepositories(
 		basePackages = {
 				"org.snomed.heathanalytics.server.store"

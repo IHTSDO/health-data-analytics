@@ -50,7 +50,7 @@
                             <b-button v-on:click="addGroup">Add Group</b-button>
                         </div>
                         <div>
-                            <b-button v-if="this.outcomes.length === 1" style="margin-top:15px" v-on:click="discoverGroups">                                <b-icon icon="stars" :style="{ opacity: correlationDiscoveryIconOpacity }"></b-icon>
+                            <b-button v-if="correlationDiscoveryEnabled && this.outcomes.length === 1" style="margin-top:15px" v-on:click="discoverGroups">                                <b-icon icon="stars" :style="{ opacity: correlationDiscoveryIconOpacity }"></b-icon>
                                 Find High Risk Groups
                             </b-button>
                         </div>
@@ -109,9 +109,14 @@ export default defineComponent({
             series: [{data: []}],
             colors: ['#FA8989','#FF924C','#FFCA3A','#C5CA30','#8AC926','#52A675','#1982C4','#4267AC','#6A4C93'],
             correlationDiscoveryIconOpacity: 1,
+            correlationDiscoveryEnabled: true,
         }
     },
     mounted() {
+        axios.get('api/ui-config')
+            .then(response => {
+                this.correlationDiscoveryEnabled = response.data.correlationDiscoveryEnabled
+            })
         // this.load()
     },
     computed: {

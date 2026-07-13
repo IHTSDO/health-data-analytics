@@ -32,6 +32,43 @@ Data is generated for the years 2000-2020 with patient counts for the following 
 
 If the longitudinal option is not used then all the following scenarios will be used instead.
 
+### COVID-19 Risk Groups
+- 40% of patients over the age of 15 enter this scenario
+- Each patient is assigned exclusively to one of 10 risk groups (A–J), with equal probability
+- Group A: COVID-19 detected only
+- Group B: COVID-19 detected and disease
+  - 2% develop COVID-19 pneumonia
+    - 10% of these die
+- Group C: Obesity, COVID-19 detected and disease
+  - 20% develop COVID-19 pneumonia
+    - 20% of these die
+- Group D: Diabetes mellitus, COVID-19 detected and disease
+  - 25% develop COVID-19 pneumonia
+    - 25% of these die
+- Group E: Hypertension, COVID-19 detected and disease
+- Group F: COVID-19 pneumonia only
+  - 18% die
+- Group G: Obesity and diabetes mellitus, COVID-19 detected and disease
+  - 32% develop COVID-19 pneumonia
+    - 32% of these die
+- Group H: Obesity and hypertension, COVID-19 detected and disease
+  - 28% develop COVID-19 pneumonia
+    - 28% of these die
+- Group I: Diabetes mellitus and hypertension, COVID-19 detected and disease
+  - 25% develop COVID-19 pneumonia
+    - 25% of these die
+- Group J: Obesity, diabetes mellitus and hypertension, COVID-19 detected and disease
+  - 48% develop COVID-19 pneumonia
+    - 48% of these die
+- Concepts used:
+  - COVID-19 detected: << 1240581000000104 | Severe acute respiratory syndrome coronavirus 2 detected (finding) |
+  - COVID-19 disease: << 840539006 | COVID-19 |
+  - COVID-19 pneumonia: << 882784691000119100 | COVID-19 pneumonia |
+  - Obesity: << 414916001 | Obesity (disorder) |
+  - Diabetes mellitus: << 73211009 | Diabetes mellitus (disorder) |
+  - Hypertension: << 38341003 | Hypertensive disorder, systemic arterial (disorder) |
+  - Death: 419099009 | Dead (finding) |
+
 ### Rheumatoid Arthritis, COPD
 - 12% of patients have COPD
     - No medication prescribed
